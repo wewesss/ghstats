@@ -283,8 +283,11 @@ func TestDistributionShowsNotAvailable(t *testing.T) {
 	if !strings.Contains(svg, ">3,412<") || !strings.Contains(svg, ">287<") || !strings.Contains(svg, ">1,905<") {
 		t.Fatal("distribution counts missing")
 	}
-	if strings.Count(svg, ">n/a<") != 1 {
-		t.Fatalf("want exactly one n/a (source archives), got %d", strings.Count(svg, ">n/a<"))
+	if !strings.Contains(svg, ">5,000<") || !strings.Contains(svg, ">VIEWS TOTAL<") {
+		t.Fatal("cumulative views missing")
+	}
+	if strings.Contains(svg, ">n/a<") || strings.Contains(svg, "ARCHIVES") {
+		t.Fatal("source archives must not be shown")
 	}
 
 	r := sampleReport()

@@ -48,6 +48,9 @@ case "$RUNNER_ARCH_NAME" in
   *) echo "ghstats: unsupported runner architecture '$RUNNER_ARCH_NAME'" >&2; exit 1 ;;
 esac
 
+if [ -z "${GHSTATS_VERSION:-}" ] && ! [[ "${ACTION_REF:-}" =~ ^v[0-9]+(\.[0-9]+\.[0-9]+)?$ ]]; then
+  echo "::warning::ghstats: action ref '${ACTION_REF:-}' is not a release tag, installing the latest release"
+fi
 tag="$(resolve_tag)"
 archive="ghstats_${tag#v}_${goos}_${goarch}.tar.gz"
 dl="$RUNNER_TEMP/ghstats-download"

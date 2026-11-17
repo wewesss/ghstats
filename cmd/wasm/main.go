@@ -82,16 +82,18 @@ type blockOption struct {
 type linkOption struct {
 	Kind    string `json:"kind"`
 	URLOnly bool   `json:"url_only"`
+	MapOnly bool   `json:"map_only"`
 }
 
 type options struct {
-	Blocks    []blockOption `json:"blocks"`
-	Presets   []string      `json:"presets"`
-	Accents   []string      `json:"accents"`
-	Palettes  []string      `json:"palettes"`
-	Layouts   []string      `json:"layouts"`
-	LinkKinds []linkOption  `json:"link_kinds"`
-	Limits    struct {
+	Blocks     []blockOption `json:"blocks"`
+	Presets    []string      `json:"presets"`
+	Accents    []string      `json:"accents"`
+	Palettes   []string      `json:"palettes"`
+	Layouts    []string      `json:"layouts"`
+	LinkKinds  []linkOption  `json:"link_kinds"`
+	LinkStyles []string      `json:"link_styles"`
+	Limits     struct {
 		Focus    int `json:"focus"`
 		Building int `json:"building"`
 	} `json:"limits"`
@@ -99,16 +101,17 @@ type options struct {
 
 func optionsFunc(js.Value, []js.Value) any {
 	o := options{
-		Presets:  config.Presets(),
-		Accents:  config.Accents(),
-		Palettes: config.Palettes(),
-		Layouts:  config.Layouts(),
+		Presets:    config.Presets(),
+		Accents:    config.Accents(),
+		Palettes:   config.Palettes(),
+		Layouts:    config.Layouts(),
+		LinkStyles: config.LinkStyles(),
 	}
 	for _, b := range config.BlockVariants() {
 		o.Blocks = append(o.Blocks, blockOption{Name: b.Name, Variants: b.Variants})
 	}
 	for _, k := range config.LinkKinds() {
-		o.LinkKinds = append(o.LinkKinds, linkOption{Kind: k, URLOnly: config.LinkKindIsURLOnly(k)})
+		o.LinkKinds = append(o.LinkKinds, linkOption{Kind: k, URLOnly: config.LinkKindIsURLOnly(k), MapOnly: config.LinkKindIsMapOnly(k)})
 	}
 	o.Limits.Focus, o.Limits.Building = config.FocusLimits()
 	data, err := json.Marshal(o)

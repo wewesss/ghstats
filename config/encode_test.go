@@ -31,6 +31,21 @@ func richConfig() config.Config {
 	c.Render.BasePath = "assets/ghstats/"
 	c.Profile = sample.Profile().Profile
 	c.Profile.Links = append(c.Profile.Links, config.Link{Kind: "mastodon", Value: "https://mastodon.social/@me", Label: "fediverse"})
+	c.Profile.Links = append(c.Profile.Links, sample.CustomLinks()["named"])
+	c.Profile.LinkStyle = config.LinkStyleIcon
+	return c
+}
+
+func customPathConfig() config.Config {
+	c := sample.Profile()
+	c.Profile.Links = append(c.Profile.Links, sample.CustomLinks()["path"])
+	c.Profile.LinkStyle = config.LinkStyleText
+	return c
+}
+
+func allLinksConfig() config.Config {
+	c := config.Default()
+	c.Profile.Links = sample.AllLinks()
 	return c
 }
 
@@ -39,6 +54,8 @@ func TestEncodeRoundTrip(t *testing.T) {
 		"default": config.Default(),
 		"profile": sample.Profile(),
 		"rich":    richConfig(),
+		"custom":  customPathConfig(),
+		"all":     allLinksConfig(),
 	}
 	for name, c := range tests {
 		t.Run(name, func(t *testing.T) {

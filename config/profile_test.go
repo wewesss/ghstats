@@ -112,8 +112,8 @@ func TestLinkURLsAndLabels(t *testing.T) {
 			}
 		})
 	}
-	if got := len(config.LinkKinds()); got != 20 {
-		t.Fatalf("kinds = %d, want 20", got)
+	if got := len(config.LinkKinds()); got != 21 {
+		t.Fatalf("kinds = %d, want 21", got)
 	}
 }
 
@@ -134,6 +134,22 @@ func TestProfileRejects(t *testing.T) {
 		{"link not a map", "links:\n    - youtube", "exactly one key"},
 		{"link with two keys", "links:\n    - youtube: a\n      twitch: b", "exactly one key"},
 		{"map without url", "links:\n    - discord: {label: x}", "needs a url"},
+		{"custom as a scalar", "links:\n    - custom: https://example.com", "needs the map form"},
+		{"custom without a label", "links:\n    - custom: {url: \"https://example.com\"}", "needs a label"},
+		{"custom with a blank label", "links:\n    - custom: {url: \"https://example.com\", label: \" \"}", "needs a label"},
+		{"custom without a url", "links:\n    - custom: {label: blog}", "needs a url"},
+		{"custom http URL", "links:\n    - custom: {url: \"http://example.com\", label: blog}", "https://"},
+		{"custom icon unknown name", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: nope}", "neither a link kind"},
+		{"custom icon is custom", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: custom}", "neither a link kind"},
+		{"custom icon path with a tag", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: \"M0 0<script>\"}", "must not contain"},
+		{"custom icon path with a quote", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: 'M0 0\"x'}", "must not contain"},
+		{"custom icon path with an ampersand", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: \"M0 0&amp;\"}", "must not contain"},
+		{"custom icon not a string", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: [a]}", "must be a string"},
+		{"icon on another kind", "links:\n    - youtube: {url: \"https://www.youtube.com/@a\", icon: discord}", "only valid for"},
+		{"custom unknown key", "links:\n    - custom: {url: \"https://example.com\", label: blog, name: x}", "url, label and icon"},
+		{"unknown link style", "link_style: round", "profile.link_style"},
+		{"link style lists the values", "link_style: round", "full, icon, text"},
+		{"link style is case sensitive", "link_style: Icon", "profile.link_style"},
 		{"map unknown key", "links:\n    - discord: {url: \"https://x.y\", name: x}", `unknown key "name"`},
 		{"map non-https", "links:\n    - discord: {url: \"http://x.y\"}", "https://"},
 		{"link value is a list", "links:\n    - discord: [a]", "must be a handle"},
@@ -154,6 +170,40 @@ func TestProfileRejects(t *testing.T) {
 				t.Fatalf("err = %v, want it to mention %q", err, tt.want)
 			}
 		})
+	}
+}
+
+func TestCustomLinkAndLinkStyle(t *testing.T) {
+	const doc = `version: 1
+profile:
+  link_style: icon
+  links:
+    - custom: {url: "https://example.com/blog", label: "my blog", icon: youtube}
+`
+	c, err := config.Parse(strings.NewReader(doc))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := c.Profile.ResolvedLinks()
+	want := config.ResolvedLink{Kind: "custom", URL: "https://example.com/blog", Label: "my blog", Icon: "youtube", Style: "icon"}
+	if len(got) != 1 || got[0] != want {
+		t.Fatalf("links = %+v, want %+v", got, want)
+	}
+	for _, icon := range []string{"", "mastodon", "M12 2l3 7h7z", "m1 1h2"} {
+		l := config.Link{Kind: "custom", Value: "https://example.com", Label: "x", Icon: icon}
+		if _, _, err := l.Resolve(); err != nil {
+			t.Fatalf("icon %q: %v", icon, err)
+		}
+	}
+	for _, style := range []string{"", "full", "icon", "text"} {
+		c := config.Default()
+		c.Profile.LinkStyle = style
+		if err := c.Validate(); err != nil {
+			t.Fatalf("style %q: %v", style, err)
+		}
+	}
+	if !config.LinkKindIsMapOnly("custom") || config.LinkKindIsMapOnly("website") {
+		t.Fatal("only custom is map-only")
 	}
 }
 
@@ -221,7 +271,7 @@ func TestExampleProfileSectionIsValidWhenUncommented(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Profile.Focus) != 2 || len(c.Profile.ResolvedLinks()) != 4 || c.Render.Layout != "card" || c.Render.BasePath != "ghstats/" {
+	if len(c.Profile.Focus) != 2 || len(c.Profile.ResolvedLinks()) != 5 || c.Render.Layout != "card" || c.Render.BasePath != "ghstats/" {
 		t.Fatalf("profile = %+v render = %+v", c.Profile, c.Render)
 	}
 }

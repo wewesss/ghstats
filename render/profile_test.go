@@ -177,20 +177,119 @@ func TestGoldenBadges(t *testing.T) {
 func TestEveryLinkKindHasABadge(t *testing.T) {
 	for _, kind := range config.LinkKinds() {
 		value := "handle"
-		if kind == "website" || kind == "mastodon" || kind == "steam" {
+		if kind == "website" || kind == "mastodon" || kind == "steam" || kind == config.KindCustom {
 			value = "https://example.com/@handle"
 		}
 		l := config.Link{Kind: kind, Value: value}
+		if kind == config.KindCustom {
+			l.Label = "blog"
+		}
 		u, label, err := l.Resolve()
 		if err != nil {
 			t.Fatalf("%s: %v", kind, err)
 		}
-		for _, mode := range []render.Mode{render.Dark, render.Light} {
-			var buf bytes.Buffer
-			if err := render.LinkBadgeSVG(&buf, config.ResolvedLink{Kind: kind, URL: u, Label: label}, config.DefaultRender().Theme, mode); err != nil {
-				t.Fatalf("%s: %v", kind, err)
+		for _, style := range []string{"", config.LinkStyleFull, config.LinkStyleIcon, config.LinkStyleText} {
+			for _, mode := range []render.Mode{render.Dark, render.Light} {
+				var buf bytes.Buffer
+				if err := render.LinkBadgeSVG(&buf, config.ResolvedLink{Kind: kind, URL: u, Label: label, Style: style}, config.DefaultRender().Theme, mode); err != nil {
+					t.Fatalf("%s/%s: %v", kind, style, err)
+				}
+				assertWellFormed(t, buf.String())
 			}
-			assertWellFormed(t, buf.String())
+		}
+	}
+}
+
+func badgeFor(t *testing.T, l config.Link, style string) string {
+	t.Helper()
+	p := config.Profile{Links: []config.Link{l}, LinkStyle: style}
+	links := p.ResolvedLinks()
+	if len(links) != 1 {
+		t.Fatalf("link %+v did not resolve", l)
+	}
+	var buf bytes.Buffer
+	if err := render.LinkBadgeSVG(&buf, links[0], config.DefaultRender().Theme, render.Dark); err != nil {
+		t.Fatal(err)
+	}
+	assertWellFormed(t, buf.String())
+	return buf.String()
+}
+
+func TestGoldenBadgeStyles(t *testing.T) {
+	links := []config.Link{
+		{Kind: "youtube", Value: "@wewesss14"},
+		{Kind: "website", Value: "https://miralabs.tech"},
+	}
+	for _, l := range links {
+		for _, style := range []string{config.LinkStyleIcon, config.LinkStyleText} {
+			t.Run(l.Kind+"/"+style, func(t *testing.T) {
+				golden(t, "badge-"+l.Kind+"-"+style+"-dark.svg", badgeFor(t, l, style))
+			})
+		}
+	}
+}
+
+func TestBadgeStyleShapes(t *testing.T) {
+	l := config.Link{Kind: "youtube", Value: "@wewesss14"}
+	full := badgeFor(t, l, "")
+	if explicit := badgeFor(t, l, config.LinkStyleFull); explicit != full {
+		t.Fatal("an explicit full style must equal the default")
+	}
+	icon := badgeFor(t, l, config.LinkStyleIcon)
+	for _, want := range []string{`viewBox="0 0 40 40"`, `width="40" height="40"`, `aria-label="@wewesss14"`, `<title>@wewesss14</title>`, "<path"} {
+		if !strings.Contains(icon, want) {
+			t.Fatalf("icon style misses %q:\n%s", want, icon)
+		}
+	}
+	if strings.Contains(icon, "<text") {
+		t.Fatal("icon style must not draw the label")
+	}
+	text := badgeFor(t, l, config.LinkStyleText)
+	if strings.Contains(text, "<path") || strings.Contains(text, "<g ") || strings.Contains(text, "<line") {
+		t.Fatalf("text style must not draw an icon:\n%s", text)
+	}
+	if !strings.Contains(text, "@wewesss14") || !strings.Contains(text, `height="40"`) {
+		t.Fatalf("text style misses the label:\n%s", text)
+	}
+	var buf bytes.Buffer
+	err := render.LinkBadgeSVG(&buf, config.ResolvedLink{Kind: "youtube", Label: "x", Style: "round"}, config.DefaultRender().Theme, render.Dark)
+	if err == nil || !strings.Contains(err.Error(), "round") {
+		t.Fatalf("unknown style must fail, got %v", err)
+	}
+}
+
+func TestGoldenCustomBadges(t *testing.T) {
+	for name, l := range sample.CustomLinks() {
+		t.Run(name, func(t *testing.T) {
+			svg := badgeFor(t, l, "")
+			if strings.Contains(svg, "animation") {
+				t.Fatal("badges are static")
+			}
+			golden(t, "badge-custom-"+name+"-dark.svg", svg)
+		})
+	}
+	named, path, none := badgeFor(t, sample.CustomLinks()["named"], ""), badgeFor(t, sample.CustomLinks()["path"], ""), badgeFor(t, sample.CustomLinks()["none"], "")
+	if !strings.Contains(path, `d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.8 5.5 21l2-7.5L2 9h7z"`) {
+		t.Fatal("the custom path must be drawn")
+	}
+	if !strings.Contains(none, "<circle") || strings.Contains(named, "<circle") || strings.Contains(path, "<circle") {
+		t.Fatal("only the custom link without an icon draws the globe")
+	}
+	youtube := badgeFor(t, config.Link{Kind: "youtube", Value: "@a"}, "")
+	_, rest, _ := strings.Cut(youtube, `<path d="`)
+	yt, _, _ := strings.Cut(rest, `" fill=`)
+	if yt == "" || !strings.Contains(named, `<path d="`+yt+`"`) {
+		t.Fatal("a named icon must reuse the embedded icon of that kind")
+	}
+}
+
+func TestCustomBadgeRejectsBadIcon(t *testing.T) {
+	th := config.DefaultRender().Theme
+	for _, icon := range []string{"nope", "M0 0\"><script>", "custom"} {
+		var buf bytes.Buffer
+		err := render.LinkBadgeSVG(&buf, config.ResolvedLink{Kind: "custom", URL: "https://example.com", Label: "x", Icon: icon}, th, render.Dark)
+		if err == nil {
+			t.Fatalf("icon %q must fail", icon)
 		}
 	}
 }
@@ -213,6 +312,21 @@ func TestBadgeThemeAndEscaping(t *testing.T) {
 	}
 	if err := render.LinkBadgeSVG(&buf, config.ResolvedLink{Kind: "x", Label: "x"}, th, "sepia"); err == nil {
 		t.Fatal("unknown mode must fail")
+	}
+}
+
+func TestSnippetIsTheSameForEveryLinkStyle(t *testing.T) {
+	cfg := sample.Profile()
+	cfg.Profile.Links = append(sample.Profile().Profile.Links, sample.CustomLinks()["path"])
+	want := render.Snippet(cfg)
+	if !strings.Contains(want, `srcset="ghstats/links/custom-light.svg"`) {
+		t.Fatalf("custom link missing:\n%s", want)
+	}
+	for _, style := range []string{config.LinkStyleIcon, config.LinkStyleText} {
+		cfg.Profile.LinkStyle = style
+		if got := render.Snippet(cfg); got != want {
+			t.Fatalf("snippet differs for style %q", style)
+		}
 	}
 }
 

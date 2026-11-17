@@ -17,6 +17,12 @@ const (
 
 	DefaultBasePath = "ghstats/"
 
+	LinkStyleFull = "full"
+	LinkStyleIcon = "icon"
+	LinkStyleText = "text"
+
+	KindCustom = "custom"
+
 	maxFocus    = 6
 	maxBuilding = 4
 )
@@ -28,6 +34,8 @@ type Profile struct {
 	Note     string  `yaml:"note,omitempty"`
 	Focus    []Focus `yaml:"focus,omitempty"`
 	Links    []Link  `yaml:"links,omitempty"`
+
+	LinkStyle string `yaml:"link_style,omitempty"`
 }
 
 type Focus struct {
@@ -39,18 +47,22 @@ type Link struct {
 	Kind  string
 	Value string
 	Label string
+	Icon  string
 }
 
 type ResolvedLink struct {
 	Kind  string
 	URL   string
 	Label string
+	Icon  string
+	Style string
 }
 
 type linkKind struct {
 	handleURL string
 	label     func(h string) string
 	urlOnly   bool
+	mapOnly   bool
 }
 
 func fixed(s string) func(string) string { return func(string) string { return s } }
@@ -79,11 +91,23 @@ var linkKinds = map[string]linkKind{
 	"buy_me_a_coffee": {handleURL: "https://buymeacoffee.com/%s", label: fixed("coffee")},
 	"ko_fi":           {handleURL: "https://ko-fi.com/%s", label: fixed("ko-fi")},
 	"patreon":         {handleURL: "https://www.patreon.com/%s", label: prefixed("")},
+	KindCustom:        {urlOnly: true, mapOnly: true},
 }
 
 func LinkKinds() []string { return sortedKeys(linkKinds) }
 
 func LinkKindIsURLOnly(kind string) bool { return linkKinds[kind].urlOnly }
+
+func LinkKindIsMapOnly(kind string) bool { return linkKinds[kind].mapOnly }
+
+func LinkStyles() []string { return []string{LinkStyleFull, LinkStyleIcon, LinkStyleText} }
+
+func IsIconPath(s string) bool {
+	if !strings.HasPrefix(s, "M") && !strings.HasPrefix(s, "m") {
+		return false
+	}
+	return strings.IndexFunc(s, unicode.IsControl) < 0 && !strings.ContainsAny(s, "<>\"&")
+}
 
 func FocusLimits() (maxEntries, maxWords int) { return maxFocus, maxBuilding }
 
@@ -94,6 +118,9 @@ func (l *Link) UnmarshalYAML(n *yaml.Node) error {
 	kind, val := n.Content[0].Value, n.Content[1]
 	switch val.Kind {
 	case yaml.ScalarNode:
+		if kind == KindCustom {
+			return fmt.Errorf("line %d: link %q needs the map form, for example custom: {url: \"https://example.com\", label: \"my blog\", icon: \"github\"}", val.Line, kind)
+		}
 		*l = Link{Kind: kind, Value: val.Value}
 		return nil
 	case yaml.MappingNode:
@@ -109,8 +136,17 @@ func (l *Link) UnmarshalYAML(n *yaml.Node) error {
 				out.Value, haveURL = v.Value, true
 			case "label":
 				out.Label = v.Value
+			case "icon":
+				if kind != KindCustom {
+					return fmt.Errorf("line %d: link %q: the icon key is only valid for the %q kind", val.Content[i].Line, kind, KindCustom)
+				}
+				out.Icon = v.Value
 			default:
-				return fmt.Errorf("line %d: link %q: unknown key %q (want url and label)", val.Content[i].Line, kind, k)
+				want := "url and label"
+				if kind == KindCustom {
+					want = "url, label and icon"
+				}
+				return fmt.Errorf("line %d: link %q: unknown key %q (want %s)", val.Content[i].Line, kind, k, want)
 			}
 		}
 		if !haveURL {
@@ -123,10 +159,17 @@ func (l *Link) UnmarshalYAML(n *yaml.Node) error {
 }
 
 func (l Link) MarshalYAML() (any, error) {
-	if l.Label == "" {
+	if l.Label == "" && l.Icon == "" && l.Kind != KindCustom {
 		return map[string]string{l.Kind: l.Value}, nil
 	}
-	return map[string]map[string]string{l.Kind: {"url": l.Value, "label": l.Label}}, nil
+	m := map[string]string{"url": l.Value}
+	if l.Label != "" {
+		m["label"] = l.Label
+	}
+	if l.Icon != "" {
+		m["icon"] = l.Icon
+	}
+	return map[string]map[string]string{l.Kind: m}, nil
 }
 
 func (l Link) Empty() bool { return strings.TrimSpace(l.Value) == "" }
@@ -145,7 +188,7 @@ func (p Profile) ResolvedLinks() []ResolvedLink {
 		if err != nil {
 			continue
 		}
-		out = append(out, ResolvedLink{Kind: l.Kind, URL: u, Label: label})
+		out = append(out, ResolvedLink{Kind: l.Kind, URL: u, Label: label, Icon: l.Icon, Style: p.LinkStyle})
 	}
 	return out
 }
@@ -158,6 +201,9 @@ func (l Link) Resolve() (string, string, error) {
 	v := strings.TrimSpace(l.Value)
 	if v == "" {
 		return "", "", fmt.Errorf("link %q: empty value", l.Kind)
+	}
+	if err := l.checkCustom(); err != nil {
+		return "", "", err
 	}
 	var link, label string
 	if strings.Contains(v, "://") || strings.HasPrefix(strings.ToLower(v), "http:") {
@@ -192,6 +238,37 @@ func (l Link) Resolve() (string, string, error) {
 	return link, label, nil
 }
 
+func (l Link) checkCustom() error {
+	if l.Kind != KindCustom {
+		if l.Icon != "" {
+			return fmt.Errorf("link %q: the icon key is only valid for the %q kind", l.Kind, KindCustom)
+		}
+		return nil
+	}
+	if strings.TrimSpace(l.Label) == "" {
+		return fmt.Errorf("link %q: needs a label", l.Kind)
+	}
+	switch {
+	case l.Icon == "", IsIconKind(l.Icon):
+	case strings.HasPrefix(l.Icon, "M") || strings.HasPrefix(l.Icon, "m"):
+		if !IsIconPath(l.Icon) {
+			return fmt.Errorf("link %q: icon path must not contain <, >, \" or &", l.Kind)
+		}
+	default:
+		return fmt.Errorf("link %q: icon %q is neither a link kind (%s) nor an SVG path starting with M", l.Kind, l.Icon, strings.Join(iconKinds(), ", "))
+	}
+	return nil
+}
+
+func IsIconKind(s string) bool {
+	_, ok := linkKinds[s]
+	return ok && s != KindCustom
+}
+
+func iconKinds() []string {
+	return slices.DeleteFunc(LinkKinds(), func(k string) bool { return k == KindCustom })
+}
+
 func urlLabel(kind string, k linkKind, u *url.URL) string {
 	host := u.Host
 	if k.urlOnly {
@@ -219,6 +296,9 @@ func lastSegment(p string) string {
 }
 
 func (p Profile) validate(fail func(format string, args ...any)) {
+	if p.LinkStyle != "" && !slices.Contains(LinkStyles(), p.LinkStyle) {
+		fail("profile.link_style: must be one of %s, got %q", strings.Join(LinkStyles(), ", "), p.LinkStyle)
+	}
 	if p.Focus != nil && (len(p.Focus) < 1 || len(p.Focus) > maxFocus) {
 		fail("profile.focus: must have 1 to %d entries, got %d", maxFocus, len(p.Focus))
 	}

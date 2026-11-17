@@ -37,7 +37,8 @@ func Snippet(cfg config.Config) string {
 		b.WriteString("<p align=\"center\">\n")
 		for _, l := range links {
 			pic := picture(base, "links/"+l.Kind, l.Kind, "")
-			fmt.Fprintf(&b, "<a href=\"%s\">%s</a>\n", html.EscapeString(l.URL), strings.TrimSuffix(pic, "\n"))
+			pic = strings.ReplaceAll(strings.ReplaceAll(strings.TrimSuffix(pic, "\n"), "\n  ", ""), "\n", "")
+			fmt.Fprintf(&b, "<a href=\"%s\">%s</a>\n", html.EscapeString(l.URL), pic)
 		}
 		b.WriteString("</p>\n")
 		parts = append(parts, b.String())

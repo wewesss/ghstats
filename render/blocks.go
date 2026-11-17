@@ -5,14 +5,16 @@ import (
 	"math"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/report"
 )
 
 const (
-	acc     = "__ACC__"
-	maxRows = 7
+	acc      = "__ACC__"
+	maxRows  = 7
+	minWeeks = 4
 )
 
 type langRow struct {
@@ -80,6 +82,21 @@ func newRenderer(r report.Report, cfg config.Render, mode Mode) *renderer {
 	return rd
 }
 
+func otherName(l report.Languages, tail []string) string {
+	if len(l.Raw) > 0 {
+		real := make(map[string]bool, len(l.Raw))
+		for _, s := range l.Raw {
+			real[s.Name] = true
+		}
+		for _, n := range tail {
+			if !real[n] {
+				return n
+			}
+		}
+	}
+	return config.Default().Languages.OtherLabel
+}
+
 func buildRows(l report.Languages) []langRow {
 	type entry struct {
 		name  string
@@ -92,7 +109,11 @@ func buildRows(l report.Languages) []langRow {
 		}
 	}
 	if len(entries) > maxRows {
-		folded := entry{name: entries[len(entries)-1].name}
+		tail := make([]string, 0, len(entries)-maxRows+1)
+		for _, e := range entries[maxRows-1:] {
+			tail = append(tail, e.name)
+		}
+		folded := entry{name: otherName(l, tail)}
 		for _, e := range entries[maxRows-1:] {
 			folded.share += e.share
 		}
@@ -432,6 +453,15 @@ func (rd *renderer) treemap(p string) string {
 	return s.String()
 }
 
+func (rd *renderer) shiftUseful() bool {
+	for _, r := range rd.rows {
+		if math.Abs(r.raw-r.v) >= .05 {
+			return true
+		}
+	}
+	return false
+}
+
 func rank(arr []float64) []int {
 	idx := make([]int, len(arr))
 	for i := range idx {
@@ -480,7 +510,7 @@ func (rd *renderer) shift(p string) string {
 			opacity = ".7"
 		}
 		fmt.Fprintf(&s, `<path%s d="M%s %s C%s %s %s %s %s %s" pathLength="1" fill="none" stroke="%s" stroke-opacity="%s" stroke-width="%.1f" stroke-linecap="round"/>`,
-			anim("draw", d), num(xl+4), num(y1-4), num(xl+80), num(y1-4), num(xr-80), num(y2-4), num(xr-4), num(y2-4), c, opacity, 1+r.v/8)
+			anim("draw", d), num(xl+4), num(y1-4), num(xl+80), num(y1-4), num(xr-80), num(y2-4), num(xr-4), num(y2-4), c, opacity, math.Min(1+r.v/8, 4))
 		fmt.Fprintf(&s, `<circle%s cx="%s" cy="%s" r="2.5" fill="%s"/>`, anim("fade", d), num(xl), num(y1-4), c)
 		fmt.Fprintf(&s, `<circle%s cx="%s" cy="%s" r="2.5" fill="%s"/>`, anim("fade", d+.5), num(xr), num(y2-4), c)
 		s.WriteString(txt(xl-12, y1, fmt.Sprintf(`%s <tspan fill="%s" font-family="%s" font-size="10">%.1f</tspan>`, esc(r.name), th.muted, monoFont, r.raw),
@@ -599,21 +629,60 @@ func (rd *renderer) iso(p string) string {
 	return s.String()
 }
 
-func (rd *renderer) trend(channel string) []int64 {
+type plot struct {
+	label string
+	data  []int64
+}
+
+func shortDate(day string) string {
+	t, err := time.Parse("2006-01-02", day)
+	if err != nil {
+		return day
+	}
+	return strings.ToUpper(t.Format("2 Jan"))
+}
+
+func firstNonZero(vals []int64) int {
+	for i, v := range vals {
+		if v > 0 {
+			return i
+		}
+	}
+	return -1
+}
+
+func (rd *renderer) trend(channel, name string) *plot {
 	for _, t := range rd.rep.Trends {
 		if t.Channel != channel {
 			continue
 		}
-		out := make([]int64, len(t.Weeks))
-		var sum int64
+		weeks := make([]int64, len(t.Weeks))
 		for i, w := range t.Weeks {
-			out[i] = w.Count
-			sum += w.Count
+			weeks[i] = w.Count
 		}
-		if len(out) < 2 || sum <= 0 {
+		fw := firstNonZero(weeks)
+		if fw < 0 {
 			return nil
 		}
-		return out
+		if len(weeks)-fw >= minWeeks {
+			label := fmt.Sprintf("%s · %d WEEKS", name, len(weeks))
+			if fw > 0 {
+				label = name + " · SINCE " + shortDate(t.Weeks[fw].Start)
+			}
+			return &plot{label, weeks[fw:]}
+		}
+		days := make([]int64, len(t.Days))
+		for i, d := range t.Days {
+			days[i] = d.Count
+		}
+		start := firstNonZero(days)
+		if start < 0 || len(days)-start < 2 {
+			start = len(days) - 2
+		}
+		if start < 0 {
+			return nil
+		}
+		return &plot{name + " · DAILY · SINCE " + shortDate(t.Days[start].Day), days[start:]}
 	}
 	return nil
 }
@@ -621,14 +690,19 @@ func (rd *renderer) trend(channel string) []int64 {
 func (rd *renderer) history(p, channel, name string) string {
 	th := rd.th
 	var s strings.Builder
-	s.WriteString(label(22, name+" · 26 WEEKS", th, ""))
+	pl := rd.trend(channel, name)
+	title := name + " · 26 WEEKS"
+	if pl != nil {
+		title = pl.label
+	}
+	s.WriteString(label(22, title, th, ""))
 	s.WriteString(txt(width-24, 22, fmt.Sprintf(`%s <tspan fill="%s">last 14d</tspan>`, esc(rd.metric(channel, report.WindowLast14Days)), th.muted),
 		topt{fill: th.fg, size: 11, mono: true, anchor: "end"}))
-	data := rd.trend(channel)
-	if data == nil {
+	if pl == nil {
 		s.WriteString(txt(width/2, 68, "no traffic data yet", topt{fill: th.muted, size: 11, mono: true, anchor: "middle"}))
 		return s.String()
 	}
+	data := pl.data
 	const x0, x1, y0, y1 = 24.0, width - 24, 38.0, 92.0
 	var vmax int64
 	for _, v := range data {

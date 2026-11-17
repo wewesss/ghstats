@@ -23,7 +23,8 @@ import (
 var fixedNow = time.Date(2026, 11, 17, 9, 0, 0, 0, time.UTC)
 
 type apiFake struct {
-	rest atomic.Int32
+	rest      atomic.Int32
+	forbidden atomic.Bool
 }
 
 func (f *apiFake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +54,11 @@ func (f *apiFake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f.rest.Add(1)
+	if f.forbidden.Load() {
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"message":"Resource not accessible by personal access token"}`)
+		return
+	}
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(parts) != 5 || parts[3] != "traffic" {
 		http.NotFound(w, r)
@@ -167,6 +173,24 @@ func TestCollectWritesSnapshotAndHistory(t *testing.T) {
 	}
 	if len(h2.Repos["R_1"].Views) != 1 {
 		t.Fatalf("history merge duplicated days: %+v", h2.Repos["R_1"].Views)
+	}
+}
+
+func TestCollectHintsOnForbiddenTraffic(t *testing.T) {
+	f := setup(t)
+	dir := t.TempDir()
+	code, _, stderr := exec("collect", "--out", dir, "--history", filepath.Join(dir, "h.json"))
+	if code != 0 || strings.Contains(stderr, "hint:") {
+		t.Fatalf("clean run: code = %d, stderr = %q", code, stderr)
+	}
+
+	f.forbidden.Store(true)
+	code, _, stderr = exec("collect", "--out", dir, "--history", filepath.Join(dir, "h.json"))
+	if code != 0 {
+		t.Fatalf("code = %d, stderr = %q", code, stderr)
+	}
+	if strings.Count(stderr, "hint: traffic needs push access") != 1 {
+		t.Fatalf("want the hint exactly once, stderr = %q", stderr)
 	}
 }
 

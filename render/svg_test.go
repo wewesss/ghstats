@@ -221,8 +221,8 @@ func TestAnimationRules(t *testing.T) {
 		"animation-name:gsb1fade_500;animation-delay:5s",
 		`<g class="slide" style="animation-delay:0s" opacity="1">`,
 		`<g class="slide" style="animation-delay:5s" opacity="0">`,
-		`attributeName="fill"`,
-		`dur="40s"`,
+		"@property --ghs-accent",
+		".gs,.gs *{animation:none!important}",
 	} {
 		if !strings.Contains(svg, want) {
 			t.Fatalf("missing %q", want)
@@ -316,8 +316,8 @@ func TestMoreThanSevenLanguagesFoldIntoTheLastEntry(t *testing.T) {
 	cfg.Motion = false
 	svg := renderSVG(t, r, cfg, render.Dark)
 	assertWellFormed(t, svg)
-	if !strings.Contains(svg, ">I9<") || strings.Contains(svg, ">G7<") || strings.Contains(svg, ">H8<") {
-		t.Fatal("languages beyond the sixth were not folded into the last entry")
+	if !strings.Contains(svg, ">Other<") || strings.Contains(svg, ">G7<") || strings.Contains(svg, ">H8<") || strings.Contains(svg, ">I9<") {
+		t.Fatal("languages beyond the sixth were not folded into Other")
 	}
 	if !strings.Contains(svg, ">33.3%<") {
 		t.Fatal("folded entry share missing")

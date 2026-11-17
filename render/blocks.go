@@ -251,7 +251,7 @@ func (rd *renderer) langLabel(title string) string {
 
 func (rd *renderer) metric(channel, window string) string {
 	for _, m := range rd.rep.Distribution {
-		if m.Channel == channel && m.Window == window {
+		if m.Channel == channel && (m.Window == window || window == report.WindowSincePrefix && strings.HasPrefix(m.Window, window)) {
 			if m.Count == nil || m.Reliability == report.ReliabilityUnavailable {
 				return "n/a"
 			}
@@ -301,7 +301,7 @@ func (rd *renderer) distribution(p string) string {
 		{rd.metric(report.ChannelReleaseAssets, report.WindowAllTime), "RELEASES"},
 		{rd.metric(report.ChannelClones, report.WindowLast14Days), "CLONES 14D"},
 		{rd.metric(report.ChannelViews, report.WindowLast14Days), "VIEWS 14D"},
-		{rd.metric(report.ChannelSourceArchives, report.WindowAllTime), "ARCHIVES"},
+		{rd.metric(report.ChannelViews, report.WindowSincePrefix), "VIEWS TOTAL"},
 	})
 	return s + txt(24, 80, "release assets all time · traffic summed across repositories", topt{fill: th.muted, size: 10, mono: true, cls: "fade", delay: .3})
 }

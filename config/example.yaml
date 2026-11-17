@@ -63,3 +63,30 @@ render:
     overrides: {}
   # false turns every animation off.
   motion: true
+  # card: 495 px stats card. wide: 1000 px, languages in a right column.
+  layout: card
+  # Prefix of every path written in README.snippet.md (must end with "/").
+  base_path: ghstats/
+
+# Optional profile cards: identity-dark.svg and identity-light.svg (when focus or
+# tagline is set), one links/<kind>-<mode>.svg badge per non-empty link, and
+# README.snippet.md. Badges of links removed from this file are not cleaned up.
+# profile:
+#   name: octocat                    # default: the report login
+#   tagline: SOFTWARE · GAMES · EXPERIMENTS
+#   location: caen, fr
+#   note: no fixed stack, it depends on what I'm making
+#   focus:                           # 1 to 6 entries, each with 1 to 4 building words
+#     - name: WEB & DESKTOP
+#       building: [full-stack apps, desktop software]
+#     - name: GAMES
+#       building: [gameplay systems, game engines]
+#   links:                           # kept in this order; an empty value is skipped
+#     - youtube: "@octocat"          # a handle or a full https:// URL
+#     - website: https://example.com # website, mastodon and steam need a full URL
+#     - discord: {url: "https://discord.com/invite/xyz", label: discord}
+#     - github_sponsors: octocat
+#     - twitch: ""
+#   # kinds: youtube twitch kick discord tiktok instagram x bluesky threads mastodon
+#   #        reddit linkedin steam itchio website github_sponsors open_collective
+#   #        buy_me_a_coffee ko_fi patreon

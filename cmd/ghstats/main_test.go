@@ -311,3 +311,98 @@ func TestRuntimeErrorsExitOne(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderWritesProfileFiles(t *testing.T) {
+	dir := t.TempDir()
+	raw, err := json.Marshal(report.Report{SchemaVersion: report.SchemaVersion, Login: "me", CollectedAt: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reportPath := filepath.Join(dir, "report.json")
+	if err := os.WriteFile(reportPath, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfgPath := filepath.Join(dir, "ghstats.yaml")
+	cfg := `version: 1
+render:
+  layout: wide
+  base_path: assets/
+profile:
+  tagline: SOFTWARE
+  focus:
+    - {name: WEB, building: [apps, tools]}
+  links:
+    - youtube: "@me"
+    - twitch: ""
+    - website: https://example.com
+    - github_sponsors: me
+`
+	if err := os.WriteFile(cfgPath, []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outDir := filepath.Join(dir, "cards")
+	if code, _, stderr := exec("render", "--report", reportPath, "--config", cfgPath, "--out-dir", outDir); code != 0 {
+		t.Fatalf("render = %d, %q", code, stderr)
+	}
+	want := []string{
+		"stats.json", "stats-dark.svg", "stats-light.svg", "identity-dark.svg", "identity-light.svg", "README.snippet.md",
+		"links/youtube-dark.svg", "links/youtube-light.svg", "links/website-dark.svg", "links/website-light.svg",
+		"links/github_sponsors-dark.svg", "links/github_sponsors-light.svg",
+	}
+	for _, name := range want {
+		data, err := os.ReadFile(filepath.Join(outDir, filepath.FromSlash(name)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.HasSuffix(name, ".svg") {
+			dec := xml.NewDecoder(bytes.NewReader(data))
+			for {
+				if _, err := dec.Token(); err == io.EOF {
+					break
+				} else if err != nil {
+					t.Fatalf("%s: %v", name, err)
+				}
+			}
+		}
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "links", "twitch-dark.svg")); err == nil {
+		t.Fatal("empty link must not produce a file")
+	}
+	snippet, err := os.ReadFile(filepath.Join(outDir, "README.snippet.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(snippet)
+	for _, w := range []string{`src="assets/identity-dark.svg" width="100%"`, `src="assets/stats-dark.svg" width="100%"`, `<a href="https://www.youtube.com/@me">`, `srcset="assets/links/github_sponsors-light.svg"`} {
+		if !strings.Contains(s, w) {
+			t.Fatalf("snippet misses %q:\n%s", w, s)
+		}
+	}
+	if strings.Index(s, "youtube") > strings.Index(s, "example.com") || strings.Contains(s, "twitch") {
+		t.Fatalf("snippet order or content wrong:\n%s", s)
+	}
+}
+
+func TestRenderWithoutProfileWritesNoProfileFiles(t *testing.T) {
+	dir := t.TempDir()
+	raw, err := json.Marshal(report.Report{SchemaVersion: report.SchemaVersion, Login: "me"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reportPath := filepath.Join(dir, "report.json")
+	if err := os.WriteFile(reportPath, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outDir := filepath.Join(dir, "cards")
+	if code, _, stderr := exec("render", "--report", reportPath, "--out-dir", outDir); code != 0 {
+		t.Fatalf("render = %d, %q", code, stderr)
+	}
+	for _, name := range []string{"identity-dark.svg", "links"} {
+		if _, err := os.Stat(filepath.Join(outDir, name)); err == nil {
+			t.Fatalf("%s must not exist without a profile", name)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "README.snippet.md")); err != nil {
+		t.Fatal(err)
+	}
+}

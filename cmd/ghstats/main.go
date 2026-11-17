@@ -43,7 +43,7 @@ const usageText = `Usage: ghstats <command> [flags]
 Commands:
   collect   fetch repositories, languages, releases and traffic into a snapshot
   compute   turn a snapshot and a history into report.json
-  render    write stats.json, stats-dark.svg and stats-light.svg from a report
+  render    write stats.json, the SVG cards and README.snippet.md from a report
   version   print the version
 
 Run "ghstats <command> -h" for the flags of a command.
@@ -276,9 +276,24 @@ func runRender(args []string, stderr io.Writer) error {
 			return err
 		}
 		files["stats-"+string(mode)+".svg"] = buf.Bytes()
+		if cfg.Profile.HasIdentity() {
+			var ib bytes.Buffer
+			if err := render.IdentitySVG(&ib, r, cfg, mode); err != nil {
+				return err
+			}
+			files["identity-"+string(mode)+".svg"] = ib.Bytes()
+		}
+		for _, l := range cfg.Profile.ResolvedLinks() {
+			var lb bytes.Buffer
+			if err := render.LinkBadgeSVG(&lb, l, cfg.Render.Theme, mode); err != nil {
+				return err
+			}
+			files["links/"+l.Kind+"-"+string(mode)+".svg"] = lb.Bytes()
+		}
 	}
-	for _, name := range []string{"stats.json", "stats-dark.svg", "stats-light.svg"} {
-		if err := writeFile(filepath.Join(*outDir, name), files[name]); err != nil {
+	files["README.snippet.md"] = []byte(render.Snippet(cfg))
+	for name, data := range files {
+		if err := writeFile(filepath.Join(*outDir, filepath.FromSlash(name)), data); err != nil {
 			return err
 		}
 	}

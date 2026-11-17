@@ -29,6 +29,7 @@ type Config struct {
 	Languages    Languages    `yaml:"languages"`
 	Distribution Distribution `yaml:"distribution"`
 	Render       Render       `yaml:"render"`
+	Profile      Profile      `yaml:"profile"`
 }
 
 type Scope struct {
@@ -150,6 +151,7 @@ func (c Config) Validate() error {
 		fail("languages.other_label: must not be empty")
 	}
 	c.Render.validate(fail)
+	c.Profile.validate(fail)
 	return errors.Join(errs...)
 }
 

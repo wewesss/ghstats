@@ -17,10 +17,12 @@ import (
 )
 
 const (
-	width    = 495.0
-	prefix   = "gs"
-	sansFont = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif"
-	monoFont = "ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace"
+	width      = 495.0
+	wideWidth  = 1000.0
+	wideOffset = 505.0
+	prefix     = "gs"
+	sansFont   = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif"
+	monoFont   = "ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace"
 )
 
 var slotSeconds = map[string]int{"stats": 6, "languages": 5, "history": 7}
@@ -277,47 +279,53 @@ func (rd *renderer) activeVariants(blk config.Block) []string {
 	return out
 }
 
-func (rd *renderer) card() string {
-	th, cfg := rd.th, rd.cfg
-	login := rd.rep.Login
-	var body, styles []string
-
-	body = append(body, txt(24, 31, esc(login), topt{fill: th.fg, size: 14, weight: 600}))
-	body = append(body, txt(float64(23+9*utf8.RuneCountInString(login)), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
-	body = append(body, fmt.Sprintf(`<circle cx="%s" cy="27" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="27" r="3" fill="%s"/>`,
-		num(width-132), acc, num(width-132), acc))
-	synced := "never"
-	if !rd.rep.CollectedAt.IsZero() {
-		synced = rd.rep.CollectedAt.UTC().Format("2 Jan")
+func motionCSS() []string {
+	return []string{
+		fmt.Sprintf(".%s .blink{animation:%sblink 1.1s steps(1,end) infinite}@keyframes %sblink{50%%{opacity:0}}", prefix, prefix, prefix),
+		fmt.Sprintf(".%s .pulse{transform-box:fill-box;transform-origin:center;animation:%spulse 2.4s ease-out infinite}@keyframes %spulse{0%%{transform:scale(1);opacity:.55}100%%{transform:scale(3.2);opacity:0}}", prefix, prefix, prefix),
 	}
-	body = append(body, txt(width-24, 31, "synced · "+esc(synced), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
-	body = append(body, fmt.Sprintf(`<line x1="24" x2="%s" y1="46" y2="46" stroke="%s"/>`, num(width-24), th.border))
+}
+
+func shell(w float64, height int, ariaLabel string, th theme, cfg config.Render, styles, body []string) string {
+	grid := ""
+	if cfg.Theme.Preset != "transparent" {
+		grid = fmt.Sprintf(`<defs><pattern id="%sg" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="%s" opacity=".07"/></pattern></defs><rect x="1" y="1" width="%s" height="%d" rx="10" fill="url(#%sg)"/>`,
+			prefix, th.grid, num(w-2), height-2, prefix)
+	}
+	reduce := ""
 	if cfg.Motion {
-		styles = append(styles, fmt.Sprintf(".%s .blink{animation:%sblink 1.1s steps(1,end) infinite}@keyframes %sblink{50%%{opacity:0}}", prefix, prefix, prefix))
-		styles = append(styles, fmt.Sprintf(".%s .pulse{transform-box:fill-box;transform-origin:center;animation:%spulse 2.4s ease-out infinite}@keyframes %spulse{0%%{transform:scale(1);opacity:.55}100%%{transform:scale(3.2);opacity:0}}", prefix, prefix, prefix))
+		reduce = fmt.Sprintf("@media (prefers-reduced-motion: reduce){.%s,.%s *{animation:none!important}}", prefix, prefix)
 	}
+	return fmt.Sprintf(`<svg class="%s" viewBox="0 0 %s %d" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="%s"><style>%s%s</style>
+    <rect x=".5" y=".5" width="%s" height="%d" rx="10" fill="%s" stroke="%s"/>%s%s</svg>`,
+		prefix, num(w), height, esc(ariaLabel), strings.Join(styles, ""), reduce,
+		num(w-1), height-1, th.bg, th.border, grid, strings.Join(body, ""))
+}
 
-	y := 56
-	for bi, blk := range cfg.Blocks {
+func (rd *renderer) stack(indexes []int) (body, styles []string, y int) {
+	cfg, th := rd.cfg, rd.th
+	y = 56
+	for n, bi := range indexes {
+		blk := cfg.Blocks[bi]
 		vs := rd.activeVariants(blk)
-		n := len(vs)
+		n2 := len(vs)
 		bp := fmt.Sprintf("%sb%d", prefix, bi)
-		rotate := cfg.Motion && n > 1
+		rotate := cfg.Motion && n2 > 1
 		slot := slotSeconds[blk.Name]
 		cycle := 0
 		if rotate {
-			cycle = n * slot
+			cycle = n2 * slot
 		}
 		h := 0
 		for _, v := range vs {
 			h = max(h, rd.blockHeight(blk.Name, v))
 		}
-		if bi > 0 {
+		if n > 0 {
 			body = append(body, fmt.Sprintf(`<line x1="24" x2="%s" y1="%d" y2="%d" stroke="%s"/>`, num(width-24), y, y, th.border))
 			y += 8
 		}
 		if cfg.Motion {
-			styles = append(styles, blockCSS(bp, cycle, n))
+			styles = append(styles, blockCSS(bp, cycle, n2))
 		}
 		frames := &frameSet{seen: map[string]bool{}}
 		var inner strings.Builder
@@ -341,7 +349,7 @@ func (rd *renderer) card() string {
 		}
 		if rotate {
 			for i := range vs {
-				x := width - 24 - float64(n-1-i)*10
+				x := width - 24 - float64(n2-1-i)*10
 				opacity := ".25"
 				if i == 0 {
 					opacity = "1"
@@ -353,20 +361,64 @@ func (rd *renderer) card() string {
 		body = append(body, fmt.Sprintf(`<g class="%s" transform="translate(0 %d)">%s</g>`, bp, y, inner.String()))
 		y += h + 6
 	}
-	height := y + 8
+	return body, styles, y
+}
 
-	grid := ""
-	if cfg.Theme.Preset != "transparent" {
-		grid = fmt.Sprintf(`<defs><pattern id="%sg" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="%s" opacity=".07"/></pattern></defs><rect x="1" y="1" width="%s" height="%d" rx="10" fill="url(#%sg)"/>`,
-			prefix, th.grid, num(width-2), height-2, prefix)
+func (rd *renderer) card() string {
+	th, cfg := rd.th, rd.cfg
+	login := rd.rep.Login
+	wide := cfg.Layout == config.LayoutWide
+	cw := width
+	if wide {
+		cw = wideWidth
 	}
-	reduce := ""
+	var body, styles []string
+
+	body = append(body, txt(24, 31, esc(login), topt{fill: th.fg, size: 14, weight: 600}))
+	body = append(body, txt(float64(23+9*utf8.RuneCountInString(login)), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
+	body = append(body, fmt.Sprintf(`<circle cx="%s" cy="27" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="27" r="3" fill="%s"/>`,
+		num(cw-132), acc, num(cw-132), acc))
+	synced := "never"
+	if !rd.rep.CollectedAt.IsZero() {
+		synced = rd.rep.CollectedAt.UTC().Format("2 Jan")
+	}
+	body = append(body, txt(cw-24, 31, "synced · "+esc(synced), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
+	body = append(body, fmt.Sprintf(`<line x1="24" x2="%s" y1="46" y2="46" stroke="%s"/>`, num(cw-24), th.border))
 	if cfg.Motion {
-		reduce = fmt.Sprintf("@media (prefers-reduced-motion: reduce){.%s,.%s *{animation:none!important}}", prefix, prefix)
+		styles = append(styles, motionCSS()...)
 	}
-	svg := fmt.Sprintf(`<svg class="%s" viewBox="0 0 %s %d" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="%s"><style>%s%s</style>
-    <rect x=".5" y=".5" width="%s" height="%d" rx="10" fill="%s" stroke="%s"/>%s%s</svg>`,
-		prefix, num(width), height, esc("ghstats card for "+login+" ("+string(rd.mode)+")"), strings.Join(styles, ""), reduce,
-		num(width-1), height-1, th.bg, th.border, grid, strings.Join(body, ""))
+
+	var height int
+	if !wide {
+		all := make([]int, len(cfg.Blocks))
+		for i := range all {
+			all[i] = i
+		}
+		b, s, y := rd.stack(all)
+		body, styles, height = append(body, b...), append(styles, s...), y+8
+	} else {
+		var left, right []int
+		for i, blk := range cfg.Blocks {
+			if blk.Name == "languages" {
+				right = append(right, i)
+			} else {
+				left = append(left, i)
+			}
+		}
+		lb, ls, ly := rd.stack(left)
+		rb, rs, ry := rd.stack(right)
+		height = max(ly, ry) + 8
+		body = append(body, lb...)
+		if len(right) > 0 {
+			body = append(body, fmt.Sprintf(`<g transform="translate(%s 0)">%s</g>`, num(wideOffset), strings.Join(rb, "")))
+		}
+		if len(left) > 0 && len(right) > 0 {
+			body = append(body, fmt.Sprintf(`<line x1="%s" x2="%s" y1="62" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), height-14, th.border))
+		}
+		styles = append(styles, ls...)
+		styles = append(styles, rs...)
+	}
+
+	svg := shell(cw, height, "ghstats card for "+login+" ("+string(rd.mode)+")", th, cfg, styles, body)
 	return accentize(svg, th, cfg, rd.mode)
 }

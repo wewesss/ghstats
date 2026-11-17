@@ -38,6 +38,8 @@ type Render struct {
 	Languages  RenderLanguages `yaml:"languages"`
 	Theme      Theme           `yaml:"theme"`
 	Motion     bool            `yaml:"motion"`
+	Layout     string          `yaml:"layout"`
+	BasePath   string          `yaml:"base_path"`
 }
 
 type Block struct {
@@ -77,6 +79,8 @@ func DefaultRender() Render {
 		Languages:  RenderLanguages{Colors: Palette{Name: PaletteAccent}},
 		Theme:      Theme{Preset: "noir", Accent: Accent{Name: "ice"}},
 		Motion:     true,
+		Layout:     LayoutCard,
+		BasePath:   DefaultBasePath,
 	}
 }
 
@@ -130,6 +134,12 @@ func (a *Accent) UnmarshalYAML(n *yaml.Node) error {
 }
 
 func (r Render) validate(fail func(format string, args ...any)) {
+	if !validLayout(r.Layout) {
+		fail("render.layout: must be %q or %q, got %q", LayoutCard, LayoutWide, r.Layout)
+	}
+	if !validBasePath(r.BasePath) {
+		fail("render.base_path: must be a non-empty path ending with \"/\" without spaces, quotes, backslashes or \"..\", got %q", r.BasePath)
+	}
 	seen := map[string]bool{}
 	if len(r.Blocks) == 0 {
 		fail("render.blocks: must list at least one block")

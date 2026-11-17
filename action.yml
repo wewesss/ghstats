@@ -22,7 +22,7 @@ inputs:
     required: false
     default: ghstats-data
   output-dir:
-    description: Directory receiving stats.json, stats-dark.svg and stats-light.svg.
+    description: Directory receiving stats.json, the SVG cards, the link badges and README.snippet.md.
     required: false
     default: ghstats
   traffic:

@@ -177,8 +177,22 @@ func runCollect(args []string, stdout, stderr io.Writer) error {
 	if err := history.WriteFile(*histPath, history.Merge(h, snap)); err != nil {
 		return err
 	}
+	if trafficForbidden(snap) {
+		fmt.Fprintln(stderr, trafficHint)
+	}
 	fmt.Fprintln(stdout, snapPath)
 	return nil
+}
+
+const trafficHint = "hint: traffic needs push access with a token that covers each owner; a fine-grained token covers a single owner (use one token per organization or a classic token with the repo scope)"
+
+func trafficForbidden(s snapshot.Snapshot) bool {
+	for _, e := range s.Errors {
+		if e.Stage == "traffic" && strings.Contains(e.Message, "403") {
+			return true
+		}
+	}
+	return false
 }
 
 func readHistory(path string) (history.History, error) {

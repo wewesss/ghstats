@@ -218,7 +218,7 @@ func appendReleases(dst []snapshot.Release, nodes []apiRelease) []snapshot.Relea
 
 func (c *collector) fetchReleases(ctx context.Context, repos []snapshot.Repo, pending []pendingReleases) ([]*snapshot.RepoError, error) {
 	errs := make([]*snapshot.RepoError, len(pending))
-	err := forEach(ctx, len(pending), c.concurrency, func(k int) error {
+	err := forEach(ctx, len(pending), c.concurrency, func(ctx context.Context, k int) error {
 		p := pending[k]
 		repo := &repos[p.repo]
 		cursor := p.cursor
@@ -251,7 +251,7 @@ func (c *collector) fetchReleases(ctx context.Context, repos []snapshot.Repo, pe
 
 func (c *collector) fetchTraffic(ctx context.Context, repos []snapshot.Repo) ([]*snapshot.RepoError, error) {
 	errs := make([]*snapshot.RepoError, len(repos))
-	err := forEach(ctx, len(repos), c.concurrency, func(i int) error {
+	err := forEach(ctx, len(repos), c.concurrency, func(ctx context.Context, i int) error {
 		repo := &repos[i]
 		_, name, _ := strings.Cut(repo.NameWithOwner, "/")
 		breakdown := &github.TrafficBreakdownOptions{Per: "day"}
@@ -305,10 +305,15 @@ func isFatal(ctx context.Context, err error) bool {
 	return errors.As(err, &rl) || errors.As(err, &ghRL) || errors.As(err, &ghAbuse)
 }
 
-func forEach(ctx context.Context, n, limit int, fn func(i int) error) error {
-	errs := make([]error, n)
+func forEach(parent context.Context, n, limit int, fn func(ctx context.Context, i int) error) error {
+	ctx, cancel := context.WithCancelCause(parent)
+	defer cancel(nil)
+	var (
+		first error
+		once  sync.Once
+		wg    sync.WaitGroup
+	)
 	sem := make(chan struct{}, limit)
-	var wg sync.WaitGroup
 loop:
 	for i := range n {
 		select {
@@ -316,16 +321,25 @@ loop:
 		case <-ctx.Done():
 			break loop
 		}
+		if ctx.Err() != nil {
+			<-sem
+			break
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
-			errs[i] = fn(i)
+			if err := fn(ctx, i); err != nil {
+				once.Do(func() {
+					first = err
+					cancel(err)
+				})
+			}
 		}()
 	}
 	wg.Wait()
-	if err := ctx.Err(); err != nil {
+	if err := parent.Err(); err != nil {
 		return err
 	}
-	return errors.Join(errs...)
+	return first
 }

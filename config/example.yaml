@@ -1,0 +1,44 @@
+# Example ghstats configuration. Every key except "version" is optional.
+version: 1
+
+scope:
+  # Only count repositories of these owners (case-insensitive).
+  # Empty means every owner returned by the collection.
+  owners: []
+  include_forks: false
+  include_archived: false
+  # Private repositories are counted in the aggregates; their names are never output.
+  include_private: true
+  # "owner/name" or a glob such as "owner/*-old" (case-insensitive).
+  exclude_repos:
+    - octocat/dotfiles
+    - octocat/*-old
+  # Multiplier applied to every language of a repository (adjusted mode only).
+  repo_weights:
+    octocat/generated-bindings: 0.25
+
+languages:
+  # raw: bytes as reported by GitHub. adjusted: bytes multiplied by the weights below.
+  mode: adjusted
+  # Language multipliers (>= 0, default 1, names are case-insensitive).
+  weights:
+    Lua: 0.35
+    TypeScript: 1.2
+    HTML: 0
+  # Removed from the adjusted calculation (same as a weight of 0); raw is untouched.
+  exclude:
+    - Dockerfile
+  # Removed from the display only.
+  hide:
+    - Makefile
+  # What happens to the share of hidden languages: "other" folds it into the
+  # Other entry, "renormalize" rescales the visible shares to sum to 1.
+  hidden_share: other
+  # Languages shown before folding the rest into Other (0 = unlimited).
+  max_visible: 6
+  other_label: Other
+
+distribution:
+  release_assets: true
+  clones: true
+  views: true

@@ -36,7 +36,9 @@ func Compute(s snapshot.Snapshot, h history.History, cfg config.Config, now time
 		Warnings:      []string{},
 	}
 	r.Languages = languages(repos, cfg, &r.Warnings)
-	r.Distribution = distribution(repos, history.Merge(h, s), cfg.Distribution, now)
+	merged := history.Merge(h, s)
+	r.Distribution = distribution(repos, merged, cfg.Distribution, now)
+	r.Trends = trends(repos, merged, cfg.Distribution, now)
 	r.Warnings = append(r.Warnings, collectionWarnings(s.Errors, repos, cfg.Distribution)...)
 	return r, nil
 }

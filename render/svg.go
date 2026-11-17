@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -203,7 +204,50 @@ func alignToSlot(svg, bp string, start, cycle int, frames *frameSet) string {
 	})
 }
 
-var accentAttrRe = regexp.MustCompile(`<(\w+)([^<>]*?)\s(fill|stroke|stop-color)="__ACC__"([^<>]*?)(/?)>`)
+var (
+	tagRe     = regexp.MustCompile(`<\w+[^<>]*>`)
+	accAttrRe = regexp.MustCompile(`\s(fill|stroke|stop-color)="__ACC__"`)
+)
+
+const accentVar = "--ghs-accent"
+
+func cycleTag(tag, first string) string {
+	if !strings.Contains(tag, `="`+acc+`"`) {
+		return tag
+	}
+	var decl []string
+	tag = accAttrRe.ReplaceAllStringFunc(tag, func(m string) string {
+		attr := accAttrRe.FindStringSubmatch(m)[1]
+		decl = append(decl, attr+":var("+accentVar+")")
+		return fmt.Sprintf(` %s="%s"`, attr, first)
+	})
+	d := strings.Join(decl, ";")
+	const marker = ` style="`
+	if i := strings.Index(tag, marker); i >= 0 {
+		j := i + len(marker)
+		return tag[:j] + d + ";" + tag[j:]
+	}
+	end := ">"
+	if strings.HasSuffix(tag, "/>") {
+		end = "/>"
+	}
+	return strings.TrimSuffix(tag, end) + marker + d + `"` + end
+}
+
+func accentCSS(list []string) string {
+	n := float64(len(list))
+	var kf strings.Builder
+	stop := func(at float64, c string) {
+		fmt.Fprintf(&kf, "%s%%{%s:%s}", strconv.FormatFloat(at*100, 'f', 3, 64), accentVar, c)
+	}
+	for i, c := range list {
+		stop(float64(i)/n, c)
+		stop((float64(i)+.85)/n, c)
+	}
+	stop(1, list[0])
+	return fmt.Sprintf("@property %s{syntax:'&lt;color&gt;';inherits:true;initial-value:%s}.%s{animation:%saccent 40s linear infinite}@keyframes %saccent{%s}",
+		accentVar, list[0], prefix, prefix, prefix, kf.String())
+}
 
 func accentize(svg string, th theme, cfg config.Render, mode Mode) string {
 	if cfg.Theme.Accent.Name != config.AccentCycle || !cfg.Motion {
@@ -217,36 +261,20 @@ func accentize(svg string, th theme, cfg config.Render, mode Mode) string {
 	for i, name := range accentOrder {
 		list[i] = accentTable[name][idx]
 	}
-	var vals []string
-	for _, c := range list {
-		vals = append(vals, c, c)
-	}
-	vals = append(vals, list[0])
-	n := float64(len(list))
-	kt := []string{"0"}
-	for i := range list {
-		kt = append(kt, fmt.Sprintf("%.3f", (float64(i)+.85)/n), fmt.Sprintf("%.3f", float64(i+1)/n))
-	}
-	values, keyTimes := strings.Join(vals, ";"), strings.Join(kt, ";")
-	animate := func(attr string) string {
-		return fmt.Sprintf(`<animate attributeName="%s" values="%s" keyTimes="%s" dur="40s" repeatCount="indefinite"/>`, attr, values, keyTimes)
-	}
-	for strings.Contains(svg, `="__ACC__"`) {
-		next := accentAttrRe.ReplaceAllStringFunc(svg, func(m string) string {
-			sub := accentAttrRe.FindStringSubmatch(m)
-			tag, a, attr, b, self := sub[1], sub[2], sub[3], sub[4], sub[5]
-			open := fmt.Sprintf(`<%s%s %s="%s"%s>`, tag, a, attr, list[0], b)
-			if self != "" {
-				return open + animate(attr) + "</" + tag + ">"
-			}
-			return open + animate(attr)
-		})
-		if next == svg {
-			break
-		}
-		svg = next
-	}
+	svg = tagRe.ReplaceAllStringFunc(svg, func(tag string) string { return cycleTag(tag, list[0]) })
+	svg = strings.Replace(svg, "<style>", "<style>"+accentCSS(list), 1)
 	return strings.ReplaceAll(svg, acc, list[0])
+}
+
+func (rd *renderer) activeVariants(blk config.Block) []string {
+	if blk.Name != "languages" || !slices.Contains(blk.Variants, "shift") || rd.shiftUseful() {
+		return blk.Variants
+	}
+	out := slices.DeleteFunc(slices.Clone(blk.Variants), func(v string) bool { return v == "shift" })
+	if len(out) == 0 {
+		return []string{"bars"}
+	}
+	return out
 }
 
 func (rd *renderer) card() string {
@@ -271,7 +299,8 @@ func (rd *renderer) card() string {
 
 	y := 56
 	for bi, blk := range cfg.Blocks {
-		n := len(blk.Variants)
+		vs := rd.activeVariants(blk)
+		n := len(vs)
 		bp := fmt.Sprintf("%sb%d", prefix, bi)
 		rotate := cfg.Motion && n > 1
 		slot := slotSeconds[blk.Name]
@@ -280,7 +309,7 @@ func (rd *renderer) card() string {
 			cycle = n * slot
 		}
 		h := 0
-		for _, v := range blk.Variants {
+		for _, v := range vs {
 			h = max(h, rd.blockHeight(blk.Name, v))
 		}
 		if bi > 0 {
@@ -292,7 +321,7 @@ func (rd *renderer) card() string {
 		}
 		frames := &frameSet{seen: map[string]bool{}}
 		var inner strings.Builder
-		for i, v := range blk.Variants {
+		for i, v := range vs {
 			svg := variants[blk.Name][v](rd, fmt.Sprintf("%sv%d", bp, i))
 			if !rotate {
 				if i == 0 {
@@ -311,7 +340,7 @@ func (rd *renderer) card() string {
 			styles = append(styles, strings.Join(frames.order, ""))
 		}
 		if rotate {
-			for i := range blk.Variants {
+			for i := range vs {
 				x := width - 24 - float64(n-1-i)*10
 				opacity := ".25"
 				if i == 0 {
@@ -333,7 +362,7 @@ func (rd *renderer) card() string {
 	}
 	reduce := ""
 	if cfg.Motion {
-		reduce = fmt.Sprintf("@media (prefers-reduced-motion: reduce){.%s *{animation:none!important}}", prefix)
+		reduce = fmt.Sprintf("@media (prefers-reduced-motion: reduce){.%s,.%s *{animation:none!important}}", prefix, prefix)
 	}
 	svg := fmt.Sprintf(`<svg class="%s" viewBox="0 0 %s %d" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="%s"><style>%s%s</style>
     <rect x=".5" y=".5" width="%s" height="%d" rx="10" fill="%s" stroke="%s"/>%s%s</svg>`,

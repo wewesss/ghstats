@@ -96,3 +96,43 @@ func TestTrendDisabledChannelIsAbsent(t *testing.T) {
 		t.Fatalf("trends = %#v, want empty non-nil", r.Trends)
 	}
 }
+
+func TestTrendDaysCoverTwentyEightDaysZeroFilled(t *testing.T) {
+	a := repo("me/a", nil)
+	a.Traffic = &snapshot.Traffic{Views: []snapshot.DayCount{
+		dc(11, 17, 4),
+		dc(11, 16, 2),
+		dc(10, 21, 8),
+		dc(10, 20, 16),
+	}}
+	b := repo("me/b", nil)
+	b.Traffic = &snapshot.Traffic{Views: []snapshot.DayCount{dc(11, 17, 1)}}
+	r := mustCompute(t, snap(a, b), config.Default())
+	tr := trendOf(t, r, report.ChannelViews)
+
+	if len(tr.Days) != 28 {
+		t.Fatalf("days = %d", len(tr.Days))
+	}
+	if tr.Days[0].Day != "2026-10-21" || tr.Days[27].Day != "2026-11-17" {
+		t.Fatalf("range = %s .. %s", tr.Days[0].Day, tr.Days[27].Day)
+	}
+	if tr.Days[27].Count != 5 {
+		t.Fatalf("today = %d, want 5 (summed across repositories)", tr.Days[27].Count)
+	}
+	if tr.Days[26].Count != 2 {
+		t.Fatalf("yesterday = %d", tr.Days[26].Count)
+	}
+	if tr.Days[0].Count != 8 {
+		t.Fatalf("oldest day = %d, want 8 (the day before is out of range)", tr.Days[0].Count)
+	}
+	if tr.Days[10].Count != 0 {
+		t.Fatalf("empty day = %d", tr.Days[10].Count)
+	}
+	var sum int64
+	for _, d := range tr.Days {
+		sum += d.Count
+	}
+	if sum != 15 {
+		t.Fatalf("sum = %d, want 15", sum)
+	}
+}

@@ -9,7 +9,10 @@ import (
 	"github.com/wewesss/ghstats/snapshot"
 )
 
-const trendWeeks = 26
+const (
+	trendWeeks = 26
+	trendDays  = 28
+)
 
 func trends(repos []snapshot.Repo, h history.History, dc config.Distribution, now time.Time) []report.Trend {
 	out := []report.Trend{}
@@ -34,6 +37,12 @@ func trend(channel string, repos []snapshot.Repo, h history.History, now time.Ti
 	for i := range weeks {
 		weeks[i].Start = first.AddDate(0, 0, 7*i).Format(dayLayout)
 	}
+	today := now.UTC().Truncate(24 * time.Hour)
+	firstDay := today.AddDate(0, 0, -(trendDays - 1))
+	days := make([]report.DayCount, trendDays)
+	for i := range days {
+		days[i].Day = firstDay.AddDate(0, 0, i).Format(dayLayout)
+	}
 	for _, r := range repos {
 		rh, ok := h.Repos[r.ID]
 		if !ok {
@@ -41,11 +50,14 @@ func trend(channel string, repos []snapshot.Repo, h history.History, now time.Ti
 		}
 		for _, d := range series(rh) {
 			day := d.Day.UTC().Truncate(24 * time.Hour)
+			if !day.Before(firstDay) && !day.After(today) {
+				days[int(day.Sub(firstDay)/(24*time.Hour))].Count += int64(d.Count)
+			}
 			if day.Before(first) || day.After(last.AddDate(0, 0, 6)) {
 				continue
 			}
 			weeks[int(weekStart(day).Sub(first)/(7*24*time.Hour))].Count += int64(d.Count)
 		}
 	}
-	return report.Trend{Channel: channel, Weeks: weeks}
+	return report.Trend{Channel: channel, Weeks: weeks, Days: days}
 }

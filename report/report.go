@@ -60,6 +60,12 @@ type LangShare struct {
 type Trend struct {
 	Channel string      `json:"channel"`
 	Weeks   []WeekCount `json:"weeks"`
+	Days    []DayCount  `json:"days"`
+}
+
+type DayCount struct {
+	Day   string `json:"day"`
+	Count int64  `json:"count"`
 }
 
 type WeekCount struct {

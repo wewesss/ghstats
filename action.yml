@@ -10,9 +10,9 @@ inputs:
     description: Personal access token used to collect (fine-grained, see the README).
     required: true
   version:
-    description: Release tag of ghstats to download, or "latest".
+    description: 'Release tag to download. Empty: the tag the action is pinned to (`@v1` takes the newest v1.x.y), or the latest release when the ref is a branch or SHA. "latest" forces the latest release.'
     required: false
-    default: latest
+    default: ""
   config:
     description: Configuration file path. When the file does not exist, ghstats runs without --config.
     required: false
@@ -29,6 +29,10 @@ inputs:
     description: Set to "false" to skip the traffic API calls.
     required: false
     default: "true"
+  keep-snapshots:
+    description: Number of snapshots kept in data-dir/snapshots; 0 keeps them all.
+    required: false
+    default: "30"
 
 outputs:
   snapshot:
@@ -46,41 +50,10 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         GHSTATS_VERSION: ${{ inputs.version }}
+        ACTION_REF: ${{ github.action_ref }}
         RUNNER_OS_NAME: ${{ runner.os }}
         RUNNER_ARCH_NAME: ${{ runner.arch }}
-      run: |
-        set -euo pipefail
-        case "$RUNNER_OS_NAME" in
-          Linux) goos=linux ;;
-          macOS) goos=darwin ;;
-          *) echo "ghstats: unsupported runner OS '$RUNNER_OS_NAME' (use ubuntu-latest or macos-latest)" >&2; exit 1 ;;
-        esac
-        case "$RUNNER_ARCH_NAME" in
-          X64) goarch=amd64 ;;
-          ARM64) goarch=arm64 ;;
-          *) echo "ghstats: unsupported runner architecture '$RUNNER_ARCH_NAME'" >&2; exit 1 ;;
-        esac
-        repo="wewesss/ghstats"
-        tag="$GHSTATS_VERSION"
-        if [ "$tag" = "latest" ]; then
-          tag="$(gh release view --repo "$repo" --json tagName --jq .tagName)"
-        fi
-        archive="ghstats_${tag#v}_${goos}_${goarch}.tar.gz"
-        dl="$RUNNER_TEMP/ghstats-download"
-        rm -rf "$dl"
-        mkdir -p "$dl"
-        gh release download "$tag" --repo "$repo" --dir "$dl" --pattern "$archive" --pattern checksums.txt
-        cd "$dl"
-        if command -v sha256sum >/dev/null 2>&1; then
-          sha256sum -c --ignore-missing checksums.txt
-        else
-          shasum -a 256 -c --ignore-missing checksums.txt
-        fi
-        bin="$RUNNER_TEMP/ghstats"
-        rm -rf "$bin"
-        mkdir -p "$bin"
-        tar -xzf "$archive" -C "$bin"
-        echo "$bin" >> "$GITHUB_PATH"
+      run: "$GITHUB_ACTION_PATH/scripts/install.sh"
 
     - name: Collect
       id: collect
@@ -89,9 +62,10 @@ runs:
         GHSTATS_TOKEN: ${{ inputs.token }}
         DATA_DIR: ${{ inputs.data-dir }}
         TRAFFIC: ${{ inputs.traffic }}
+        KEEP: ${{ inputs.keep-snapshots }}
       run: |
         set -euo pipefail
-        args=(--out "$DATA_DIR/snapshots" --history "$DATA_DIR/history.json")
+        args=(--out "$DATA_DIR/snapshots" --history "$DATA_DIR/history.json" --keep "$KEEP")
         if [ "$TRAFFIC" = "false" ]; then
           args+=(--no-traffic)
         fi

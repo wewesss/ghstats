@@ -38,13 +38,13 @@ go install github.com/wewesss/ghstats/cmd/ghstats@latest
 ```
 
 ```sh
-ghstats collect [--out data/snapshots] [--history data/history.json] [--no-traffic] [--concurrency N]
+ghstats collect [--out data/snapshots] [--history data/history.json] [--no-traffic] [--concurrency N] [--keep N]
 ghstats compute --snapshot <file> --history <file> --out <report.json> [--config <file>]
 ghstats render  --report <report.json> --out-dir <dir> [--config <file>]
 ghstats version
 ```
 
-- `collect` writes `snapshot-<timestamp>.json` into `--out`, merges it into the history file and prints the snapshot path.
+- `collect` writes `snapshot-<timestamp>.json` into `--out`, merges it into the history file and prints the snapshot path. With `--keep N` (N > 0) only the N most recent `snapshot-*.json` files of `--out` are kept; `0`, the default, keeps them all.
 - `compute` turns a snapshot and a history into `report.json`.
 - `render` writes `stats.json`, `stats-dark.svg` and `stats-light.svg` into `--out-dir`, plus the profile files described under [Profile cards](#profile-cards) when the configuration asks for them, and `README.snippet.md`.
 
@@ -105,7 +105,19 @@ The badge icons come from [Simple Icons](https://simpleicons.org) (CC0 1.0). The
 
 ## GitHub Action
 
-The repository is a composite Action for Linux and macOS runners. Inputs: `token` (required), `version` (default `latest`), `config` (default `ghstats.yaml`, ignored when the file is missing), `data-dir` (default `ghstats-data`), `output-dir` (default `ghstats`), `traffic` (default `true`). Outputs: `snapshot` and `report`.
+The repository is a composite Action for Linux and macOS runners.
+
+| Input | Default | Description |
+| --- | --- | --- |
+| `token` | required | Personal access token used to collect. |
+| `version` | empty | Release tag to download. Empty: the tag the action is pinned to (`@v1` takes the newest v1.x.y), or the latest release when the ref is a branch or SHA. `latest` forces the latest release. |
+| `config` | `ghstats.yaml` | Configuration file, ignored when the file is missing. |
+| `data-dir` | `ghstats-data` | Directory holding `snapshots/` and `history.json`. |
+| `output-dir` | `ghstats` | Directory receiving the cards and `README.snippet.md`. |
+| `traffic` | `true` | Set to `false` to skip the traffic API calls. |
+| `keep-snapshots` | `30` | Number of snapshots kept in `data-dir/snapshots`; `0` keeps them all. |
+
+Outputs: `snapshot` and `report`.
 
 Example workflow for a `<user>/<user>` profile repository, with a private `<user>/ghstats-data` repository holding the snapshots and history:
 
@@ -132,7 +144,7 @@ jobs:
           path: ghstats-data
           token: ${{ secrets.GHSTATS_TOKEN }}
 
-      - uses: wewesss/ghstats@v0
+      - uses: wewesss/ghstats@v1
         with:
           token: ${{ secrets.GHSTATS_TOKEN }}
 
@@ -169,6 +181,10 @@ Then reference the committed cards in your profile README:
   <img alt="GitHub stats" src="ghstats/stats-dark.svg">
 </picture>
 ```
+
+## Stability
+
+From v1.0.0 the configuration `version: 1` and the `stats.json` `schema_version: 1` are stable for the whole v1 series: an added field breaks nothing, and an incompatible change ships as v2. Pin the Action with `wewesss/ghstats@v1`, which follows the newest v1.x.y release and installs the matching binary.
 
 ## Privacy
 

@@ -20,3 +20,28 @@ jobs:
       - run: go vet ./...
       - run: go test -race ./...
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+      - run: bash -n scripts/install.sh
+      - name: Resolve the release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GHSTATS_RESOLVE_ONLY: "1"
+        run: |
+          set -euo pipefail
+          tag="$(ACTION_REF=v0 bash scripts/install.sh)"
+          case "$tag" in v0.*) ;; *) echo "ACTION_REF=v0 resolved to '$tag'" >&2; exit 1 ;; esac
+          tag="$(ACTION_REF=v0.2.3 bash scripts/install.sh)"
+          [ "$tag" = "v0.2.3" ] || { echo "ACTION_REF=v0.2.3 resolved to '$tag'" >&2; exit 1; }
+          tag="$(GHSTATS_VERSION=v0.2.1 ACTION_REF=v0 bash scripts/install.sh)"
+          [ "$tag" = "v0.2.1" ] || { echo "GHSTATS_VERSION=v0.2.1 resolved to '$tag'" >&2; exit 1; }
+          tag="$(ACTION_REF=main bash scripts/install.sh)"
+          [ -n "$tag" ] || { echo "ACTION_REF=main resolved to nothing" >&2; exit 1; }

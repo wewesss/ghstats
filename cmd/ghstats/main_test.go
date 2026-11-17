@@ -95,6 +95,7 @@ func TestUsageErrorsExitTwo(t *testing.T) {
 		{"collect", "--bogus"},
 		{"collect", "extra"},
 		{"collect", "--concurrency", "-1"},
+		{"collect", "--keep", "-1"},
 		{"compute"},
 		{"compute", "--snapshot", "s.json", "--history", "h.json"},
 		{"compute", "--out", "r.json"},
@@ -173,6 +174,87 @@ func TestCollectWritesSnapshotAndHistory(t *testing.T) {
 	}
 	if len(h2.Repos["R_1"].Views) != 1 {
 		t.Fatalf("history merge duplicated days: %+v", h2.Repos["R_1"].Views)
+	}
+}
+
+func seedSnapshots(t *testing.T, dir string, names ...string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range names {
+		if err := os.WriteFile(filepath.Join(dir, n), []byte("{}"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func listDir(t *testing.T, dir string) []string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	return names
+}
+
+func TestCollectKeepPrunesOldestSnapshots(t *testing.T) {
+	setup(t)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "snapshots")
+	seedSnapshots(t, out,
+		"snapshot-2026-11-14T090000Z.json",
+		"snapshot-2026-11-15T090000Z.json",
+		"snapshot-2026-11-16T090000Z.json",
+		"other.json")
+
+	code, _, stderr := exec("collect", "--keep", "2", "--out", out, "--history", filepath.Join(dir, "h.json"))
+	if code != 0 {
+		t.Fatalf("code = %d, stderr = %q", code, stderr)
+	}
+	got := strings.Join(listDir(t, out), " ")
+	want := "other.json snapshot-2026-11-16T090000Z.json snapshot-2026-11-17T090000Z.json"
+	if got != want {
+		t.Fatalf("files = %q, want %q", got, want)
+	}
+}
+
+func TestCollectKeepNeverRemovesTheNewSnapshot(t *testing.T) {
+	setup(t)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "snapshots")
+	seedSnapshots(t, out,
+		"snapshot-2026-11-18T090000Z.json",
+		"snapshot-2026-11-19T090000Z.json")
+
+	code, _, stderr := exec("collect", "--keep", "1", "--out", out, "--history", filepath.Join(dir, "h.json"))
+	if code != 0 {
+		t.Fatalf("code = %d, stderr = %q", code, stderr)
+	}
+	if got := strings.Join(listDir(t, out), " "); got != "snapshot-2026-11-17T090000Z.json" {
+		t.Fatalf("files = %q", got)
+	}
+}
+
+func TestCollectWithoutKeepRemovesNothing(t *testing.T) {
+	setup(t)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "snapshots")
+	seedSnapshots(t, out,
+		"snapshot-2026-11-14T090000Z.json",
+		"snapshot-2026-11-15T090000Z.json",
+		"snapshot-2026-11-16T090000Z.json")
+
+	code, _, stderr := exec("collect", "--out", out, "--history", filepath.Join(dir, "h.json"))
+	if code != 0 {
+		t.Fatalf("code = %d, stderr = %q", code, stderr)
+	}
+	if n := len(listDir(t, out)); n != 4 {
+		t.Fatalf("%d files, want 4", n)
 	}
 }
 

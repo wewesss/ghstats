@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -130,11 +131,15 @@ func runCollect(args []string, stdout, stderr io.Writer) error {
 	histPath := fs.String("history", "data/history.json", "traffic history file, updated in place")
 	noTraffic := fs.Bool("no-traffic", false, "skip the traffic API calls")
 	concurrency := fs.Int("concurrency", 0, "parallel API requests (0 uses the default)")
+	keep := fs.Int("keep", 0, "snapshots kept in --out (0 keeps them all)")
 	if err := parseFlags(fs, args); err != nil {
 		return err
 	}
 	if *concurrency < 0 {
 		return usageError{"--concurrency must be >= 0"}
+	}
+	if *keep < 0 {
+		return usageError{"--keep must be >= 0"}
 	}
 
 	token := os.Getenv("GHSTATS_TOKEN")
@@ -166,6 +171,11 @@ func runCollect(args []string, stdout, stderr io.Writer) error {
 	if err := snapshot.WriteFile(snapPath, snap); err != nil {
 		return err
 	}
+	if *keep > 0 {
+		if err := pruneSnapshots(*out, snapPath, *keep); err != nil {
+			return err
+		}
+	}
 
 	h, err := readHistory(*histPath)
 	if err != nil {
@@ -181,6 +191,26 @@ func runCollect(args []string, stdout, stderr io.Writer) error {
 		fmt.Fprintln(stderr, trafficHint)
 	}
 	fmt.Fprintln(stdout, snapPath)
+	return nil
+}
+
+func pruneSnapshots(dir, current string, keep int) error {
+	names, err := filepath.Glob(filepath.Join(dir, "snapshot-*.json"))
+	if err != nil {
+		return err
+	}
+	sort.Strings(names)
+	others := names[:0]
+	for _, n := range names {
+		if n != current {
+			others = append(others, n)
+		}
+	}
+	for _, n := range others[:max(0, len(others)-(keep-1))] {
+		if err := os.Remove(n); err != nil {
+			return fmt.Errorf("remove %s: %w", n, err)
+		}
+	}
 	return nil
 }
 

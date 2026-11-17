@@ -1,0 +1,130 @@
+name: ghstats
+description: Collect GitHub statistics and render the stats cards (JSON and SVG) for a profile README.
+author: wewesss
+branding:
+  icon: bar-chart-2
+  color: gray-dark
+
+inputs:
+  token:
+    description: Personal access token used to collect (fine-grained, see the README).
+    required: true
+  version:
+    description: Release tag of ghstats to download, or "latest".
+    required: false
+    default: latest
+  config:
+    description: Configuration file path. When the file does not exist, ghstats runs without --config.
+    required: false
+    default: ghstats.yaml
+  data-dir:
+    description: Directory holding snapshots/ and history.json (check out the private data repository there).
+    required: false
+    default: ghstats-data
+  output-dir:
+    description: Directory receiving stats.json, stats-dark.svg and stats-light.svg.
+    required: false
+    default: ghstats
+  traffic:
+    description: Set to "false" to skip the traffic API calls.
+    required: false
+    default: "true"
+
+outputs:
+  snapshot:
+    description: Path of the snapshot written by collect.
+    value: ${{ steps.collect.outputs.snapshot }}
+  report:
+    description: Path of report.json.
+    value: ${{ steps.compute.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ghstats
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GHSTATS_VERSION: ${{ inputs.version }}
+        RUNNER_OS_NAME: ${{ runner.os }}
+        RUNNER_ARCH_NAME: ${{ runner.arch }}
+      run: |
+        set -euo pipefail
+        case "$RUNNER_OS_NAME" in
+          Linux) goos=linux ;;
+          macOS) goos=darwin ;;
+          *) echo "ghstats: unsupported runner OS '$RUNNER_OS_NAME' (use ubuntu-latest or macos-latest)" >&2; exit 1 ;;
+        esac
+        case "$RUNNER_ARCH_NAME" in
+          X64) goarch=amd64 ;;
+          ARM64) goarch=arm64 ;;
+          *) echo "ghstats: unsupported runner architecture '$RUNNER_ARCH_NAME'" >&2; exit 1 ;;
+        esac
+        repo="wewesss/ghstats"
+        tag="$GHSTATS_VERSION"
+        if [ "$tag" = "latest" ]; then
+          tag="$(gh release view --repo "$repo" --json tagName --jq .tagName)"
+        fi
+        archive="ghstats_${tag#v}_${goos}_${goarch}.tar.gz"
+        dl="$RUNNER_TEMP/ghstats-download"
+        rm -rf "$dl"
+        mkdir -p "$dl"
+        gh release download "$tag" --repo "$repo" --dir "$dl" --pattern "$archive" --pattern checksums.txt
+        cd "$dl"
+        if command -v sha256sum >/dev/null 2>&1; then
+          sha256sum -c --ignore-missing checksums.txt
+        else
+          shasum -a 256 -c --ignore-missing checksums.txt
+        fi
+        bin="$RUNNER_TEMP/ghstats"
+        rm -rf "$bin"
+        mkdir -p "$bin"
+        tar -xzf "$archive" -C "$bin"
+        echo "$bin" >> "$GITHUB_PATH"
+
+    - name: Collect
+      id: collect
+      shell: bash
+      env:
+        GHSTATS_TOKEN: ${{ inputs.token }}
+        DATA_DIR: ${{ inputs.data-dir }}
+        TRAFFIC: ${{ inputs.traffic }}
+      run: |
+        set -euo pipefail
+        args=(--out "$DATA_DIR/snapshots" --history "$DATA_DIR/history.json")
+        if [ "$TRAFFIC" = "false" ]; then
+          args+=(--no-traffic)
+        fi
+        snapshot="$(ghstats collect "${args[@]}")"
+        echo "snapshot=$snapshot" >> "$GITHUB_OUTPUT"
+
+    - name: Compute
+      id: compute
+      shell: bash
+      env:
+        DATA_DIR: ${{ inputs.data-dir }}
+        CONFIG: ${{ inputs.config }}
+        SNAPSHOT: ${{ steps.collect.outputs.snapshot }}
+      run: |
+        set -euo pipefail
+        report="$RUNNER_TEMP/ghstats-report.json"
+        args=(--snapshot "$SNAPSHOT" --history "$DATA_DIR/history.json" --out "$report")
+        if [ -f "$CONFIG" ]; then
+          args+=(--config "$CONFIG")
+        fi
+        ghstats compute "${args[@]}"
+        echo "report=$report" >> "$GITHUB_OUTPUT"
+
+    - name: Render
+      shell: bash
+      env:
+        CONFIG: ${{ inputs.config }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+        REPORT: ${{ steps.compute.outputs.report }}
+      run: |
+        set -euo pipefail
+        args=(--report "$REPORT" --out-dir "$OUTPUT_DIR")
+        if [ -f "$CONFIG" ]; then
+          args+=(--config "$CONFIG")
+        fi
+        ghstats render "${args[@]}"

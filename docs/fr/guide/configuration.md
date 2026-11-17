@@ -122,12 +122,13 @@ Une section facultative qui ajoute une carte identité et un badge par lien. Tou
 | `profile.note` | Facultatif. |
 | `profile.focus` | 1 à 6 entrées, chacune `{name, building}` où `building` contient 1 à 4 mots. |
 | `profile.links` | Liste de `kind: valeur`, gardée dans cet ordre ; une valeur vide est ignorée. |
+| `profile.link_style` | Apparence de chaque bouton de lien : `full` (par défaut, icône et libellé), `icon` (icône seule) ou `text` (libellé seul). |
 
 La carte identité est générée quand `profile` contient au moins `focus` ou `tagline`.
 
 ### Liens
 
-Types de liens : `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`. Chaque type ne peut être listé qu'une fois.
+Types de liens : `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom`. Chaque type ne peut être listé qu'une fois.
 
 Une valeur est un identifiant (le `@` initial est facultatif) ou une URL `https://` complète ; `mastodon`, `steam` et `website` exigent une URL complète. La forme `{url, label}` remplace le libellé :
 
@@ -138,6 +139,27 @@ profile:
     - website: https://example.com
     - discord: {url: "https://discord.com/invite/xyz", label: discord}
 ```
+
+Le type `custom` est un bouton vers n'importe quelle URL et n'existe qu'en forme map `{url, label, icon}` : `url` (une URL `https://` complète) et `label` sont obligatoires, `icon` est facultatif. `icon` est soit le nom d'un type connu (`youtube`, `discord`...), qui réutilise son icône embarquée, soit un tracé SVG commençant par `M` ou `m` (l'attribut `d` d'un `<path>` en viewBox 24x24 ; `<`, `>`, `"` et `&` sont refusés). Sans `icon`, le bouton porte un globe.
+
+```yaml
+profile:
+  links:
+    - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}
+```
+
+La forme scalaire `custom: https://...`, un `url` ou un `label` manquant, un `icon` sur un autre type et une icône qui n'est ni un nom de type ni un tracé valide sont des erreurs de validation.
+
+### Style des liens
+
+`profile.link_style` vaut `full` (par défaut : icône et libellé), `icon` (un carré avec l'icône seule ; le libellé reste dans `aria-label` et `<title>`) ou `text` (le libellé seul). Toute autre valeur est une erreur de validation qui liste les trois.
+
+```yaml
+profile:
+  link_style: icon
+```
+
+Voir [Cartes de profil](../cards/profile.md#styles-de-bouton) pour le rendu de chaque style.
 
 ## Exemple complet
 

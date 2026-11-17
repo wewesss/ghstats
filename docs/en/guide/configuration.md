@@ -122,12 +122,13 @@ An optional section that adds an identity card and one badge per link. Everythin
 | `profile.note` | Optional. |
 | `profile.focus` | 1 to 6 entries, each `{name, building}` where `building` holds 1 to 4 words. |
 | `profile.links` | List of `kind: value`, kept in this order; an empty value is skipped. |
+| `profile.link_style` | Look of every link button: `full` (default, icon and label), `icon` (icon only) or `text` (label only). |
 
 The identity card is generated when `profile` has at least `focus` or `tagline`.
 
 ### Links
 
-Link kinds: `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`. Each kind can be listed once.
+Link kinds: `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom`. Each kind can be listed once.
 
 A value is a handle (a leading `@` is optional) or a full `https://` URL; `mastodon`, `steam` and `website` need a full URL. The map form `{url, label}` overrides the label:
 
@@ -138,6 +139,27 @@ profile:
     - website: https://example.com
     - discord: {url: "https://discord.com/invite/xyz", label: discord}
 ```
+
+The `custom` kind is a button to any URL and exists only in the map form `{url, label, icon}`: `url` (a full `https://` URL) and `label` are required, `icon` is optional. `icon` is either a known kind name (`youtube`, `discord`...), which reuses its embedded icon, or an SVG path starting with `M` or `m` (the `d` attribute of a `<path>` in a 24x24 viewBox; `<`, `>`, `"` and `&` are rejected). Without `icon`, the button shows a globe.
+
+```yaml
+profile:
+  links:
+    - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}
+```
+
+The scalar form `custom: https://...`, a missing `url` or `label`, an `icon` on another kind and an icon that is neither a kind name nor a valid path are validation errors.
+
+### Link style
+
+`profile.link_style` is `full` (default: icon and label), `icon` (a square with the icon only; the label stays in `aria-label` and `<title>`) or `text` (the label only). Any other value is a validation error that lists the three.
+
+```yaml
+profile:
+  link_style: icon
+```
+
+See [Profile cards](../cards/profile.md#button-styles) for the rendering of each style.
 
 ## Full example
 

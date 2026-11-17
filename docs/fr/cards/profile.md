@@ -22,11 +22,13 @@ profile:
       building: [full-stack apps, desktop software]
     - name: GAMES
       building: [gameplay systems, game engines]
+  link_style: full                 # full, icon ou text
   links:                           # gardés dans cet ordre ; une valeur vide est ignorée
     - youtube: "@octocat"          # un identifiant ou une URL https:// complète
     - website: https://example.com
     - discord: {url: "https://discord.com/invite/xyz", label: discord}
     - github_sponsors: octocat
+    - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}
 render:
   layout: wide
   base_path: ghstats/
@@ -56,11 +58,78 @@ La carte identité est écrite sous les noms `identity-dark.svg` et `identity-li
 
 ## Badges de liens
 
+Les 21 boutons, en style `full`, avec des valeurs fictives.
+
 <p>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/youtube-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/youtube-light.svg">
     <img alt="youtube" src="../../../showcase/badges/youtube-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/twitch-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/twitch-light.svg">
+    <img alt="twitch" src="../../../showcase/badges/twitch-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/kick-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/kick-light.svg">
+    <img alt="kick" src="../../../showcase/badges/kick-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/discord-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/discord-light.svg">
+    <img alt="discord" src="../../../showcase/badges/discord-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/tiktok-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/tiktok-light.svg">
+    <img alt="tiktok" src="../../../showcase/badges/tiktok-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/instagram-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/instagram-light.svg">
+    <img alt="instagram" src="../../../showcase/badges/instagram-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/x-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/x-light.svg">
+    <img alt="x" src="../../../showcase/badges/x-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/bluesky-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/bluesky-light.svg">
+    <img alt="bluesky" src="../../../showcase/badges/bluesky-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/threads-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/threads-light.svg">
+    <img alt="threads" src="../../../showcase/badges/threads-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/mastodon-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/mastodon-light.svg">
+    <img alt="mastodon" src="../../../showcase/badges/mastodon-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/reddit-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/reddit-light.svg">
+    <img alt="reddit" src="../../../showcase/badges/reddit-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/linkedin-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/linkedin-light.svg">
+    <img alt="linkedin" src="../../../showcase/badges/linkedin-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/steam-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/steam-light.svg">
+    <img alt="steam" src="../../../showcase/badges/steam-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/itchio-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/itchio-light.svg">
+    <img alt="itchio" src="../../../showcase/badges/itchio-dark.svg">
   </picture>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/website-dark.svg">
@@ -72,15 +141,143 @@ La carte identité est écrite sous les noms `identity-dark.svg` et `identity-li
     <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/github_sponsors-light.svg">
     <img alt="github_sponsors" src="../../../showcase/badges/github_sponsors-dark.svg">
   </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/open_collective-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/open_collective-light.svg">
+    <img alt="open_collective" src="../../../showcase/badges/open_collective-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/buy_me_a_coffee-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/buy_me_a_coffee-light.svg">
+    <img alt="buy_me_a_coffee" src="../../../showcase/badges/buy_me_a_coffee-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/ko_fi-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/ko_fi-light.svg">
+    <img alt="ko_fi" src="../../../showcase/badges/ko_fi-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/patreon-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/patreon-light.svg">
+    <img alt="patreon" src="../../../showcase/badges/patreon-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/custom-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/custom-light.svg">
+    <img alt="custom" src="../../../showcase/badges/custom-dark.svg">
+  </picture>
 </p>
 
 `links/<kind>-dark.svg` et `links/<kind>-light.svg` sont écrits pour chaque lien non vide. ghstats ne supprime pas les fichiers d'un lien que vous retirez de la configuration.
 
-Types de liens : `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`. Une valeur est un identifiant (le `@` initial est facultatif) ou une URL `https://` complète ; `mastodon`, `steam` et `website` exigent une URL complète. La forme `{url, label}` remplace le libellé.
+Types de liens : `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom` (voir [Bouton personnalisé](#bouton-personnalisé)). Une valeur est un identifiant (le `@` initial est facultatif) ou une URL `https://` complète ; `mastodon`, `steam` et `website` exigent une URL complète. La forme `{url, label}` remplace le libellé.
 
 Un lien n'est cliquable que si son badge est une image séparée enveloppée dans son propre `<a>`, ce qui explique pourquoi chaque lien a son propre fichier SVG et ne fait pas partie de la carte identité.
 
 Les icônes des badges viennent de [Simple Icons](https://simpleicons.org) (CC0 1.0). Les logos de marque restent la propriété de leurs détenteurs respectifs.
+
+## Bouton personnalisé
+
+Le type `custom` ajoute un bouton vers n'importe quelle URL. Il n'existe qu'en forme map, `url` et `label` sont obligatoires, et il ne peut être listé qu'une fois.
+
+```yaml
+profile:
+  links:
+    - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}
+```
+
+`icon` est facultatif. Sans `icon`, le bouton porte un globe, comme `website`. Un nom de type connu (`youtube`, `discord`...) réutilise l'icône embarquée de ce type. Un tracé SVG commençant par `M` ou `m` est l'attribut `d` d'un `<path>` en viewBox 24x24, au format de [Simple Icons](https://simpleicons.org) ; les caractères `<`, `>`, `"` et `&` sont refusés.
+
+De gauche à droite : `icon: youtube`, `icon: "M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.8 5.5 21l2-7.5L2 9h7z"`, sans `icon`.
+
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/custom/named-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/custom/named-light.svg">
+    <img alt="custom, named icon" src="../../../showcase/badges/custom/named-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/custom/path-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/custom/path-light.svg">
+    <img alt="custom, SVG path icon" src="../../../showcase/badges/custom/path-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/custom/none-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/custom/none-light.svg">
+    <img alt="custom, no icon" src="../../../showcase/badges/custom/none-dark.svg">
+  </picture>
+</p>
+
+Erreurs de validation : la forme scalaire `custom: https://...` est refusée (le message montre la forme map), `url` ou `label` manquant est refusé, `icon` sur un autre type que `custom` est refusé, et une icône qui n'est ni un type connu ni un tracé valide est refusée.
+
+## Styles de bouton
+
+`profile.link_style` règle l'apparence de tous les boutons : `full` (par défaut : icône et libellé), `icon` (un carré avec l'icône seule ; le libellé reste dans `aria-label` et `<title>`) ou `text` (le libellé seul). Une autre valeur est refusée avec la liste des trois. Les fichiers écrits et `README.snippet.md` sont les mêmes pour les trois styles.
+
+```yaml
+profile:
+  link_style: icon
+```
+
+`full` :
+
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/youtube-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/youtube-light.svg">
+    <img alt="youtube, full style" src="../../../showcase/badges/youtube-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/discord-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/discord-light.svg">
+    <img alt="discord, full style" src="../../../showcase/badges/discord-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/github_sponsors-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/github_sponsors-light.svg">
+    <img alt="github_sponsors, full style" src="../../../showcase/badges/github_sponsors-dark.svg">
+  </picture>
+</p>
+
+`icon` :
+
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/styles/youtube-icon-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/styles/youtube-icon-light.svg">
+    <img alt="youtube, icon style" src="../../../showcase/badges/styles/youtube-icon-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/styles/discord-icon-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/styles/discord-icon-light.svg">
+    <img alt="discord, icon style" src="../../../showcase/badges/styles/discord-icon-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/styles/github_sponsors-icon-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/styles/github_sponsors-icon-light.svg">
+    <img alt="github_sponsors, icon style" src="../../../showcase/badges/styles/github_sponsors-icon-dark.svg">
+  </picture>
+</p>
+
+`text` :
+
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/styles/youtube-text-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/styles/youtube-text-light.svg">
+    <img alt="youtube, text style" src="../../../showcase/badges/styles/youtube-text-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/styles/discord-text-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/styles/discord-text-light.svg">
+    <img alt="discord, text style" src="../../../showcase/badges/styles/discord-text-dark.svg">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/badges/styles/github_sponsors-text-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="../../../showcase/badges/styles/github_sponsors-text-light.svg">
+    <img alt="github_sponsors, text style" src="../../../showcase/badges/styles/github_sponsors-text-dark.svg">
+  </picture>
+</p>
 
 ## README.snippet.md
 

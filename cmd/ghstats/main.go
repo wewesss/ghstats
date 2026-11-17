@@ -301,24 +301,12 @@ func runRender(args []string, stderr io.Writer) error {
 	}
 	files := map[string][]byte{"stats.json": jsonBuf.Bytes()}
 	for _, mode := range []render.Mode{render.Dark, render.Light} {
-		var buf bytes.Buffer
-		if err := render.SVG(&buf, r, cfg.Render, mode); err != nil {
+		cards, err := render.Cards(r, cfg, mode)
+		if err != nil {
 			return err
 		}
-		files["stats-"+string(mode)+".svg"] = buf.Bytes()
-		if cfg.Profile.HasIdentity() {
-			var ib bytes.Buffer
-			if err := render.IdentitySVG(&ib, r, cfg, mode); err != nil {
-				return err
-			}
-			files["identity-"+string(mode)+".svg"] = ib.Bytes()
-		}
-		for _, l := range cfg.Profile.ResolvedLinks() {
-			var lb bytes.Buffer
-			if err := render.LinkBadgeSVG(&lb, l, cfg.Render.Theme, mode); err != nil {
-				return err
-			}
-			files["links/"+l.Kind+"-"+string(mode)+".svg"] = lb.Bytes()
+		for name, svg := range cards {
+			files[name] = []byte(svg)
 		}
 	}
 	files["README.snippet.md"] = []byte(render.Snippet(cfg))

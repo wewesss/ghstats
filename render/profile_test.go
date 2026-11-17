@@ -7,56 +7,28 @@ import (
 
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/render"
+	"github.com/wewesss/ghstats/sample"
 )
-
-func profileConfig() config.Config {
-	c := config.Default()
-	c.Render.Theme.Accent = config.Accent{Name: "cycle"}
-	c.Profile = config.Profile{
-		Name:     "wewesss",
-		Tagline:  "SOFTWARE · GAMES · EXPERIMENTS",
-		Location: "caen, fr",
-		Note:     "no fixed stack — it depends on what I'm making",
-		Focus: []config.Focus{
-			{Name: "WEB & DESKTOP", Building: []string{"full-stack apps", "desktop software"}},
-			{Name: "GAMES", Building: []string{"gameplay systems", "game engines"}},
-			{Name: "AI & AUTOMATION", Building: []string{"coding agents", "automated workflows"}},
-			{Name: "SYSTEMS", Building: []string{"runtimes & compilers", "native tooling"}},
-		},
-		Links: []config.Link{
-			{Kind: "youtube", Value: "@wewesss14"},
-			{Kind: "website", Value: "https://miralabs.tech"},
-			{Kind: "github_sponsors", Value: "wewesss"},
-		},
-	}
-	return c
-}
 
 func renderIdentity(t *testing.T, cfg config.Config, mode render.Mode) string {
 	t.Helper()
 	var buf bytes.Buffer
-	if err := render.IdentitySVG(&buf, sampleReport(), cfg, mode); err != nil {
+	if err := render.IdentitySVG(&buf, sample.Report(), cfg, mode); err != nil {
 		t.Fatal(err)
 	}
 	return buf.String()
 }
 
-func wideConfig() config.Render {
-	c := fullConfig()
-	c.Layout = config.LayoutWide
-	return c
-}
-
 func TestGoldenIdentity(t *testing.T) {
 	for _, mode := range []render.Mode{render.Dark, render.Light} {
 		t.Run(string(mode), func(t *testing.T) {
-			svg := renderIdentity(t, profileConfig(), mode)
+			svg := renderIdentity(t, sample.Profile(), mode)
 			assertWellFormed(t, svg)
 			golden(t, "identity-"+string(mode)+".svg", svg)
 		})
 	}
 	t.Run("motion-off", func(t *testing.T) {
-		cfg := profileConfig()
+		cfg := sample.Profile()
 		cfg.Render.Motion = false
 		svg := renderIdentity(t, cfg, render.Dark)
 		assertWellFormed(t, svg)
@@ -68,7 +40,7 @@ func TestGoldenIdentity(t *testing.T) {
 }
 
 func TestIdentityShape(t *testing.T) {
-	cfg := profileConfig()
+	cfg := sample.Profile()
 	svg := renderIdentity(t, cfg, render.Dark)
 	if !strings.Contains(svg, `viewBox="0 0 1000 300"`) {
 		t.Fatal("4 focus entries must give a 300 px card")
@@ -92,7 +64,7 @@ func TestIdentityShape(t *testing.T) {
 		t.Fatal("6 focus entries must grow the card to 368 px")
 	}
 
-	cfg = profileConfig()
+	cfg = sample.Profile()
 	cfg.Profile.Location = ""
 	cfg.Profile.Note = ""
 	cfg.Profile.Name = ""
@@ -115,7 +87,7 @@ func TestIdentityEveryPresetAndAccent(t *testing.T) {
 		for _, acc := range []config.Accent{{Name: "ice"}, {Name: "cycle"}, {Dark: "#112233", Light: "#445566"}} {
 			for _, mode := range []render.Mode{render.Dark, render.Light} {
 				for _, motion := range []bool{true, false} {
-					cfg := profileConfig()
+					cfg := sample.Profile()
 					cfg.Render.Theme.Preset = preset
 					cfg.Render.Theme.Accent = acc
 					cfg.Render.Motion = motion
@@ -128,12 +100,12 @@ func TestIdentityEveryPresetAndAccent(t *testing.T) {
 
 func TestIdentityRejectsBadInput(t *testing.T) {
 	var buf bytes.Buffer
-	if err := render.IdentitySVG(&buf, sampleReport(), profileConfig(), "sepia"); err == nil {
+	if err := render.IdentitySVG(&buf, sample.Report(), sample.Profile(), "sepia"); err == nil {
 		t.Fatal("unknown mode must fail")
 	}
-	cfg := profileConfig()
+	cfg := sample.Profile()
 	cfg.Profile.Focus = []config.Focus{}
-	if err := render.IdentitySVG(&buf, sampleReport(), cfg, render.Dark); err == nil {
+	if err := render.IdentitySVG(&buf, sample.Report(), cfg, render.Dark); err == nil {
 		t.Fatal("invalid profile must fail")
 	}
 }
@@ -141,7 +113,7 @@ func TestIdentityRejectsBadInput(t *testing.T) {
 func TestGoldenWideStats(t *testing.T) {
 	for _, mode := range []render.Mode{render.Dark, render.Light} {
 		t.Run(string(mode), func(t *testing.T) {
-			svg := renderSVG(t, sampleReport(), wideConfig(), mode)
+			svg := renderSVG(t, sample.Report(), sample.WideRender(), mode)
 			assertWellFormed(t, svg)
 			if !strings.Contains(svg, `viewBox="0 0 1000 `) || !strings.Contains(svg, `translate(505 0)`) {
 				t.Fatal("wide layout shape missing")
@@ -155,21 +127,21 @@ func TestWideLayoutVariants(t *testing.T) {
 	for _, blocks := range [][]config.Block{
 		{{Name: "languages", Variants: []string{"bars"}}},
 		{{Name: "stats", Variants: []string{"totals"}}, {Name: "history", Variants: []string{"views"}}},
-		allBlocks,
+		sample.AllBlocks(),
 	} {
 		for _, motion := range []bool{true, false} {
-			cfg := wideConfig()
+			cfg := sample.WideRender()
 			cfg.Blocks = blocks
 			cfg.Motion = motion
-			assertWellFormed(t, renderSVG(t, sampleReport(), cfg, render.Dark))
+			assertWellFormed(t, renderSVG(t, sample.Report(), cfg, render.Dark))
 		}
 	}
 }
 
 func TestAccentSharedAcrossCards(t *testing.T) {
-	stats := renderSVG(t, sampleReport(), fullConfig(), render.Dark)
-	wide := renderSVG(t, sampleReport(), wideConfig(), render.Dark)
-	ident := renderIdentity(t, profileConfig(), render.Dark)
+	stats := renderSVG(t, sample.Report(), sample.FullRender(), render.Dark)
+	wide := renderSVG(t, sample.Report(), sample.WideRender(), render.Dark)
+	ident := renderIdentity(t, sample.Profile(), render.Dark)
 	css := func(svg string) string {
 		i := strings.Index(svg, "@property")
 		j := strings.Index(svg, "@keyframes gsaccent")
@@ -186,7 +158,7 @@ func TestAccentSharedAcrossCards(t *testing.T) {
 }
 
 func TestGoldenBadges(t *testing.T) {
-	cfg := profileConfig()
+	cfg := sample.Profile()
 	for _, l := range cfg.Profile.ResolvedLinks() {
 		t.Run(l.Kind, func(t *testing.T) {
 			var buf bytes.Buffer
@@ -245,7 +217,7 @@ func TestBadgeThemeAndEscaping(t *testing.T) {
 }
 
 func TestSnippet(t *testing.T) {
-	cfg := profileConfig()
+	cfg := sample.Profile()
 	cfg.Profile.Links = []config.Link{
 		{Kind: "website", Value: "https://miralabs.tech"},
 		{Kind: "twitch", Value: ""},

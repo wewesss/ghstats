@@ -29,23 +29,23 @@ type Config struct {
 	Languages    Languages    `yaml:"languages"`
 	Distribution Distribution `yaml:"distribution"`
 	Render       Render       `yaml:"render"`
-	Profile      Profile      `yaml:"profile"`
+	Profile      Profile      `yaml:"profile,omitempty"`
 }
 
 type Scope struct {
-	Owners          []string           `yaml:"owners"`
+	Owners          []string           `yaml:"owners,omitempty"`
 	IncludeForks    bool               `yaml:"include_forks"`
 	IncludeArchived bool               `yaml:"include_archived"`
 	IncludePrivate  bool               `yaml:"include_private"`
-	ExcludeRepos    []string           `yaml:"exclude_repos"`
-	RepoWeights     map[string]float64 `yaml:"repo_weights"`
+	ExcludeRepos    []string           `yaml:"exclude_repos,omitempty"`
+	RepoWeights     map[string]float64 `yaml:"repo_weights,omitempty"`
 }
 
 type Languages struct {
 	Mode        string             `yaml:"mode"`
-	Weights     map[string]float64 `yaml:"weights"`
-	Exclude     []string           `yaml:"exclude"`
-	Hide        []string           `yaml:"hide"`
+	Weights     map[string]float64 `yaml:"weights,omitempty"`
+	Exclude     []string           `yaml:"exclude,omitempty"`
+	Hide        []string           `yaml:"hide,omitempty"`
 	HiddenShare string             `yaml:"hidden_share"`
 	MaxVisible  int                `yaml:"max_visible"`
 	OtherLabel  string             `yaml:"other_label"`

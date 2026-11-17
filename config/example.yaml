@@ -42,3 +42,24 @@ distribution:
   release_assets: true
   clones: true
   views: true
+
+render:
+  # Blocks are stacked in this order. One variant is fixed, several rotate in place.
+  blocks:
+    - stats: [totals, distribution]
+    - languages: [bars, iso, cells, treemap, shift, terminal]
+    - history: [views, clones]
+  # Replace the names of private repositories with a black bar.
+  private_bar: true
+  languages:
+    # accent | github | mono | spectrum | duotone | a map such as {TypeScript: "#3178c6"}
+    colors: accent
+  theme:
+    # noir | carbon | graphite | midnight | slate | dune | transparent
+    preset: noir
+    # ice | mint | amber | silver | violet | rose | lime | coral | cycle | {dark: "#9ec5ff", light: "#2457c5"}
+    accent: ice
+    # Optional keys: bg, border, fg, muted, faint ("#rrggbb", or "none" for bg).
+    overrides: {}
+  # false turns every animation off.
+  motion: true

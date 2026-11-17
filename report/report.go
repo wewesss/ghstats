@@ -28,6 +28,7 @@ type Report struct {
 	Totals        Totals    `json:"totals"`
 	Languages     Languages `json:"languages"`
 	Distribution  []Metric  `json:"distribution"`
+	Trends        []Trend   `json:"trends"`
 	Warnings      []string  `json:"warnings"`
 }
 
@@ -54,6 +55,16 @@ type LangShare struct {
 	Bytes    int64   `json:"bytes"`
 	Weighted float64 `json:"weighted"`
 	Share    float64 `json:"share"`
+}
+
+type Trend struct {
+	Channel string      `json:"channel"`
+	Weeks   []WeekCount `json:"weeks"`
+}
+
+type WeekCount struct {
+	Start string `json:"start"`
+	Count int64  `json:"count"`
 }
 
 type Metric struct {

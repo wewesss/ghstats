@@ -24,6 +24,7 @@ jobs:
       - name: Check the showcase is up to date
         run: |
           go run ./tools/showcase
+          git add -N showcase/
           git diff --exit-code showcase/
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 

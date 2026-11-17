@@ -1,3 +1,5 @@
+<p align="center"><img src=".github/assets/logo.svg" alt="" width="56" height="56"></p>
+
 <h1 align="center">ghstats</h1>
 
 <p align="center">
@@ -11,7 +13,7 @@
 
 [English](./README.md) · Français
 
-[Prise en main](./docs/fr/guide/getting-started.md) · [Configuration](./docs/fr/guide/configuration.md) · [Action GitHub](./docs/fr/guide/action.md) · [Cartes](./docs/fr/cards/gallery.md) · [Confidentialité](./docs/fr/guide/privacy.md) · [Changelog](./CHANGELOG.md)
+[Prise en main](./docs/fr/guide/getting-started.md) · [Configuration](./docs/fr/guide/configuration.md) · [Action GitHub](./docs/fr/guide/action.md) · [Cartes](./docs/fr/cards/gallery.md) · [Confidentialité](./docs/fr/guide/privacy.md) · [Changelog](./CHANGELOG.md) · [FAQ](./FAQ.fr.md) · [Contribuer](./CONTRIBUTING.fr.md) · [Sécurité](./SECURITY.md)
 
 ---
 

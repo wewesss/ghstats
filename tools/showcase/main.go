@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/wewesss/ghstats/config"
@@ -89,15 +90,49 @@ func build() (map[string]string, error) {
 		}
 		files[fmt.Sprintf("identity-%s.svg", mode)] = svg
 
-		for _, l := range profile.Profile.ResolvedLinks() {
-			svg, err := svgString(func(sb *strings.Builder) error { return render.LinkBadgeSVG(sb, l, profile.Render.Theme, mode) })
-			if err != nil {
-				return nil, err
+		for _, style := range []string{config.LinkStyleFull, config.LinkStyleIcon, config.LinkStyleText} {
+			for _, l := range resolve(profile, sample.AllLinks(), style) {
+				name := fmt.Sprintf("badges/%s-%s.svg", l.Kind, mode)
+				if style != config.LinkStyleFull {
+					if !slices.Contains(styleKinds, l.Kind) {
+						continue
+					}
+					name = fmt.Sprintf("badges/styles/%s-%s-%s.svg", l.Kind, style, mode)
+				}
+				if err := addBadge(files, name, l, profile.Render.Theme, mode); err != nil {
+					return nil, err
+				}
 			}
-			files[fmt.Sprintf("badges/%s-%s.svg", l.Kind, mode)] = svg
+		}
+
+		variants := sample.CustomLinks()
+		for _, variant := range []string{"named", "path", "none"} {
+			for _, l := range resolve(profile, []config.Link{variants[variant]}, config.LinkStyleFull) {
+				if err := addBadge(files, fmt.Sprintf("badges/custom/%s-%s.svg", variant, mode), l, profile.Render.Theme, mode); err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 	return files, nil
+}
+
+var styleKinds = []string{"youtube", "discord", "github_sponsors"}
+
+func resolve(cfg config.Config, links []config.Link, style string) []config.ResolvedLink {
+	p := cfg.Profile
+	p.Links = links
+	p.LinkStyle = style
+	return p.ResolvedLinks()
+}
+
+func addBadge(files map[string]string, name string, l config.ResolvedLink, th config.Theme, mode render.Mode) error {
+	svg, err := svgString(func(sb *strings.Builder) error { return render.LinkBadgeSVG(sb, l, th, mode) })
+	if err != nil {
+		return err
+	}
+	files[name] = svg
+	return nil
 }
 
 func svgString(f func(sb *strings.Builder) error) (string, error) {

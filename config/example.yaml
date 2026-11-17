@@ -81,12 +81,16 @@ render:
 #       building: [full-stack apps, desktop software]
 #     - name: GAMES
 #       building: [gameplay systems, game engines]
+#   link_style: full                 # full (icon + label), icon (icon only) or text (label only)
 #   links:                           # kept in this order; an empty value is skipped
 #     - youtube: "@octocat"          # a handle or a full https:// URL
 #     - website: https://example.com # website, mastodon and steam need a full URL
 #     - discord: {url: "https://discord.com/invite/xyz", label: discord}
 #     - github_sponsors: octocat
+#     - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}
 #     - twitch: ""
 #   # kinds: youtube twitch kick discord tiktok instagram x bluesky threads mastodon
 #   #        reddit linkedin steam itchio website github_sponsors open_collective
-#   #        buy_me_a_coffee ko_fi patreon
+#   #        buy_me_a_coffee ko_fi patreon custom
+#   # custom needs the map form with url and label; icon (optional) is a kind
+#   # name or an SVG path starting with M (24x24 viewBox); only one custom link.

@@ -52,6 +52,42 @@ func Profile() config.Config {
 	return c
 }
 
+const customIconPath = "M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.8 5.5 21l2-7.5L2 9h7z"
+
+func AllLinks() []config.Link {
+	return []config.Link{
+		{Kind: "youtube", Value: "@ghstats-demo"},
+		{Kind: "twitch", Value: "ghstats-demo"},
+		{Kind: "kick", Value: "ghstats-demo"},
+		{Kind: "discord", Value: "ghstats-demo"},
+		{Kind: "tiktok", Value: "@ghstats-demo"},
+		{Kind: "instagram", Value: "ghstats-demo"},
+		{Kind: "x", Value: "ghstats-demo"},
+		{Kind: "bluesky", Value: "ghstats-demo.bsky.social"},
+		{Kind: "threads", Value: "ghstats-demo"},
+		{Kind: "mastodon", Value: "https://example.com/@ghstats-demo"},
+		{Kind: "reddit", Value: "ghstats-demo"},
+		{Kind: "linkedin", Value: "ghstats-demo"},
+		{Kind: "steam", Value: "https://example.com/steam/ghstats-demo"},
+		{Kind: "itchio", Value: "ghstats-demo"},
+		{Kind: "website", Value: "https://example.com"},
+		{Kind: "github_sponsors", Value: "ghstats-demo"},
+		{Kind: "open_collective", Value: "ghstats-demo"},
+		{Kind: "buy_me_a_coffee", Value: "ghstats-demo"},
+		{Kind: "ko_fi", Value: "ghstats-demo"},
+		{Kind: "patreon", Value: "ghstats-demo"},
+		CustomLinks()["path"],
+	}
+}
+
+func CustomLinks() map[string]config.Link {
+	return map[string]config.Link{
+		"named": {Kind: config.KindCustom, Value: "https://example.com/blog", Label: "my blog", Icon: "youtube"},
+		"path":  {Kind: config.KindCustom, Value: "https://example.com/blog", Label: "my blog", Icon: customIconPath},
+		"none":  {Kind: config.KindCustom, Value: "https://example.com/blog", Label: "my blog"},
+	}
+}
+
 func i64(v int64) *int64 { return &v }
 
 func lang(name string, share float64) report.LangShare {

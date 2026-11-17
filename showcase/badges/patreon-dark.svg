@@ -1,0 +1,4 @@
+<svg viewBox="0 0 150 40" width="150" height="40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="patreon">
+    <rect x=".5" y=".5" width="149" height="39" rx="8" fill="#0b0c0f" stroke="#1f2329"/><g transform="translate(15 11) scale(.75)"><path d="M22.957 7.21c-.004-3.064-2.391-5.576-5.191-6.482-3.478-1.125-8.064-.962-11.384.604C2.357 3.231 1.093 7.391 1.046 11.54c-.039 3.411.302 12.396 5.369 12.46 3.765.047 4.326-4.804 6.068-7.141 1.24-1.662 2.836-2.132 4.801-2.618 3.376-.836 5.678-3.501 5.673-7.031Z" fill="#e6e8eb"/></g>
+    <line x1="42" x2="42" y1="10" y2="30" stroke="#1f2329"/>
+    <text x="52" y="25" font-family="ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace" font-size="12" font-weight="400" fill="#e6e8eb" text-anchor="start">ghstats-demo</text></svg>

@@ -12,6 +12,7 @@ import (
 const (
 	identityWidth = 1000.0
 	identitySlot  = 3
+	monoAdvance   = 0.6
 )
 
 func IdentitySVG(w io.Writer, r report.Report, cfg config.Config, mode Mode) error {
@@ -55,7 +56,7 @@ func identityCard(r report.Report, cfg config.Config, mode Mode) string {
 	cycle := len(words) * identitySlot
 
 	var styles []string
-	styles = append(styles, ".gs .word{opacity:0}.gs .word0{opacity:1}.gs .dom{opacity:.32}.gs .dom0{opacity:1}.gs .domdot{opacity:0}.gs .domdot0{opacity:1}")
+	styles = append(styles, ".gs .word{opacity:0}.gs .word0{opacity:1}.gs .dom{opacity:.5}.gs .dom0{opacity:1}.gs .domdot{opacity:0}.gs .domdot0{opacity:1}")
 	if rc.Motion {
 		styles = append(styles, motionCSS()...)
 		styles = append(styles, fmt.Sprintf(".%s .fade{animation:%sifade .8s cubic-bezier(.2,.7,.2,1) backwards}@keyframes %sifade{from{opacity:0;transform:translateY(5px)}}", prefix, prefix, prefix))
@@ -71,7 +72,7 @@ func identityCard(r report.Report, cfg config.Config, mode Mode) string {
 				}
 				seen[n] = true
 				d := 100 * float64(n) / float64(len(words))
-				styles = append(styles, fmt.Sprintf(".%s .dom%d{animation:%sidm%d %ds linear infinite backwards}@keyframes %sidm%d{0%%,%.2f%%{opacity:1}%.2f%%,100%%{opacity:.32}}",
+				styles = append(styles, fmt.Sprintf(".%s .dom%d{animation:%sidm%d %ds linear infinite backwards}@keyframes %sidm%d{0%%,%.2f%%{opacity:1}%.2f%%,100%%{opacity:.5}}",
 					prefix, n, prefix, n, cycle, prefix, n, d-.01, d))
 				styles = append(styles, fmt.Sprintf(".%s .domdot%d{animation:%sidd%d %ds linear infinite backwards}@keyframes %sidd%d{0%%,%.2f%%{opacity:1}%.2f%%,100%%{opacity:0}}",
 					prefix, n, prefix, n, cycle, prefix, n, d-.01, d))
@@ -84,7 +85,7 @@ func identityCard(r report.Report, cfg config.Config, mode Mode) string {
 	b = append(b, txt(float64(29+9*utf8.RuneCountInString(name)), 37, "/ profile", topt{fill: th.muted, size: 12, mono: true}))
 	dotX := W - 31
 	if p.Location != "" {
-		dotX = W - 150
+		dotX = W - 28 - 11*monoAdvance*float64(utf8.RuneCountInString(p.Location)) - 12
 	}
 	b = append(b, fmt.Sprintf(`<circle cx="%s" cy="33" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="33" r="3" fill="%s"/>`, num(dotX), acc, num(dotX), acc))
 	if p.Location != "" {
@@ -107,10 +108,10 @@ func identityCard(r report.Report, cfg config.Config, mode Mode) string {
 			if i == 0 {
 				cls = "word word0"
 			}
-			b = append(b, txt(156, 216, esc(wd), topt{fill: acc, size: 18, mono: true, cls: cls, delay: float64(i * identitySlot)}))
+			line := `<tspan fill-opacity="0">$ building </tspan>` + esc(wd) + `<tspan class="blink">_</tspan>`
+			b = append(b, txt(28, 216, line, topt{fill: acc, size: 18, mono: true, cls: cls, delay: float64(i * identitySlot)}))
 		}
-		b = append(b, fmt.Sprintf(`<rect class="blink" x="28" y="236" width="9" height="3" fill="%s"/>`, acc))
-		noteY = 252
+		noteY = 242
 	}
 	if p.Note != "" {
 		b = append(b, txt(28, noteY, esc(p.Note), topt{fill: th.muted, size: 12, mono: true}))
@@ -139,7 +140,7 @@ func identityCard(r report.Report, cfg config.Config, mode Mode) string {
 			b = append(b, txt(672, float64(y), fmt.Sprintf("%02d", i+1), topt{fill: th.muted, size: 11, mono: true}))
 			b = append(b, txt(700, float64(y), esc(f.Name), topt{fill: th.fg, size: 13, weight: 500, mono: true, ls: 1.2}))
 			b = append(b, `</g>`)
-			b = append(b, fmt.Sprintf(`<circle class="%s"%s cx="%s" cy="%d" r="3" fill="%s"/>`, dotCls, style, num(W-36), y-4, acc))
+			b = append(b, fmt.Sprintf(`<circle class="%s"%s cx="658" cy="%d" r="3" fill="%s"/>`, dotCls, style, y-4, acc))
 		}
 	}
 

@@ -233,13 +233,6 @@ func customColor(m map[string]string, name string) (string, bool) {
 	return "", false
 }
 
-func (rd *renderer) solid(c string) string {
-	if c == acc {
-		return rd.th.accent
-	}
-	return c
-}
-
 func (rd *renderer) emptyLanguages(title string) string {
 	return label(22, title, rd.th, esc(rd.rep.Languages.Mode)) +
 		txt(width/2, 130, "no language data yet", topt{fill: rd.th.muted, size: 11, mono: true, anchor: "middle"})
@@ -585,9 +578,6 @@ func (rd *renderer) iso(p string) string {
 		return rd.emptyLanguages("LANGUAGES · STACK")
 	}
 	cols := rd.langColors()
-	for i, c := range cols {
-		cols[i] = rd.solid(c)
-	}
 	var s strings.Builder
 	s.WriteString(rd.langLabel("LANGUAGES · STACK"))
 	const cx, cy, dx, dy, total, gap = 104.0, 196.0, 58.0, 33.0, 124.0, 2.0
@@ -606,8 +596,11 @@ func (rd *renderer) iso(p string) string {
 		top := join(pt(cx, cy-dy-sl.z1), pt(cx+dx, cy-sl.z1), pt(cx, cy+dy-sl.z1), pt(cx-dx, cy-sl.z1))
 		left := join(pt(cx-dx, cy-sl.z1), pt(cx, cy+dy-sl.z1), pt(cx, cy+dy-sl.z0), pt(cx-dx, cy-sl.z0))
 		right := join(pt(cx, cy+dy-sl.z1), pt(cx+dx, cy-sl.z1), pt(cx+dx, cy-sl.z0), pt(cx, cy+dy-sl.z0))
-		fmt.Fprintf(&s, `<g%s><polygon points="%s" fill="%s"/><polygon points="%s" fill="%s"/><polygon points="%s" fill="%s"/></g>`,
-			anim("drop", .15+float64(i)*.12), left, mixTo(c, [3]float64{0, 0, 0}, .12), right, mixTo(c, [3]float64{0, 0, 0}, .32), top, mixTo(c, [3]float64{255, 255, 255}, .14))
+		face := func(pts, shade string, op float64) string {
+			return fmt.Sprintf(`<polygon points="%s" fill="%s"/><polygon points="%s" fill="%s" fill-opacity="%g"/>`, pts, c, pts, shade, op)
+		}
+		fmt.Fprintf(&s, `<g%s>%s%s%s</g>`, anim("drop", .15+float64(i)*.12),
+			face(left, "#000000", .12), face(right, "#000000", .32), face(top, "#ffffff", .14))
 	}
 	const lx = 248.0
 	for k := range rd.rows {

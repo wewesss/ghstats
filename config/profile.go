@@ -22,12 +22,12 @@ const (
 )
 
 type Profile struct {
-	Name     string  `yaml:"name"`
-	Tagline  string  `yaml:"tagline"`
-	Location string  `yaml:"location"`
-	Note     string  `yaml:"note"`
-	Focus    []Focus `yaml:"focus"`
-	Links    []Link  `yaml:"links"`
+	Name     string  `yaml:"name,omitempty"`
+	Tagline  string  `yaml:"tagline,omitempty"`
+	Location string  `yaml:"location,omitempty"`
+	Note     string  `yaml:"note,omitempty"`
+	Focus    []Focus `yaml:"focus,omitempty"`
+	Links    []Link  `yaml:"links,omitempty"`
 }
 
 type Focus struct {
@@ -83,6 +83,10 @@ var linkKinds = map[string]linkKind{
 
 func LinkKinds() []string { return sortedKeys(linkKinds) }
 
+func LinkKindIsURLOnly(kind string) bool { return linkKinds[kind].urlOnly }
+
+func FocusLimits() (maxEntries, maxWords int) { return maxFocus, maxBuilding }
+
 func (l *Link) UnmarshalYAML(n *yaml.Node) error {
 	if n.Kind != yaml.MappingNode || len(n.Content) != 2 {
 		return fmt.Errorf("line %d: a link item must be a map with exactly one key (kind: handle or url)", n.Line)
@@ -116,6 +120,13 @@ func (l *Link) UnmarshalYAML(n *yaml.Node) error {
 		return nil
 	}
 	return fmt.Errorf("line %d: link %q must be a handle, a URL or a {url, label} map", val.Line, kind)
+}
+
+func (l Link) MarshalYAML() (any, error) {
+	if l.Label == "" {
+		return map[string]string{l.Kind: l.Value}, nil
+	}
+	return map[string]map[string]string{l.Kind: {"url": l.Value, "label": l.Label}}, nil
 }
 
 func (l Link) Empty() bool { return strings.TrimSpace(l.Value) == "" }

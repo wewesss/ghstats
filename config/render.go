@@ -26,6 +26,7 @@ var (
 		"languages": {"bars", "iso", "cells", "treemap", "shift", "terminal"},
 		"history":   {"views", "clones"},
 	}
+	blockOrder   = []string{"stats", "languages", "history"}
 	presets      = []string{"noir", "carbon", "graphite", "midnight", "slate", "dune", "transparent"}
 	accents      = []string{"ice", "mint", "amber", "silver", "violet", "rose", "lime", "coral", AccentCycle}
 	palettes     = []string{PaletteAccent, PaletteGitHub, PaletteMono, PaletteSpectrum, PaletteDuotone}
@@ -59,7 +60,7 @@ type Palette struct {
 type Theme struct {
 	Preset    string            `yaml:"preset"`
 	Accent    Accent            `yaml:"accent"`
-	Overrides map[string]string `yaml:"overrides"`
+	Overrides map[string]string `yaml:"overrides,omitempty"`
 }
 
 type Accent struct {
@@ -227,3 +228,37 @@ func validHex(s string) bool {
 	}
 	return true
 }
+
+func (b Block) MarshalYAML() (any, error) {
+	return map[string][]string{b.Name: b.Variants}, nil
+}
+
+func (p Palette) MarshalYAML() (any, error) {
+	if p.Custom != nil {
+		return p.Custom, nil
+	}
+	return p.Name, nil
+}
+
+func (a Accent) MarshalYAML() (any, error) {
+	if a.Name != "" {
+		return a.Name, nil
+	}
+	return map[string]string{"dark": a.Dark, "light": a.Light}, nil
+}
+
+func BlockVariants() []Block {
+	out := make([]Block, 0, len(blockOrder))
+	for _, name := range blockOrder {
+		out = append(out, Block{Name: name, Variants: slices.Clone(blockVariants[name])})
+	}
+	return out
+}
+
+func Presets() []string { return slices.Clone(presets) }
+
+func Accents() []string { return slices.Clone(accents) }
+
+func Palettes() []string { return slices.Clone(palettes) }
+
+func Layouts() []string { return []string{LayoutCard, LayoutWide} }

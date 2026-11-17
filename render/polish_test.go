@@ -9,10 +9,11 @@ import (
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/render"
 	"github.com/wewesss/ghstats/report"
+	"github.com/wewesss/ghstats/sample"
 )
 
 func historyReport(weekVals, dayVals []int64) report.Report {
-	r := sampleReport()
+	r := sample.Report()
 	trend := report.Trend{Channel: report.ChannelViews}
 	ws := time.Date(2026, 5, 25, 0, 0, 0, 0, time.UTC)
 	for i, v := range weekVals {
@@ -89,7 +90,7 @@ func TestHistoryTrimsYoungHistories(t *testing.T) {
 }
 
 func TestShiftDroppedWhenRawEqualsAdjusted(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	r.Languages.Display = r.Languages.Raw
 	r.Languages.Multipliers = nil
 
@@ -118,7 +119,7 @@ func TestShiftDroppedWhenRawEqualsAdjusted(t *testing.T) {
 	}
 
 	cfg.Blocks = []config.Block{{Name: "languages", Variants: []string{"shift"}}}
-	if svg := renderSVG(t, sampleReport(), cfg, render.Dark); !strings.Contains(svg, "RAW → ADJUSTED") {
+	if svg := renderSVG(t, sample.Report(), cfg, render.Dark); !strings.Contains(svg, "RAW → ADJUSTED") {
 		t.Fatal("shift dropped although raw and adjusted differ")
 	}
 }
@@ -127,7 +128,7 @@ func TestShiftStrokeWidthIsCapped(t *testing.T) {
 	cfg := config.DefaultRender()
 	cfg.Blocks = []config.Block{{Name: "languages", Variants: []string{"shift"}}}
 	cfg.Motion = false
-	svg := renderSVG(t, sampleReport(), cfg, render.Dark)
+	svg := renderSVG(t, sample.Report(), cfg, render.Dark)
 	if !strings.Contains(svg, `stroke-width="4.0"`) || strings.Contains(svg, `stroke-width="4.9"`) {
 		t.Fatal("a 31% curve is not capped at 4")
 	}
@@ -138,7 +139,7 @@ func TestShiftStrokeWidthIsCapped(t *testing.T) {
 
 func TestFoldedLanguagesAreNamedOther(t *testing.T) {
 	build := func(extra string) report.Report {
-		r := sampleReport()
+		r := sample.Report()
 		r.Languages.Raw, r.Languages.Display, r.Languages.Multipliers = nil, nil, nil
 		for _, n := range []string{"A1", "B2", "C3", "D4", "E5", "F6", "G7", "H8", "I9"} {
 			r.Languages.Raw = append(r.Languages.Raw, report.LangShare{Name: n, Share: .1})
@@ -166,7 +167,7 @@ func TestFoldedLanguagesAreNamedOther(t *testing.T) {
 var doubleStyleRe = regexp.MustCompile(`style="[^"]*"[^<>]*\sstyle="`)
 
 func TestCycleAccentUsesACustomProperty(t *testing.T) {
-	svg := renderSVG(t, sampleReport(), fullConfig(), render.Dark)
+	svg := renderSVG(t, sample.Report(), sample.FullRender(), render.Dark)
 	assertWellFormed(t, svg)
 	for _, want := range []string{
 		"@property --ghs-accent{syntax:'&lt;color&gt;';inherits:true;initial-value:#9ec5ff}",
@@ -188,9 +189,9 @@ func TestCycleAccentUsesACustomProperty(t *testing.T) {
 		t.Fatal("an element carries two style attributes")
 	}
 
-	cfg := fullConfig()
+	cfg := sample.FullRender()
 	cfg.Theme.Accent = config.Accent{Name: "mint"}
-	plain := renderSVG(t, sampleReport(), cfg, render.Dark)
+	plain := renderSVG(t, sample.Report(), cfg, render.Dark)
 	if strings.Contains(plain, "--ghs-accent") || strings.Contains(plain, "<animate") {
 		t.Fatal("a fixed accent uses the cycle machinery")
 	}

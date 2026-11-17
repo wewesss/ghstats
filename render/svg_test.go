@@ -17,69 +17,13 @@ import (
 	"github.com/wewesss/ghstats/history"
 	"github.com/wewesss/ghstats/render"
 	"github.com/wewesss/ghstats/report"
+	"github.com/wewesss/ghstats/sample"
 	"github.com/wewesss/ghstats/snapshot"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files")
 
-var allBlocks = []config.Block{
-	{Name: "stats", Variants: []string{"totals", "distribution"}},
-	{Name: "languages", Variants: []string{"bars", "iso", "cells", "treemap", "shift", "terminal"}},
-	{Name: "history", Variants: []string{"views", "clones"}},
-}
-
-func fullConfig() config.Render {
-	c := config.DefaultRender()
-	c.Blocks = allBlocks
-	c.Theme.Accent = config.Accent{Name: "cycle"}
-	return c
-}
-
 func i64(v int64) *int64 { return &v }
-
-func sampleReport() report.Report {
-	lang := func(name string, share float64) report.LangShare { return report.LangShare{Name: name, Share: share} }
-	weeks := func(vals ...int64) []report.WeekCount {
-		start := time.Date(2026, 5, 25, 0, 0, 0, 0, time.UTC)
-		out := make([]report.WeekCount, len(vals))
-		for i, v := range vals {
-			out[i] = report.WeekCount{Start: start.AddDate(0, 0, 7*i).Format("2006-01-02"), Count: v}
-		}
-		return out
-	}
-	return report.Report{
-		SchemaVersion: report.SchemaVersion,
-		GeneratedAt:   time.Date(2026, 11, 17, 10, 0, 0, 0, time.UTC),
-		CollectedAt:   time.Date(2026, 11, 17, 9, 0, 0, 0, time.UTC),
-		Login:         "wewesss",
-		Totals:        report.Totals{Repos: 42, PublicRepos: 31, PrivateRepos: 11, Stars: 128, Forks: 17, Followers: 56},
-		Languages: report.Languages{
-			Mode: "adjusted",
-			Raw: []report.LangShare{
-				lang("Lua", .317), lang("TypeScript", .246), lang("Go", .175), lang("Makefile", .087),
-				lang("Rust", .079), lang("Python", .056), lang("Shell", .04),
-			},
-			Display: []report.LangShare{
-				lang("TypeScript", .31), lang("Go", .22), lang("Lua", .14), lang("Rust", .10),
-				lang("Python", .07), lang("Shell", .05), lang("Other", .11),
-			},
-			Multipliers: map[string]float64{"Lua": 0.35},
-		},
-		Distribution: []report.Metric{
-			{Channel: report.ChannelReleaseAssets, Count: i64(3412), Window: report.WindowAllTime, Reliability: report.ReliabilityObserved},
-			{Channel: report.ChannelClones, Count: i64(287), Window: report.WindowLast14Days, Reliability: report.ReliabilityObserved},
-			{Channel: report.ChannelClones, Count: i64(900), Window: "since:2026-01-01", Reliability: report.ReliabilityObserved},
-			{Channel: report.ChannelViews, Count: i64(1905), Window: report.WindowLast14Days, Reliability: report.ReliabilityObserved},
-			{Channel: report.ChannelViews, Count: i64(5000), Window: "since:2026-01-01", Reliability: report.ReliabilityObserved},
-			{Channel: report.ChannelSourceArchives, Window: report.WindowAllTime, Reliability: report.ReliabilityUnavailable},
-		},
-		Trends: []report.Trend{
-			{Channel: report.ChannelClones, Weeks: weeks(8, 12, 9, 15, 11, 7, 14, 18, 13, 10, 21, 17, 12, 19, 25, 16, 14, 22, 28, 19, 17, 24, 31, 22, 27, 35)},
-			{Channel: report.ChannelViews, Weeks: weeks(42, 38, 51, 47, 60, 55, 49, 72, 66, 58, 81, 77, 69, 90, 84, 79, 102, 95, 88, 110, 97, 121, 115, 108, 134, 128)},
-		},
-		Warnings: []string{},
-	}
-}
 
 func renderSVG(t *testing.T, r report.Report, cfg config.Render, mode render.Mode) string {
 	t.Helper()
@@ -129,7 +73,7 @@ func golden(t *testing.T, name, got string) {
 }
 
 func TestGoldenCards(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	for _, mode := range []render.Mode{render.Dark, render.Light} {
 		t.Run("default-"+string(mode), func(t *testing.T) {
 			svg := renderSVG(t, r, config.DefaultRender(), mode)
@@ -137,7 +81,7 @@ func TestGoldenCards(t *testing.T) {
 			golden(t, "default-"+string(mode)+".svg", svg)
 		})
 		t.Run("full-"+string(mode), func(t *testing.T) {
-			svg := renderSVG(t, r, fullConfig(), mode)
+			svg := renderSVG(t, r, sample.FullRender(), mode)
 			assertWellFormed(t, svg)
 			golden(t, "full-"+string(mode)+".svg", svg)
 		})
@@ -145,7 +89,7 @@ func TestGoldenCards(t *testing.T) {
 }
 
 func TestGoldenLanguageVariants(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	for _, v := range []string{"bars", "iso", "cells", "treemap", "shift", "terminal"} {
 		t.Run(v, func(t *testing.T) {
 			cfg := config.DefaultRender()
@@ -159,7 +103,7 @@ func TestGoldenLanguageVariants(t *testing.T) {
 }
 
 func TestEveryPresetPaletteAndMode(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	presets := []string{"noir", "carbon", "graphite", "midnight", "slate", "dune", "transparent"}
 	palettes := []config.Palette{
 		{Name: "accent"}, {Name: "github"}, {Name: "mono"}, {Name: "spectrum"}, {Name: "duotone"},
@@ -170,7 +114,7 @@ func TestEveryPresetPaletteAndMode(t *testing.T) {
 			for _, mode := range []render.Mode{render.Dark, render.Light} {
 				for _, motion := range []bool{true, false} {
 					t.Run(fmt.Sprintf("%s/%d/%s/%v", preset, i, mode, motion), func(t *testing.T) {
-						cfg := fullConfig()
+						cfg := sample.FullRender()
 						cfg.Theme.Preset = preset
 						cfg.Languages.Colors = pal
 						cfg.Motion = motion
@@ -183,14 +127,14 @@ func TestEveryPresetPaletteAndMode(t *testing.T) {
 }
 
 func TestEveryAccent(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	accents := []config.Accent{
 		{Name: "ice"}, {Name: "mint"}, {Name: "amber"}, {Name: "silver"}, {Name: "violet"}, {Name: "rose"}, {Name: "lime"}, {Name: "coral"},
 		{Name: "cycle"}, {Dark: "#112233", Light: "#445566"},
 	}
 	for _, a := range accents {
 		for _, mode := range []render.Mode{render.Dark, render.Light} {
-			cfg := fullConfig()
+			cfg := sample.FullRender()
 			cfg.Theme.Accent = a
 			cfg.Languages.Colors = config.Palette{Name: "duotone"}
 			assertWellFormed(t, renderSVG(t, r, cfg, mode))
@@ -201,20 +145,20 @@ func TestEveryAccent(t *testing.T) {
 func TestOverridesApplyLast(t *testing.T) {
 	cfg := config.DefaultRender()
 	cfg.Theme.Overrides = map[string]string{"bg": "#123456", "border": "#abcdef", "fg": "#fedcba"}
-	svg := renderSVG(t, sampleReport(), cfg, render.Dark)
+	svg := renderSVG(t, sample.Report(), cfg, render.Dark)
 	for _, want := range []string{`fill="#123456"`, `stroke="#abcdef"`, `fill="#fedcba"`} {
 		if !strings.Contains(svg, want) {
 			t.Fatalf("missing %s", want)
 		}
 	}
 	cfg.Theme.Overrides = map[string]string{"bg": "none"}
-	if svg := renderSVG(t, sampleReport(), cfg, render.Dark); !strings.Contains(svg, `rx="10" fill="none"`) {
+	if svg := renderSVG(t, sample.Report(), cfg, render.Dark); !strings.Contains(svg, `rx="10" fill="none"`) {
 		t.Fatal("bg none not applied")
 	}
 }
 
 func TestAnimationRules(t *testing.T) {
-	svg := renderSVG(t, sampleReport(), fullConfig(), render.Dark)
+	svg := renderSVG(t, sample.Report(), sample.FullRender(), render.Dark)
 	for _, want := range []string{
 		"@media (prefers-reduced-motion: reduce)",
 		"animation-name:gsb1fade_200;animation-delay:0s",
@@ -229,9 +173,9 @@ func TestAnimationRules(t *testing.T) {
 		}
 	}
 
-	cfg := fullConfig()
+	cfg := sample.FullRender()
 	cfg.Motion = false
-	still := renderSVG(t, sampleReport(), cfg, render.Dark)
+	still := renderSVG(t, sample.Report(), cfg, render.Dark)
 	for _, bad := range []string{"@keyframes", "prefers-reduced-motion", "<animate", `class="slide"`, `class="dot"`} {
 		if strings.Contains(still, bad) {
 			t.Fatalf("motion off still contains %q", bad)
@@ -243,7 +187,7 @@ func TestDataMapping(t *testing.T) {
 	cfg := config.DefaultRender()
 	cfg.Blocks = []config.Block{{Name: "stats", Variants: []string{"totals"}}, {Name: "languages", Variants: []string{"bars"}}}
 	cfg.Motion = false
-	svg := renderSVG(t, sampleReport(), cfg, render.Dark)
+	svg := renderSVG(t, sample.Report(), cfg, render.Dark)
 	for _, want := range []string{">128<", ">42<", ">17<", ">56<", "PRIVATE 11", "names hidden", "×0.35", ">31.0%<", "synced · 17 Nov", ">wewesss<", ">adjusted<"} {
 		if !strings.Contains(svg, want) {
 			t.Fatalf("missing %q", want)
@@ -251,11 +195,11 @@ func TestDataMapping(t *testing.T) {
 	}
 
 	cfg.PrivateBar = false
-	if svg := renderSVG(t, sampleReport(), cfg, render.Dark); strings.Contains(svg, "PRIVATE") {
+	if svg := renderSVG(t, sample.Report(), cfg, render.Dark); strings.Contains(svg, "PRIVATE") {
 		t.Fatal("private bar rendered while disabled")
 	}
 
-	r := sampleReport()
+	r := sample.Report()
 	r.Totals.PrivateRepos = 0
 	cfg.PrivateBar = true
 	if svg := renderSVG(t, r, cfg, render.Dark); strings.Contains(svg, "PRIVATE") {
@@ -264,7 +208,7 @@ func TestDataMapping(t *testing.T) {
 }
 
 func TestThousandsSeparator(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	r.Totals.Stars = 3412
 	r.Totals.Followers = 1234567
 	cfg := config.DefaultRender()
@@ -279,7 +223,7 @@ func TestDistributionShowsNotAvailable(t *testing.T) {
 	cfg := config.DefaultRender()
 	cfg.Blocks = []config.Block{{Name: "stats", Variants: []string{"distribution"}}}
 	cfg.Motion = false
-	svg := renderSVG(t, sampleReport(), cfg, render.Dark)
+	svg := renderSVG(t, sample.Report(), cfg, render.Dark)
 	if !strings.Contains(svg, ">3,412<") || !strings.Contains(svg, ">287<") || !strings.Contains(svg, ">1,905<") {
 		t.Fatal("distribution counts missing")
 	}
@@ -290,7 +234,7 @@ func TestDistributionShowsNotAvailable(t *testing.T) {
 		t.Fatal("source archives must not be shown")
 	}
 
-	r := sampleReport()
+	r := sample.Report()
 	r.Distribution = []report.Metric{
 		{Channel: report.ChannelClones, Window: report.WindowLast14Days, Reliability: report.ReliabilityUnavailable},
 		{Channel: report.ChannelViews, Count: i64(0), Window: report.WindowLast14Days, Reliability: report.ReliabilityUnavailable},
@@ -305,7 +249,7 @@ func TestDistributionShowsNotAvailable(t *testing.T) {
 }
 
 func TestMoreThanSevenLanguagesFoldIntoTheLastEntry(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	names := []string{"A1", "B2", "C3", "D4", "E5", "F6", "G7", "H8", "I9"}
 	r.Languages.Raw = nil
 	r.Languages.Display = nil
@@ -328,11 +272,11 @@ func TestMoreThanSevenLanguagesFoldIntoTheLastEntry(t *testing.T) {
 }
 
 func TestMissingDataRendersFramesNotNumbers(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	r.Languages = report.Languages{Mode: "raw"}
 	r.Trends = nil
 	r.Distribution = nil
-	svg := renderSVG(t, r, fullConfig(), render.Light)
+	svg := renderSVG(t, r, sample.FullRender(), render.Light)
 	assertWellFormed(t, svg)
 	if !strings.Contains(svg, "no language data yet") || !strings.Contains(svg, "no traffic data yet") {
 		t.Fatal("empty messages missing")
@@ -347,12 +291,12 @@ func TestEmptyReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, cfg := range []config.Render{config.DefaultRender(), fullConfig()} {
+	for _, cfg := range []config.Render{config.DefaultRender(), sample.FullRender()} {
 		for _, mode := range []render.Mode{render.Dark, render.Light} {
 			assertWellFormed(t, renderSVG(t, r, cfg, mode))
 		}
 	}
-	assertWellFormed(t, renderSVG(t, report.Report{}, fullConfig(), render.Dark))
+	assertWellFormed(t, renderSVG(t, report.Report{}, sample.FullRender(), render.Dark))
 	var buf bytes.Buffer
 	if err := render.JSON(&buf, r); err != nil {
 		t.Fatal(err)
@@ -361,27 +305,27 @@ func TestEmptyReport(t *testing.T) {
 
 func TestInvalidInputsAreRejected(t *testing.T) {
 	var buf bytes.Buffer
-	if err := render.SVG(&buf, sampleReport(), config.DefaultRender(), "sepia"); err == nil {
+	if err := render.SVG(&buf, sample.Report(), config.DefaultRender(), "sepia"); err == nil {
 		t.Fatal("unknown mode accepted")
 	}
 	bad := config.DefaultRender()
 	bad.Theme.Preset = "neon"
-	if err := render.SVG(&buf, sampleReport(), bad, render.Dark); err == nil {
+	if err := render.SVG(&buf, sample.Report(), bad, render.Dark); err == nil {
 		t.Fatal("invalid configuration accepted")
 	}
 }
 
 func TestTextIsEscaped(t *testing.T) {
-	r := sampleReport()
+	r := sample.Report()
 	r.Login = `a<b>&"c`
 	r.Languages.Display[0].Name = "C<&>"
 	r.Languages.Raw[1].Name = "C<&>"
-	assertWellFormed(t, renderSVG(t, r, fullConfig(), render.Dark))
+	assertWellFormed(t, renderSVG(t, r, sample.FullRender(), render.Dark))
 }
 
 func TestDeterministic(t *testing.T) {
-	r := sampleReport()
-	cfg := fullConfig()
+	r := sample.Report()
+	cfg := sample.FullRender()
 	cfg.Languages.Colors = config.Palette{Custom: map[string]string{"Go": "#00add8", "Rust": "#dea584"}}
 	first := renderSVG(t, r, cfg, render.Dark)
 	for range 5 {
@@ -393,7 +337,7 @@ func TestDeterministic(t *testing.T) {
 
 func TestJSON(t *testing.T) {
 	var a, b bytes.Buffer
-	r := sampleReport()
+	r := sample.Report()
 	if err := render.JSON(&a, r); err != nil {
 		t.Fatal(err)
 	}
@@ -438,7 +382,7 @@ func TestPrivateRepositoryNamesNeverLeak(t *testing.T) {
 		t.Fatalf("totals = %+v", r.Totals)
 	}
 	for _, mode := range []render.Mode{render.Dark, render.Light} {
-		svg := renderSVG(t, r, fullConfig(), mode)
+		svg := renderSVG(t, r, sample.FullRender(), mode)
 		assertWellFormed(t, svg)
 		if strings.Contains(svg, "secret-repo") {
 			t.Fatal("SVG leaks a private repository name")

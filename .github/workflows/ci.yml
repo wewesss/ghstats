@@ -19,6 +19,13 @@ jobs:
           check-latest: true
       - run: go vet ./...
       - run: go test -race ./...
+      - run: GOOS=js GOARCH=wasm go vet ./cmd/wasm
+      - run: GOOS=js GOARCH=wasm go build -o /dev/null ./cmd/wasm
+      - name: Check the showcase is up to date
+        run: |
+          go run ./tools/showcase
+          git add -N showcase/
+          git diff --exit-code showcase/
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
   action:

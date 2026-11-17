@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/google/go-github/v93/github"
 
 	"github.com/wewesss/ghstats/collect"
 	"github.com/wewesss/ghstats/snapshot"
@@ -22,6 +25,7 @@ type fake struct {
 	releasePages  map[string]map[string]any
 	trafficStatus map[string]int
 	trafficDelay  time.Duration
+	rateLimited   bool
 
 	graphQLCalls atomic.Int32
 	restCalls    atomic.Int32
@@ -93,6 +97,14 @@ func (f *fake) serveREST(w http.ResponseWriter, r *http.Request) {
 	}
 	if got := r.URL.Query().Get("per"); got != "day" {
 		f.t.Errorf("per = %q", got)
+	}
+	if f.rateLimited {
+		w.Header().Set("X-RateLimit-Limit", "60")
+		w.Header().Set("X-RateLimit-Remaining", "0")
+		w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10))
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"message":"API rate limit exceeded"}`)
+		return
 	}
 	if status := f.trafficStatus[parts[1]+"/"+parts[2]]; status != 0 {
 		w.WriteHeader(status)
@@ -363,5 +375,27 @@ func TestCollectRespectsConcurrency(t *testing.T) {
 	}
 	if got := f.maxInflight.Load(); got < 1 || got > limit {
 		t.Fatalf("max in-flight = %d, want within [1, %d]", got, limit)
+	}
+}
+
+func TestCollectRateLimitStopsRemainingTraffic(t *testing.T) {
+	f := newFake(t)
+	f.rateLimited = true
+	var nodes []map[string]any
+	for i := range 20 {
+		nodes = append(nodes, repoNode(fmt.Sprintf("R_%02d", i), fmt.Sprintf("me/r%02d", i), nil))
+	}
+	f.repoPages = map[string]map[string]any{"": repoPage(false, "", nodes...)}
+
+	_, err := run(t, f, collect.Options{Traffic: true, Concurrency: 1})
+	var rl *github.RateLimitError
+	if !errors.As(err, &rl) {
+		t.Fatalf("err = %v, want *github.RateLimitError", err)
+	}
+	if errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, must not be a bare cancellation", err)
+	}
+	if got := f.restCalls.Load(); got != 1 {
+		t.Fatalf("REST calls = %d, want 1", got)
 	}
 }

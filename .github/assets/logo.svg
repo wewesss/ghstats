@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <g fill="#5d6570" stroke="#69727d" stroke-width=".75" stroke-linejoin="round"><polygon points="6,31 24,40 24,45 6,36"/><polygon points="24,40 42,31 42,36 24,45"/><polygon points="24,22 42,31 24,40 6,31"/></g>
+  <polygon points="6,31 24,40 24,45 6,36" fill="#000" fill-opacity=".12"/><polygon points="24,40 42,31 42,36 24,45" fill="#000" fill-opacity=".32"/><polygon points="24,22 42,31 24,40 6,31" fill="#fff" fill-opacity=".14"/>
+  <g fill="#8a929c" stroke="#69727d" stroke-width=".75" stroke-linejoin="round"><polygon points="6,22 24,31 24,36 6,27"/><polygon points="24,31 42,22 42,27 24,36"/><polygon points="24,13 42,22 24,31 6,22"/></g>
+  <polygon points="6,22 24,31 24,36 6,27" fill="#000" fill-opacity=".12"/><polygon points="24,31 42,22 42,27 24,36" fill="#000" fill-opacity=".32"/><polygon points="24,13 42,22 24,31 6,22" fill="#fff" fill-opacity=".14"/>
+  <g fill="#9ec5ff" stroke="#69727d" stroke-width=".75" stroke-linejoin="round"><polygon points="6,13 24,22 24,27 6,18"/><polygon points="24,22 42,13 42,18 24,27"/><polygon points="24,4 42,13 24,22 6,13"/></g>
+  <polygon points="6,13 24,22 24,27 6,18" fill="#000" fill-opacity=".12"/><polygon points="24,22 42,13 42,18 24,27" fill="#000" fill-opacity=".32"/><polygon points="24,4 42,13 24,22 6,13" fill="#fff" fill-opacity=".14"/>
+</svg>

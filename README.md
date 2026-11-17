@@ -1,125 +1,46 @@
-# ghstats
+<h1 align="center">ghstats</h1>
 
-GitHub statistics engine in Go. It collects your repositories, languages, releases and traffic, keeps the traffic history beyond GitHub's 14 days, and renders a JSON report plus dark and light SVG cards for a profile README.
+<p align="center">
+  <a href="https://github.com/wewesss/ghstats/actions/workflows/ci.yml"><img src="https://github.com/wewesss/ghstats/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/wewesss/ghstats/releases"><img src="https://img.shields.io/github/v/release/wewesss/ghstats" alt="Latest release"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+  <a href="./go.mod"><img src="https://img.shields.io/github/go-mod/go-version/wewesss/ghstats" alt="Go version"></a>
+</p>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="render/testdata/full-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="render/testdata/full-light.svg">
-  <img alt="ghstats card" src="render/testdata/full-dark.svg">
-</picture>
+> "A GitHub statistics engine that renders dark and light SVG cards for your profile README and keeps your traffic history beyond 14 days."
 
-## Features
+English · [Français](./README.fr.md)
 
-- Blocks `stats`, `languages` and `history`, each with several variants; listing several variants makes them rotate in place.
-- Seven theme presets and nine accents, including `cycle`, or fully custom colors.
-- Language palettes: `accent`, `github`, `mono`, `spectrum`, `duotone`, or your own map.
-- Raw and adjusted language shares: per-language weights, per-repository weights, `exclude`, `hide`, and `hidden_share` (`other` or `renormalize`).
-- Traffic history (views and clones) accumulated beyond the 14 days GitHub keeps.
-- Privacy: no private repository name appears in any output.
-- Reduced-motion support, and `motion: false` to turn every animation off.
+[Getting started](./docs/en/guide/getting-started.md) · [Configuration](./docs/en/guide/configuration.md) · [GitHub Action](./docs/en/guide/action.md) · [Cards](./docs/en/cards/gallery.md) · [Privacy](./docs/en/guide/privacy.md) · [Changelog](./CHANGELOG.md)
 
-## Token
+---
 
-Use a fine-grained personal access token:
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="showcase/identity-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="showcase/identity-light.svg">
+    <img alt="The ghstats identity card" src="showcase/identity-dark.svg" width="100%">
+  </picture>
+</p>
 
-- Resource owner: your account, with access to all repositories.
-- Repository permissions, read-only: Metadata, Contents, Administration (needed for traffic).
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="showcase/wide-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="showcase/wide-light.svg">
+    <img alt="The ghstats wide stats card" src="showcase/wide-dark.svg" width="100%">
+  </picture>
+</p>
 
-A fine-grained token covers a single owner, so organization repositories get no traffic data. Use one token per organization, or a classic token with the `repo` scope.
+## What is ghstats?
 
-`ghstats collect` reads `GHSTATS_TOKEN`, then `GITHUB_TOKEN`.
+ghstats collects your repositories, languages, releases and traffic through the GitHub API, computes a report, and renders `stats.json` plus dark and light SVG cards. The traffic history (views and clones) is accumulated beyond the 14 days GitHub keeps.
 
-## CLI
+It ships as a composite GitHub Action and as a CLI. A scheduled workflow refreshes the cards in your profile repository, and the raw data, which contains private repository names, stays in a private repository. No private repository name appears in any output.
 
-Install with Go or download a release archive from the [releases page](https://github.com/wewesss/ghstats/releases):
+## Quick start
 
-```sh
-go install github.com/wewesss/ghstats/cmd/ghstats@latest
-```
-
-```sh
-ghstats collect [--out data/snapshots] [--history data/history.json] [--no-traffic] [--concurrency N] [--keep N]
-ghstats compute --snapshot <file> --history <file> --out <report.json> [--config <file>]
-ghstats render  --report <report.json> --out-dir <dir> [--config <file>]
-ghstats version
-```
-
-- `collect` writes `snapshot-<timestamp>.json` into `--out`, merges it into the history file and prints the snapshot path. With `--keep N` (N > 0) only the N most recent `snapshot-*.json` files of `--out` are kept; `0`, the default, keeps them all.
-- `compute` turns a snapshot and a history into `report.json`.
-- `render` writes `stats.json`, `stats-dark.svg` and `stats-light.svg` into `--out-dir`, plus the profile files described under [Profile cards](#profile-cards) when the configuration asks for them, and `README.snippet.md`.
-
-Exit codes: `0` success, `1` runtime error, `2` usage error.
-
-## Configuration
-
-Every key except `version` is optional. See [`config/example.yaml`](config/example.yaml) for the complete file. The `render` keys:
-
-| Key | Allowed values |
-| --- | --- |
-| `render.blocks` | list of `block: [variants]`: `stats`: `totals`, `distribution`; `languages`: `bars`, `iso`, `cells`, `treemap`, `shift`, `terminal`; `history`: `views`, `clones` |
-| `render.private_bar` | `true` or `false` |
-| `render.languages.colors` | `accent`, `github`, `mono`, `spectrum`, `duotone`, or a map of language to `"#rrggbb"` |
-| `render.theme.preset` | `noir`, `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent` |
-| `render.theme.accent` | `ice`, `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, or `{dark: "#rrggbb", light: "#rrggbb"}` |
-| `render.theme.overrides` | keys `bg`, `border`, `fg`, `muted`, `faint` as `"#rrggbb"` (`bg` also accepts `none`) |
-| `render.motion` | `true` or `false` |
-| `render.layout` | `card` (495 px, default) or `wide` (1000 px, `languages` in a right column, the other blocks stacked on the left) |
-| `render.base_path` | prefix of every path written in `README.snippet.md`, ending with `/` (default `ghstats/`) |
-
-## Profile cards
-
-An optional `profile` section adds an identity card and one small badge per link. Everything follows the `render.theme`, so presets, accents (including `cycle`, kept in sync across all cards) and overrides apply to every file.
-
-```yaml
-profile:
-  name: octocat                    # default: the report login
-  tagline: SOFTWARE · GAMES · EXPERIMENTS
-  location: caen, fr               # optional
-  note: no fixed stack, it depends on what I'm making   # optional
-  focus:                           # 1 to 6 entries, each with 1 to 4 building words
-    - name: WEB & DESKTOP
-      building: [full-stack apps, desktop software]
-    - name: GAMES
-      building: [gameplay systems, game engines]
-  links:                           # kept in this order; an empty value is skipped
-    - youtube: "@octocat"          # a handle or a full https:// URL
-    - website: https://example.com
-    - discord: {url: "https://discord.com/invite/xyz", label: discord}
-    - github_sponsors: octocat
-render:
-  layout: wide
-  base_path: ghstats/
-```
-
-Link kinds: `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`. A value is a handle (a leading `@` is optional) or a full `https://` URL; `mastodon`, `steam` and `website` need a full URL. The map form `{url, label}` overrides the label.
-
-`ghstats render` writes, next to the stats files:
-
-- `identity-dark.svg` and `identity-light.svg`, when `profile` has at least `focus` or `tagline`. The `building` words rotate every 3 seconds and the matching focus row lights up; with `motion: false` or reduced motion the first word and first row are shown.
-- `links/<kind>-dark.svg` and `links/<kind>-light.svg` for each non-empty link. ghstats does not delete the files of a link you remove from the configuration.
-- `README.snippet.md`: the identity `<picture>` (when generated), the stats `<picture>`, then a centered row with one `<a href="URL"><picture>…</picture></a>` per link, in configuration order. Every path is prefixed with `render.base_path`. Paste it into your profile README.
-
-A link is clickable only when its badge is a separate image wrapped in its own `<a>`, which is why each link is its own SVG file and not part of the identity card. Commit the whole output directory (`git add ghstats`) so the badges and the identity card are published with the stats cards.
-
-The badge icons come from [Simple Icons](https://simpleicons.org) (CC0 1.0). The brand logos remain the property of their respective owners.
-
-## GitHub Action
-
-The repository is a composite Action for Linux and macOS runners.
-
-| Input | Default | Description |
-| --- | --- | --- |
-| `token` | required | Personal access token used to collect. |
-| `version` | empty | Release tag to download. Empty: the tag the action is pinned to (`@v1` takes the newest v1.x.y), or the latest release when the ref is a branch or SHA. `latest` forces the latest release. |
-| `config` | `ghstats.yaml` | Configuration file, ignored when the file is missing. |
-| `data-dir` | `ghstats-data` | Directory holding `snapshots/` and `history.json`. |
-| `output-dir` | `ghstats` | Directory receiving the cards and `README.snippet.md`. |
-| `traffic` | `true` | Set to `false` to skip the traffic API calls. |
-| `keep-snapshots` | `30` | Number of snapshots kept in `data-dir/snapshots`; `0` keeps them all. |
-
-Outputs: `snapshot` and `report`.
-
-Example workflow for a `<user>/<user>` profile repository, with a private `<user>/ghstats-data` repository holding the snapshots and history:
+1. Create a private `<user>/ghstats-data` repository, and a fine-grained token on your account with read-only Metadata, Contents and Administration on all repositories, plus Contents read and write on `<user>/ghstats-data`. Store it as the `GHSTATS_TOKEN` secret of your profile repository.
+2. Add this workflow to your `<user>/<user>` repository, then run it once from the Actions tab:
 
 ```yaml
 name: ghstats
@@ -170,9 +91,7 @@ jobs:
           fi
 ```
 
-`GHSTATS_TOKEN` needs Contents read and write on `<user>/ghstats-data`, on top of the permissions listed under Token.
-
-Then reference the committed cards in your profile README:
+3. Paste this in your profile README:
 
 ```html
 <picture>
@@ -182,15 +101,59 @@ Then reference the committed cards in your profile README:
 </picture>
 ```
 
+The full walkthrough is in [Getting started](./docs/en/guide/getting-started.md).
+
+## Cards
+
+Three blocks, each with several variants: `stats`, `languages` and `history`. Listing several variants makes them rotate in place. Seven theme presets, nine accents and five language palettes apply to every card.
+
+<table>
+  <tr>
+    <td>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="showcase/stats-totals-dark.svg">
+        <source media="(prefers-color-scheme: light)" srcset="showcase/stats-totals-light.svg">
+        <img alt="stats, totals" src="showcase/stats-totals-dark.svg" width="100%">
+      </picture>
+    </td>
+    <td>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="showcase/languages-treemap-dark.svg">
+        <source media="(prefers-color-scheme: light)" srcset="showcase/languages-treemap-light.svg">
+        <img alt="languages, treemap" src="showcase/languages-treemap-dark.svg" width="100%">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="showcase/languages-iso-dark.svg">
+        <source media="(prefers-color-scheme: light)" srcset="showcase/languages-iso-light.svg">
+        <img alt="languages, iso" src="showcase/languages-iso-dark.svg" width="100%">
+      </picture>
+    </td>
+    <td>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="showcase/history-views-dark.svg">
+        <source media="(prefers-color-scheme: light)" srcset="showcase/history-views-light.svg">
+        <img alt="history, views" src="showcase/history-views-dark.svg" width="100%">
+      </picture>
+    </td>
+  </tr>
+</table>
+
+Every variant, with the configuration that produces it, is in the [gallery](./docs/en/cards/gallery.md). The identity card and the link badges are described in [Profile cards](./docs/en/cards/profile.md).
+
 ## Stability
 
 From v1.0.0 the configuration `version: 1` and the `stats.json` `schema_version: 1` are stable for the whole v1 series: an added field breaks nothing, and an incompatible change ships as v2. Pin the Action with `wewesss/ghstats@v1`, which follows the newest v1.x.y release and installs the matching binary.
 
-## Privacy
-
-Raw snapshots contain private repository names. Keep them, and the history file, in a private repository only. The rendered `stats.json` and SVG files never contain a private repository name.
-
 The previous version (`github-stats-api-go`, GPL-3.0) is kept at the [`legacy-v1.0.0`](https://github.com/wewesss/ghstats/tree/legacy-v1.0.0) tag.
+
+## Sponsor
+
+- GitHub Sponsors: [github.com/sponsors/wewesss](https://github.com/sponsors/wewesss)
+- Open Collective: [opencollective.com/miralabs-tech](https://opencollective.com/miralabs-tech)
 
 ## License
 

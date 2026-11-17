@@ -28,6 +28,7 @@ type Config struct {
 	Scope        Scope        `yaml:"scope"`
 	Languages    Languages    `yaml:"languages"`
 	Distribution Distribution `yaml:"distribution"`
+	Render       Render       `yaml:"render"`
 }
 
 type Scope struct {
@@ -66,6 +67,7 @@ func Default() Config {
 			OtherLabel:  "Other",
 		},
 		Distribution: Distribution{ReleaseAssets: true, Clones: true, Views: true},
+		Render:       DefaultRender(),
 	}
 }
 
@@ -147,6 +149,7 @@ func (c Config) Validate() error {
 	if c.Languages.OtherLabel == "" {
 		fail("languages.other_label: must not be empty")
 	}
+	c.Render.validate(fail)
 	return errors.Join(errs...)
 }
 

@@ -131,3 +131,125 @@ func TestLoadMissingFile(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 }
+
+func TestRenderDefaults(t *testing.T) {
+	r := config.Default().Render
+	var blocks []string
+	for _, b := range r.Blocks {
+		blocks = append(blocks, b.Name+":"+strings.Join(b.Variants, "+"))
+	}
+	if got := strings.Join(blocks, ","); got != "stats:totals,languages:bars,history:views" {
+		t.Fatalf("blocks = %s", got)
+	}
+	if !r.PrivateBar || !r.Motion || r.Languages.Colors.Name != "accent" || r.Theme.Preset != "noir" || r.Theme.Accent.Name != "ice" {
+		t.Fatalf("render = %+v", r)
+	}
+}
+
+func TestRenderParsesFullExample(t *testing.T) {
+	in := `version: 1
+render:
+  blocks:
+    - stats: [totals, distribution]
+    - languages: [bars, iso, cells, treemap, shift, terminal]
+    - history: [views, clones]
+  private_bar: false
+  languages:
+    colors:
+      TypeScript: "#3178c6"
+      Go: "#00ADD8"
+  theme:
+    preset: dune
+    accent:
+      dark: "#112233"
+      light: "#445566"
+    overrides:
+      bg: none
+      fg: "#ffffff"
+  motion: false
+`
+	got, err := config.Parse(strings.NewReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := got.Render
+	if len(r.Blocks) != 3 || r.Blocks[1].Name != "languages" || len(r.Blocks[1].Variants) != 6 || r.Blocks[2].Variants[1] != "clones" {
+		t.Fatalf("blocks = %+v", r.Blocks)
+	}
+	if r.PrivateBar || r.Motion {
+		t.Fatalf("flags = %+v", r)
+	}
+	if r.Languages.Colors.Name != "" || r.Languages.Colors.Custom["Go"] != "#00ADD8" {
+		t.Fatalf("colors = %+v", r.Languages.Colors)
+	}
+	if r.Theme.Preset != "dune" || r.Theme.Accent != (config.Accent{Dark: "#112233", Light: "#445566"}) || r.Theme.Overrides["bg"] != "none" {
+		t.Fatalf("theme = %+v", r.Theme)
+	}
+}
+
+func TestRenderStringAccentAndPalette(t *testing.T) {
+	got, err := config.Parse(strings.NewReader("version: 1\nrender:\n  languages:\n    colors: github\n  theme:\n    accent: cycle\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Render.Languages.Colors.Name != "github" || got.Render.Theme.Accent.Name != "cycle" || got.Render.Theme.Preset != "noir" || len(got.Render.Blocks) != 3 {
+		t.Fatalf("render = %+v", got.Render)
+	}
+}
+
+func TestRenderRejects(t *testing.T) {
+	tests := []struct {
+		name, render, want string
+	}{
+		{"unknown block", "blocks:\n    - bogus: [a]", `unknown block "bogus"`},
+		{"unknown variant", "blocks:\n    - stats: [nope]", `unknown variant "nope"`},
+		{"empty variants", "blocks:\n    - stats: []", "at least one variant"},
+		{"null variants", "blocks:\n    - stats:", "at least one variant"},
+		{"duplicate block", "blocks:\n    - stats: [totals]\n    - stats: [distribution]", "more than once"},
+		{"duplicate variant", "blocks:\n    - stats: [totals, totals]", `variant "totals" is listed more than once`},
+		{"item not a map", "blocks:\n    - stats", "exactly one key"},
+		{"item with two keys", "blocks:\n    - stats: [totals]\n      history: [views]", "exactly one key"},
+		{"no blocks", "blocks: []", "at least one block"},
+		{"unknown palette", "languages:\n    colors: neon", `unknown palette "neon"`},
+		{"bad palette hex", "languages:\n    colors:\n      Go: \"#12345\"", "#rrggbb"},
+		{"short palette hex", "languages:\n    colors:\n      Go: \"#fff\"", "#rrggbb"},
+		{"unknown preset", "theme:\n    preset: neon", `unknown preset "neon"`},
+		{"unknown accent", "theme:\n    accent: teal", `unknown accent "teal"`},
+		{"accent missing light", "theme:\n    accent:\n      dark: \"#112233\"", "both dark and light"},
+		{"accent missing dark", "theme:\n    accent:\n      light: \"#112233\"", "both dark and light"},
+		{"accent bad hex", "theme:\n    accent:\n      dark: red\n      light: \"#112233\"", "theme.accent.dark"},
+		{"accent unknown key", "theme:\n    accent:\n      dark: \"#112233\"\n      lite: \"#112233\"", `unknown key "lite"`},
+		{"unknown override", "theme:\n    overrides:\n      accent: \"#112233\"", `unknown key "accent"`},
+		{"bad override hex", "theme:\n    overrides:\n      fg: blue", "theme.overrides"},
+		{"none only for bg", "theme:\n    overrides:\n      fg: none", "theme.overrides"},
+		{"unknown render key", "bogus: 1", "bogus"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := config.Parse(strings.NewReader("version: 1\nrender:\n  " + tt.render + "\n"))
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("err = %v, want it to mention %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestRenderValidateJoinsErrors(t *testing.T) {
+	c := config.Default()
+	c.Render.Theme.Preset = "neon"
+	c.Render.Languages.Colors = config.Palette{Name: "neon"}
+	err := c.Validate()
+	if err == nil || !strings.Contains(err.Error(), "preset") || !strings.Contains(err.Error(), "palette") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestExampleRenderMatchesFullCard(t *testing.T) {
+	c, err := config.Load("example.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Render.Blocks) != 3 || len(c.Render.Blocks[1].Variants) != 6 || c.Render.Theme.Accent.Name != "ice" {
+		t.Fatalf("render = %+v", c.Render)
+	}
+}

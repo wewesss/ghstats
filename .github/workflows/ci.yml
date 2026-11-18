@@ -52,6 +52,23 @@ jobs:
           [ "$tag" = "v0.2.1" ] || { echo "GHSTATS_VERSION=v0.2.1 resolved to '$tag'" >&2; exit 1; }
           tag="$(ACTION_REF=main bash scripts/install.sh)"
           [ -n "$tag" ] || { echo "ACTION_REF=main resolved to nothing" >&2; exit 1; }
+      - name: Ignore pre-release tags
+        env:
+          GHSTATS_RESOLVE_ONLY: "1"
+          GHSTATS_TEST_TAGS: |
+            v1.0.0
+            v1.2.0-rc.1
+            v1.1.0
+            v1.10.0-beta.2
+            v2.0.0
+        run: |
+          set -euo pipefail
+          tag="$(ACTION_REF=v1 bash scripts/install.sh)"
+          [ "$tag" = "v1.1.0" ] || { echo "ACTION_REF=v1 resolved to '$tag' with pre-release tags listed" >&2; exit 1; }
+          if ACTION_REF=v3 bash scripts/install.sh 2>/dev/null; then
+            echo "ACTION_REF=v3 must find no stable release" >&2
+            exit 1
+          fi
 
   site:
     runs-on: ubuntu-latest

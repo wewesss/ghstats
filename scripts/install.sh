@@ -3,6 +3,14 @@ set -euo pipefail
 
 repo="wewesss/ghstats"
 
+list_tags() {
+  if [ -n "${GHSTATS_TEST_TAGS:-}" ]; then
+    printf '%s\n' "$GHSTATS_TEST_TAGS"
+    return
+  fi
+  gh release list --repo "$repo" --exclude-drafts --exclude-pre-releases --limit 100 --json tagName --jq '.[].tagName'
+}
+
 resolve_tag() {
   local version="${GHSTATS_VERSION:-}" ref="${ACTION_REF:-}" major tags
   if [ -n "$version" ] && [ "$version" != "latest" ]; then
@@ -19,8 +27,7 @@ resolve_tag() {
   fi
   if [[ "$ref" =~ ^v[0-9]+$ ]]; then
     major="$ref"
-    tags="$(gh release list --repo "$repo" --exclude-drafts --exclude-pre-releases --limit 100 --json tagName \
-      --jq ".[] | select(.tagName | startswith(\"${major}.\")) | .tagName")"
+    tags="$(list_tags | grep -E "^${major}\.[0-9]+\.[0-9]+$" || true)"
     if [ -z "$tags" ]; then
       echo "ghstats: no published release found for ${major}.x.y in ${repo}" >&2
       return 1

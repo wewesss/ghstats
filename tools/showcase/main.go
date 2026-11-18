@@ -53,7 +53,12 @@ func clean(dir string) error {
 			return err
 		}
 	}
-	return os.RemoveAll(filepath.Join(dir, "badges"))
+	for _, sub := range []string{"badges", "project"} {
+		if err := os.RemoveAll(filepath.Join(dir, sub)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func build() (map[string]string, error) {
@@ -102,6 +107,12 @@ func build() (map[string]string, error) {
 				if err := addBadge(files, name, l, profile.Render.Theme, mode); err != nil {
 					return nil, err
 				}
+			}
+		}
+
+		for _, l := range resolve(profile, sample.ProjectLinks(), config.LinkStyleFull) {
+			if err := addBadge(files, fmt.Sprintf("project/%s-%s.svg", l.Kind, mode), l, profile.Render.Theme, mode); err != nil {
+				return nil, err
 			}
 		}
 

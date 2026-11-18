@@ -9,6 +9,15 @@
   <a href="./go.mod"><img src="https://img.shields.io/github/go-mod/go-version/wewesss/ghstats" alt="Version de Go"></a>
 </p>
 
+<p align="center">
+  <a href="https://www.youtube.com/@wewesss14"><picture><source media="(prefers-color-scheme: dark)" srcset="showcase/project/youtube-dark.svg"><source media="(prefers-color-scheme: light)" srcset="showcase/project/youtube-light.svg"><img alt="youtube" src="showcase/project/youtube-dark.svg"></picture></a>
+  <a href="https://www.twitch.tv/wewesss14"><picture><source media="(prefers-color-scheme: dark)" srcset="showcase/project/twitch-dark.svg"><source media="(prefers-color-scheme: light)" srcset="showcase/project/twitch-light.svg"><img alt="twitch" src="showcase/project/twitch-dark.svg"></picture></a>
+  <a href="https://discord.com/invite/B6Z5VbA5wd"><picture><source media="(prefers-color-scheme: dark)" srcset="showcase/project/discord-dark.svg"><source media="(prefers-color-scheme: light)" srcset="showcase/project/discord-light.svg"><img alt="discord" src="showcase/project/discord-dark.svg"></picture></a>
+  <a href="https://miralabs.tech"><picture><source media="(prefers-color-scheme: dark)" srcset="showcase/project/website-dark.svg"><source media="(prefers-color-scheme: light)" srcset="showcase/project/website-light.svg"><img alt="website" src="showcase/project/website-dark.svg"></picture></a>
+  <a href="https://github.com/sponsors/wewesss"><picture><source media="(prefers-color-scheme: dark)" srcset="showcase/project/github_sponsors-dark.svg"><source media="(prefers-color-scheme: light)" srcset="showcase/project/github_sponsors-light.svg"><img alt="github_sponsors" src="showcase/project/github_sponsors-dark.svg"></picture></a>
+  <a href="https://opencollective.com/miralabs-tech"><picture><source media="(prefers-color-scheme: dark)" srcset="showcase/project/open_collective-dark.svg"><source media="(prefers-color-scheme: light)" srcset="showcase/project/open_collective-light.svg"><img alt="open_collective" src="showcase/project/open_collective-dark.svg"></picture></a>
+</p>
+
 > "Un moteur de statistiques GitHub qui génère des cartes SVG sombres et claires pour le README de votre profil et conserve l'historique de trafic au-delà de 14 jours."
 
 [English](./README.md) · Français

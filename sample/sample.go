@@ -80,6 +80,17 @@ func AllLinks() []config.Link {
 	}
 }
 
+func ProjectLinks() []config.Link {
+	return []config.Link{
+		{Kind: "youtube", Value: "@wewesss14"},
+		{Kind: "twitch", Value: "wewesss14"},
+		{Kind: "discord", Value: "https://discord.com/invite/B6Z5VbA5wd"},
+		{Kind: "website", Value: "https://miralabs.tech"},
+		{Kind: "github_sponsors", Value: "wewesss"},
+		{Kind: "open_collective", Value: "miralabs-tech"},
+	}
+}
+
 func CustomLinks() map[string]config.Link {
 	return map[string]config.Link{
 		"named": {Kind: config.KindCustom, Value: "https://example.com/blog", Label: "my blog", Icon: "youtube"},

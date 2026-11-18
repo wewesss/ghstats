@@ -38,6 +38,8 @@ The `version` input decides which release of the binary is installed:
 
 Pin `wewesss/ghstats@v1` to follow the v1 series: the configuration `version: 1` and the `stats.json` `schema_version: 1` are stable for all of it.
 
+Pinning the Action by commit SHA protects `action.yml`, not the binary: a SHA ref installs the latest release. To freeze the binary too, set the `version` input, for example `version: v1.1.1`.
+
 ## Files produced
 
 | Path | Written by | Content |

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -90,6 +91,10 @@ func (c *Client) once(ctx context.Context, body []byte, out any) error {
 	}
 	resp, err := hc.Do(req)
 	if err != nil {
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			err = ue.Err
+		}
 		return fmt.Errorf("ghapi: request: %w", err)
 	}
 	defer resp.Body.Close()

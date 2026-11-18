@@ -488,3 +488,26 @@ func TestRenderWithoutProfileWritesNoProfileFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCollectKeepIgnoresFilesItDidNotWrite(t *testing.T) {
+	setup(t)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "snapshots")
+	seedSnapshots(t, out,
+		"snapshot-backup-before-migration.json",
+		"snapshot-old.json",
+		"snapshot-2026-11-14T090000Z.json.bak",
+		"snapshot-2026-11-14T090000Z.json",
+		"snapshot-2026-11-15T090000Z.json",
+		"snapshot-2026-11-16T090000Z.json")
+
+	code, _, stderr := exec("collect", "--keep", "2", "--out", out, "--history", filepath.Join(dir, "h.json"))
+	if code != 0 {
+		t.Fatalf("code = %d, stderr = %q", code, stderr)
+	}
+	got := strings.Join(listDir(t, out), " ")
+	want := "snapshot-2026-11-14T090000Z.json.bak snapshot-2026-11-16T090000Z.json snapshot-2026-11-17T090000Z.json snapshot-backup-before-migration.json snapshot-old.json"
+	if got != want {
+		t.Fatalf("files = %q, want %q", got, want)
+	}
+}

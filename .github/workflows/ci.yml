@@ -52,3 +52,19 @@ jobs:
           [ "$tag" = "v0.2.1" ] || { echo "GHSTATS_VERSION=v0.2.1 resolved to '$tag'" >&2; exit 1; }
           tag="$(ACTION_REF=main bash scripts/install.sh)"
           [ -n "$tag" ] || { echo "ACTION_REF=main resolved to nothing" >&2; exit 1; }
+
+  site:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run build

@@ -38,6 +38,8 @@ L'input `version` décide quelle release du binaire est installée :
 
 Épinglez `wewesss/ghstats@v1` pour suivre la série v1 : la configuration `version: 1` et le `schema_version: 1` de `stats.json` y sont stables.
 
+Épingler l'Action par SHA de commit protège `action.yml`, pas le binaire : une ref SHA installe la dernière release. Pour figer aussi le binaire, renseignez l'input `version`, par exemple `version: v1.1.1`.
+
 ## Fichiers produits
 
 | Chemin | Écrit par | Contenu |

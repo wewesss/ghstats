@@ -202,7 +202,7 @@ func pruneSnapshots(dir, current string, keep int) error {
 	sort.Strings(names)
 	others := names[:0]
 	for _, n := range names {
-		if n != current {
+		if n != current && isSnapshotName(filepath.Base(n)) {
 			others = append(others, n)
 		}
 	}
@@ -212,6 +212,19 @@ func pruneSnapshots(dir, current string, keep int) error {
 		}
 	}
 	return nil
+}
+
+func isSnapshotName(name string) bool {
+	stamp, ok := strings.CutPrefix(name, "snapshot-")
+	if !ok {
+		return false
+	}
+	stamp, ok = strings.CutSuffix(stamp, ".json")
+	if !ok {
+		return false
+	}
+	t, err := time.Parse(snapshotNameLayout, stamp)
+	return err == nil && t.Format(snapshotNameLayout) == stamp
 }
 
 const trafficHint = "hint: traffic needs push access with a token that covers each owner; a fine-grained token covers a single owner (use one token per organization or a classic token with the repo scope)"

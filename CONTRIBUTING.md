@@ -11,7 +11,7 @@ Thanks for considering a contribution. A few guidelines keep the project healthy
 ## Before you open a PR
 
 1. **Fork** the repo and create a branch off `main`.
-2. **Install Go** at the version in [`go.mod`](./go.mod). Bun is only needed for the future documentation site, never for the Go code; if you use a JavaScript package manager at all, use `bun`, not `npm`, `pnpm` or `yarn`.
+2. **Install Go** at the version in [`go.mod`](./go.mod). Bun is only needed for the documentation site in `site/`, never for the Go code; if you use a JavaScript package manager at all, use `bun`, not `npm`, `pnpm` or `yarn`.
 3. **Run the same checks as CI** before you push:
 
    ```sh
@@ -26,6 +26,20 @@ Thanks for considering a contribution. A few guidelines keep the project healthy
    ```
 
    CI runs the same gates on every PR; if one fails, the PR won't merge. The showcase check fails when the files under `showcase/` are not the output of `go run ./tools/showcase`: run the generator and commit the result whenever you change the renderer or the sample data.
+
+## The documentation site
+
+The site in [`site/`](./site) is built from [`docs/`](./docs) with [`@standarx/mdocs`](https://www.npmjs.com/package/@standarx/mdocs). The builder and the live gallery render the cards in the browser with the Go renderer compiled to WebAssembly, so the build needs Go as well as Bun:
+
+```sh
+cd site
+bun install --frozen-lockfile
+bun run typecheck
+bun run build   # compiles the WebAssembly, then writes site/dist
+bun run dev     # live reload on the pages, without the renderer: see site/README.md
+```
+
+CI runs the same `typecheck` and `build`. The site is deployed to GitHub Pages by `.github/workflows/pages.yml` on every `v*.*.*` tag, or by hand.
 
 ## Golden files
 

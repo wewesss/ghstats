@@ -13,7 +13,7 @@
 
 [English](./README.md) · Français
 
-[Prise en main](./docs/fr/guide/getting-started.md) · [Configuration](./docs/fr/guide/configuration.md) · [Action GitHub](./docs/fr/guide/action.md) · [Cartes](./docs/fr/cards/gallery.md) · [Confidentialité](./docs/fr/guide/privacy.md) · [Changelog](./CHANGELOG.md) · [FAQ](./FAQ.fr.md) · [Contribuer](./CONTRIBUTING.fr.md) · [Sécurité](./SECURITY.md)
+[Prise en main](./docs/fr/guide/getting-started.md) · [Configuration](./docs/fr/guide/configuration.md) · [Action GitHub](./docs/fr/guide/action.md) · [Cartes](./docs/fr/cards/gallery.md) · [Builder](https://wewesss.github.io/ghstats/) · [Confidentialité](./docs/fr/guide/privacy.md) · [Changelog](./CHANGELOG.md) · [FAQ](./FAQ.fr.md) · [Contribuer](./CONTRIBUTING.fr.md) · [Sécurité](./SECURITY.md)
 
 ---
 

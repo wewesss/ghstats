@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-11-18
+
+### Added
+
+- The `custom` link kind and the `link_style` profile key (`full`, `icon`, `text`).
+- `showcase/`: generated SVGs of every card variant, dark and light, kept in sync by CI.
+- Documentation in English and French under `docs/`, and illustrated READMEs.
+- A GitHub Pages site with a live builder and a live gallery, rendered in the browser by the same Go code compiled to WebAssembly. It is deployed on every `v*.*.*` tag.
+
+### Changed
+
+- Nothing in the CLI or the Action: the binary and the Action behave as in 1.0.0.
+
 ## [1.0.0] - 2026-11-17
 
 ### Added

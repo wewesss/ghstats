@@ -5,8 +5,6 @@ sidebar:
   order: 1
 ---
 
-# Galerie
-
 Chaque image ci-dessous est générée à partir d'un rapport d'exemple fixe, avec `motion: false` et l'accent `cycle`, en sombre et en clair. Les deux modes suivent le thème de couleur du visiteur. Sous chaque image, l'entrée `render.blocks` qui la produit ; les autres clés sont dans [Configuration](../guide/configuration.md). Lister plusieurs variantes d'un bloc les fait alterner sur place.
 
 ## Galerie vivante

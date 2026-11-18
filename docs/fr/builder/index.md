@@ -5,8 +5,6 @@ sidebar:
   order: 1
 ---
 
-# Builder
-
 Le builder produit les mêmes cartes que l'Action, avec le même code Go compilé en WebAssembly, à partir d'un rapport d'exemple fixe. Changez les options à gauche, vérifiez les cartes à droite, puis copiez les fichiers en bas. L'interface du builder reste en anglais.
 
 ```demo builder

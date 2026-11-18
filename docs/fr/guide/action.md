@@ -5,8 +5,6 @@ sidebar:
   order: 2
 ---
 
-# Action GitHub
-
 Le dépôt est une Action composite pour les runners Linux et macOS. Elle installe la release de ghstats, puis lance `collect`, `compute` et `render` dans l'ordre. Un workflow complet est dans [Prise en main](./getting-started.md).
 
 ## Inputs

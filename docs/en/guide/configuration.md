@@ -5,8 +5,6 @@ sidebar:
   order: 3
 ---
 
-# Configuration
-
 ghstats reads one YAML file, `ghstats.yaml` by default. Every key except `version` is optional, and an empty file means the defaults. Unknown keys and invalid values are refused with a message naming the key. The complete annotated file is [`config/example.yaml`](../../../config/example.yaml), and a full example closes this page.
 
 ```yaml

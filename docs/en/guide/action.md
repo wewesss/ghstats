@@ -5,8 +5,6 @@ sidebar:
   order: 2
 ---
 
-# GitHub Action
-
 The repository is a composite Action for Linux and macOS runners. It installs the ghstats release, then runs `collect`, `compute` and `render` in order. A complete workflow is in [Getting started](./getting-started.md).
 
 ## Inputs

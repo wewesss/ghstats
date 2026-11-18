@@ -5,8 +5,6 @@ sidebar:
   order: 1
 ---
 
-# Gallery
-
 Every image below is generated from a fixed sample report, with `motion: false` and the `cycle` accent, in dark and light. The two modes follow the viewer's color scheme. Under each image, the `render.blocks` entry that produces it; the other keys are in [Configuration](../guide/configuration.md). Listing several variants of a block makes them rotate in place.
 
 ## Live gallery

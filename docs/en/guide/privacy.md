@@ -5,8 +5,6 @@ sidebar:
   order: 5
 ---
 
-# Privacy
-
 ## What is private
 
 Raw snapshots contain private repository names. Keep them, and the history file, in a private repository only. This is why the workflow in [Getting started](./getting-started.md) checks out a separate private `<user>/ghstats-data` repository into `data-dir` and commits `snapshots/` and `history.json` there.

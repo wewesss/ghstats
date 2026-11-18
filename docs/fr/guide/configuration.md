@@ -5,8 +5,6 @@ sidebar:
   order: 3
 ---
 
-# Configuration
-
 ghstats lit un seul fichier YAML, `ghstats.yaml` par défaut. Toutes les clés sauf `version` sont facultatives, et un fichier vide donne les valeurs par défaut. Les clés inconnues et les valeurs invalides sont refusées avec un message qui nomme la clé. Le fichier complet et annoté est [`config/example.yaml`](../../../config/example.yaml), et un exemple complet clôt cette page.
 
 ```yaml

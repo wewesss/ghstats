@@ -5,8 +5,6 @@ sidebar:
   order: 2
 ---
 
-# Profile cards
-
 An optional `profile` section adds an identity card and one small badge per link. Everything follows the `render.theme`, so presets, accents (including `cycle`, kept in sync across all cards) and overrides apply to every file.
 
 ## Configuration

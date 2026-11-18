@@ -5,8 +5,6 @@ sidebar:
   order: 1
 ---
 
-# Builder
-
 The builder renders the same cards as the Action, with the same Go code compiled to WebAssembly, from a fixed sample report. Change the options on the left, check the cards on the right, then copy the files at the bottom.
 
 ```demo builder

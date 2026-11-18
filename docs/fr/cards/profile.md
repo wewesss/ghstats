@@ -5,8 +5,6 @@ sidebar:
   order: 2
 ---
 
-# Cartes de profil
-
 Une section `profile` facultative ajoute une carte identité et un petit badge par lien. Tout suit le `render.theme` : les thèmes, les accents (dont `cycle`, synchronisé sur toutes les cartes) et les surcharges s'appliquent à chaque fichier.
 
 ## Configuration

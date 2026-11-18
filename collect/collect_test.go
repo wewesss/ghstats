@@ -399,3 +399,132 @@ func TestCollectRateLimitStopsRemainingTraffic(t *testing.T) {
 		t.Fatalf("REST calls = %d, want 1", got)
 	}
 }
+
+const secretRepo = "top-secret-project"
+
+func leakHandler(rest func(w http.ResponseWriter)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/graphql") {
+			json.NewEncoder(w).Encode(map[string]any{"data": repoPage(false, "", repoNode("R_1", "alice/"+secretRepo, nil))})
+			return
+		}
+		rest(w)
+	})
+}
+
+func collectLeak(t *testing.T, h http.Handler, opts collect.Options) (snapshot.Snapshot, error) {
+	t.Helper()
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+	opts.Token = "tok"
+	if opts.GraphQLURL == "" {
+		opts.GraphQLURL = srv.URL + "/graphql"
+	} else {
+		opts.GraphQLURL = srv.URL + opts.GraphQLURL
+	}
+	opts.RESTURL = srv.URL + "/"
+	opts.HTTPClient = srv.Client()
+	return collect.Collect(t.Context(), opts)
+}
+
+func assertNoRepoName(t *testing.T, text string) {
+	t.Helper()
+	if strings.Contains(text, secretRepo) || strings.Contains(text, "alice/") {
+		t.Fatalf("repository name leaked: %q", text)
+	}
+}
+
+func TestCollectErrorsCarryNoRepositoryName(t *testing.T) {
+	tests := []struct {
+		name  string
+		rest  func(w http.ResponseWriter)
+		check func(t *testing.T, err error)
+	}{
+		{
+			name: "secondary rate limit",
+			rest: func(w http.ResponseWriter) {
+				w.Header().Set("Retry-After", "30")
+				w.WriteHeader(http.StatusForbidden)
+				fmt.Fprint(w, `{"message":"You have exceeded a secondary rate limit","documentation_url":"https://docs.github.com/rest/overview/rate-limits-for-the-rest-api#about-secondary-rate-limits"}`)
+			},
+			check: func(t *testing.T, err error) {
+				var abuse *github.AbuseRateLimitError
+				if !errors.As(err, &abuse) {
+					t.Fatalf("err = %v, want *github.AbuseRateLimitError", err)
+				}
+				if !strings.Contains(err.Error(), "403") || !strings.Contains(err.Error(), "secondary rate limit") {
+					t.Fatalf("err lost its detail: %v", err)
+				}
+			},
+		},
+		{
+			name: "primary rate limit",
+			rest: func(w http.ResponseWriter) {
+				w.Header().Set("X-RateLimit-Remaining", "0")
+				w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10))
+				w.WriteHeader(http.StatusForbidden)
+				fmt.Fprint(w, `{"message":"API rate limit exceeded"}`)
+			},
+			check: func(t *testing.T, err error) {
+				var rl *github.RateLimitError
+				if !errors.As(err, &rl) {
+					t.Fatalf("err = %v, want *github.RateLimitError", err)
+				}
+				if !strings.Contains(err.Error(), "resets at") {
+					t.Fatalf("err lost the reset time: %v", err)
+				}
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := collectLeak(t, leakHandler(tc.rest), collect.Options{Traffic: true})
+			if err == nil {
+				t.Fatal("want an error")
+			}
+			assertNoRepoName(t, err.Error())
+			tc.check(t, err)
+		})
+	}
+}
+
+func TestCollectTrafficServerErrorMessageCarriesNoRepositoryName(t *testing.T) {
+	h := leakHandler(func(w http.ResponseWriter) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"message":"boom"}`)
+	})
+	snap, err := collectLeak(t, h, collect.Options{Traffic: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snap.Errors) != 1 || snap.Errors[0].Stage != "traffic" || snap.Errors[0].Repo != "alice/"+secretRepo {
+		t.Fatalf("errors = %+v", snap.Errors)
+	}
+	assertNoRepoName(t, snap.Errors[0].Message)
+	if !strings.Contains(snap.Errors[0].Message, "500") {
+		t.Fatalf("message lost the status: %q", snap.Errors[0].Message)
+	}
+}
+
+func TestCollectGraphQLFailureCarriesNoRepositoryName(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/graphql") {
+			panic(http.ErrAbortHandler)
+		}
+	})
+	_, err := collectLeak(t, h, collect.Options{GraphQLURL: "/graphql/alice/" + secretRepo})
+	if err == nil {
+		t.Fatal("want an error")
+	}
+	assertNoRepoName(t, err.Error())
+
+	h = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"message":"boom"}`)
+	})
+	_, err = collectLeak(t, h, collect.Options{GraphQLURL: "/graphql/alice/" + secretRepo})
+	if err == nil {
+		t.Fatal("want an error")
+	}
+	assertNoRepoName(t, err.Error())
+}

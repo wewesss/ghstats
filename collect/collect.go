@@ -132,7 +132,7 @@ func (c *collector) fetchRepos(ctx context.Context, viewer *snapshot.Viewer) ([]
 		}
 		var page reposResponse
 		if err := c.gql.Do(ctx, reposQuery, vars, &page); err != nil {
-			return nil, nil, fmt.Errorf("collect: repositories: %w", err)
+			return nil, nil, fmt.Errorf("collect: repositories: %w", sanitize(err))
 		}
 		*viewer = snapshot.Viewer{
 			Login:     page.Viewer.Login,
@@ -226,6 +226,7 @@ func (c *collector) fetchReleases(ctx context.Context, repos []snapshot.Repo, pe
 			var out releasesResponse
 			vars := map[string]any{"id": repo.ID, "cursor": cursor}
 			if err := c.gql.Do(ctx, releasesQuery, vars, &out); err != nil {
+				err = sanitize(err)
 				if isFatal(ctx, err) {
 					return err
 				}
@@ -261,6 +262,7 @@ func (c *collector) fetchTraffic(ctx context.Context, repos []snapshot.Repo) ([]
 			clones, _, err = c.gh.Repositories.ListTrafficClones(ctx, repo.Owner, name, breakdown)
 		}
 		if err != nil {
+			err = sanitize(err)
 			if isFatal(ctx, err) {
 				return err
 			}

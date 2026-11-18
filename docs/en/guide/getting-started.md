@@ -5,8 +5,6 @@ sidebar:
   order: 1
 ---
 
-# Getting started
-
 This page takes you from nothing to cards published in your profile README.
 
 ## Prerequisites

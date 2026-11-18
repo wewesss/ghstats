@@ -5,9 +5,20 @@ sidebar:
   order: 1
 ---
 
-# Galerie
-
 Chaque image ci-dessous est générée à partir d'un rapport d'exemple fixe, avec `motion: false` et l'accent `cycle`, en sombre et en clair. Les deux modes suivent le thème de couleur du visiteur. Sous chaque image, l'entrée `render.blocks` qui la produit ; les autres clés sont dans [Configuration](../guide/configuration.md). Lister plusieurs variantes d'un bloc les fait alterner sur place.
+
+## Galerie vivante
+
+Choisissez un preset, un accent et une palette : chaque variante ci-dessous est rendue dans votre navigateur, en sombre et en clair. L'interface de la démo reste en anglais.
+
+```demo gallery
+```
+
+Ouvrez la [galerie en ligne](https://wewesss.github.io/ghstats/fr/cards/gallery/) si vous lisez ceci sur GitHub : la démo ci-dessus ne fonctionne que sur le site.
+
+## Galerie statique
+
+Les images ci-dessous sont les fichiers générés du dossier `showcase/`.
 
 ## stats
 

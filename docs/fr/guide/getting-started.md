@@ -5,8 +5,6 @@ sidebar:
   order: 1
 ---
 
-# Prise en main
-
 Cette page vous mène de zéro à des cartes publiées dans le README de votre profil.
 
 ## Prérequis

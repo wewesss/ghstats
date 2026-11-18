@@ -5,8 +5,6 @@ sidebar:
   order: 4
 ---
 
-# Ligne de commande
-
 L'Action GitHub lance ces commandes pour vous. Utilisez la CLI directement pour essayer une configuration en local ou pour faire tourner ghstats en dehors de GitHub Actions.
 
 ## Installation

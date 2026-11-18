@@ -13,7 +13,7 @@ Cette page est traduite pour faciliter la lecture, mais **la version anglaise fa
 ## Avant d'ouvrir une PR
 
 1. **Forkez** le dépôt et créez une branche à partir de `main`.
-2. **Installez Go** à la version de [`go.mod`](./go.mod). Bun n'est nécessaire que pour le futur site de documentation, jamais pour le code Go ; si vous utilisez un gestionnaire de paquets JavaScript, utilisez `bun`, pas `npm`, `pnpm` ni `yarn`.
+2. **Installez Go** à la version de [`go.mod`](./go.mod). Bun n'est nécessaire que pour le site de documentation dans `site/`, jamais pour le code Go ; si vous utilisez un gestionnaire de paquets JavaScript, utilisez `bun`, pas `npm`, `pnpm` ni `yarn`.
 3. **Lancez les mêmes vérifications que la CI** avant de pousser :
 
    ```sh
@@ -28,6 +28,20 @@ Cette page est traduite pour faciliter la lecture, mais **la version anglaise fa
    ```
 
    La CI lance les mêmes portes sur chaque PR ; si l'une échoue, la PR n'est pas fusionnée. La vérification du showcase échoue quand les fichiers de `showcase/` ne sont pas la sortie de `go run ./tools/showcase` : relancez le générateur et commitez le résultat dès que vous modifiez le moteur de rendu ou les données d'exemple.
+
+## Le site de documentation
+
+Le site de [`site/`](./site) est construit depuis [`docs/`](./docs) avec [`@standarx/mdocs`](https://www.npmjs.com/package/@standarx/mdocs). Le builder et la galerie vivante rendent les cartes dans le navigateur avec le moteur de rendu Go compilé en WebAssembly : la construction a donc besoin de Go en plus de Bun :
+
+```sh
+cd site
+bun install --frozen-lockfile
+bun run typecheck
+bun run build   # compile le WebAssembly, puis écrit site/dist
+bun run dev     # rechargement des pages, sans le moteur de rendu : voir site/README.md
+```
+
+La CI lance le même `typecheck` et le même `build`. Le site est déployé sur GitHub Pages par `.github/workflows/pages.yml` à chaque tag `v*.*.*`, ou à la main.
 
 ## Fichiers golden
 

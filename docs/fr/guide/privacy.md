@@ -5,8 +5,6 @@ sidebar:
   order: 5
 ---
 
-# Confidentialité
-
 ## Ce qui est privé
 
 Les snapshots bruts contiennent des noms de dépôts privés. Gardez-les, ainsi que le fichier d'historique, dans un dépôt privé uniquement. C'est pourquoi le workflow de [Prise en main](./getting-started.md) récupère un dépôt privé distinct `<user>/ghstats-data` dans `data-dir` et y commite `snapshots/` et `history.json`.

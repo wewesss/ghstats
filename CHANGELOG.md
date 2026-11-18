@@ -4,6 +4,27 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-18
+
+### Security
+
+- API errors printed by `ghstats collect` no longer carry the request URL or the repository name, so a rate limit hit during the traffic step no longer exposes a private repository name in a public Actions log. The HTTP status, the GitHub message and the reset time are kept.
+
+### Fixed
+
+- `ghstats collect --keep` only removes files named like the snapshots `collect` writes (`snapshot-<timestamp>.json`), and leaves any other file of the folder alone.
+- Pre-release tags (`v1.2.0-rc.1`) no longer trigger the release or Pages workflows, no longer move the major tag, are marked as pre-releases by GoReleaser, and are ignored when `@v1` resolves to the newest release.
+
+### Changed
+
+- The Pages workflow grants `pages: write` and `id-token: write` to the deploy job only.
+- `go.mod` pins `toolchain go1.27.4`, which fixes GO-2026-6859 for local builds.
+- The Action guide states that pinning by commit SHA protects `action.yml`, not the binary, and that the `version` input freezes the binary.
+
+### Added
+
+- Project link buttons at the top of the READMEs and on the home page of the site, generated in `showcase/project/`.
+
 ## [1.1.0] - 2026-11-18
 
 ### Added

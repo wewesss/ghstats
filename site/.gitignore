@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.mdocs/
+public/ghstats.wasm
+public/wasm_exec.js

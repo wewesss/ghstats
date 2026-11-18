@@ -9,6 +9,19 @@ sidebar:
 
 Every image below is generated from a fixed sample report, with `motion: false` and the `cycle` accent, in dark and light. The two modes follow the viewer's color scheme. Under each image, the `render.blocks` entry that produces it; the other keys are in [Configuration](../guide/configuration.md). Listing several variants of a block makes them rotate in place.
 
+## Live gallery
+
+Pick a preset, an accent and a palette: every variant below is rendered in your browser, in dark and light.
+
+```demo gallery
+```
+
+Open the [live gallery](https://wewesss.github.io/ghstats/en/cards/gallery/) if you are reading this on GitHub: the demo above only runs on the site.
+
+## Static gallery
+
+The images below are the generated files of the `showcase/` folder.
+
 ## stats
 
 The `stats` block has two variants.

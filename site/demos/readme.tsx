@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { svgUrl, type Ghstats, type Mode } from "./ghstats";
 
@@ -115,6 +116,17 @@ function ReadmeModal({
   }, []);
 
   useEffect(() => {
+    const html = document.documentElement;
+    const previous = [html.style.overflow, document.body.style.overflow];
+    html.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = previous[0] ?? "";
+      document.body.style.overflow = previous[1] ?? "";
+    };
+  }, []);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -138,7 +150,7 @@ function ReadmeModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div
       ref={dialog}
       className="gs-modal"
@@ -177,7 +189,8 @@ function ReadmeModal({
           content
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

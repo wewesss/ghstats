@@ -230,9 +230,10 @@ function CardsEditor({
               ))}
             </select>
           </Field>
-          <Field label="Header">
+          <label className="gs-check">
             <input type="checkbox" checked={card.header} onChange={(event) => update(index, { header: event.target.checked })} />
-          </Field>
+            <span>Header</span>
+          </label>
           <BlocksEditor blocks={card.blocks} options={options} onChange={(blocks) => update(index, { blocks })} />
           <button type="button" className="gs-button" onClick={() => remove(index)}>
             Remove card
@@ -381,9 +382,10 @@ function BuilderForm({ form, options, onChange }: { form: FormState; options: Op
             <textarea rows={4} value={form.paletteColors} onChange={(event) => set("paletteColors", event.target.value)} spellCheck={false} />
           </Field>
         ) : null}
-        <Field label="Show multipliers">
+        <label className="gs-check">
           <input type="checkbox" checked={form.multipliers} onChange={(event) => set("multipliers", event.target.checked)} />
-        </Field>
+          <span>Show multipliers</span>
+        </label>
         <Field label="Layout">
           <Select value={form.layout} values={options.layouts} onChange={(value) => set("layout", value)} />
         </Field>
@@ -590,44 +592,46 @@ function BuilderApp({ api, options, initial }: Ready) {
         </fieldset>
       </div>
 
-      <div className="gs-pane gs-pane-preview">
-        <DataRow source={data} onChange={setData} />
-        <div className="gs-toolbar">
-          <span>
-            Preview <ReadmePreviewButton api={api} source={override ?? formSource} report={data.report} mode={mode} />
-          </span>
-          <span role="group" aria-label="Preview mode">
-            <button type="button" className="gs-button" aria-pressed={mode === "dark"} onClick={() => setMode("dark")}>
-              Dark
-            </button>
-            <button type="button" className="gs-button" aria-pressed={mode === "light"} onClick={() => setMode("light")}>
-              Light
-            </button>
-          </span>
-        </div>
-        {result.error !== "" ? (
-          <pre className="gs-error" role="alert">
-            {result.error}
-          </pre>
-        ) : null}
-        <Preview result={shown} mode={mode} />
-      </div>
-
-      <div className="gs-pane gs-outputs">
-        <section className="gs-output">
-          <header>
-            <code>ghstats.yaml</code>
+      <div className="gs-pane gs-pane-right">
+        <div className="gs-pane-preview">
+          <DataRow source={data} onChange={setData} />
+          <div className="gs-toolbar">
             <span>
-              <CopyButton text={yamlText} />
-              <button type="button" className="gs-button" onClick={() => download("ghstats.yaml", yamlText)}>
-                Download
+              Preview <ReadmePreviewButton api={api} source={override ?? formSource} report={data.report} mode={mode} />
+            </span>
+            <span role="group" aria-label="Preview mode">
+              <button type="button" className="gs-button" aria-pressed={mode === "dark"} onClick={() => setMode("dark")}>
+                Dark
+              </button>
+              <button type="button" className="gs-button" aria-pressed={mode === "light"} onClick={() => setMode("light")}>
+                Light
               </button>
             </span>
-          </header>
-          <textarea className="gs-yaml" spellCheck={false} rows={18} value={yamlText} onChange={(event) => editYaml(event.target.value)} aria-label="ghstats.yaml" />
-        </section>
-        <Output name=".github/workflows/ghstats.yml" text={WORKFLOW} />
-        <Output name="README.snippet.md" text={shown.snippet} />
+          </div>
+          {result.error !== "" ? (
+            <pre className="gs-error" role="alert">
+              {result.error}
+            </pre>
+          ) : null}
+          <Preview result={shown} mode={mode} />
+        </div>
+
+        <div className="gs-outputs">
+          <section className="gs-output">
+            <header>
+              <code>ghstats.yaml</code>
+              <span>
+                <CopyButton text={yamlText} />
+                <button type="button" className="gs-button" onClick={() => download("ghstats.yaml", yamlText)}>
+                  Download
+                </button>
+              </span>
+            </header>
+            <textarea className="gs-yaml" spellCheck={false} rows={18} value={yamlText} onChange={(event) => editYaml(event.target.value)} aria-label="ghstats.yaml" />
+          </section>
+          <Output name=".github/workflows/ghstats.yml" text={WORKFLOW} />
+          <Output name="README.snippet.md" text={shown.snippet} />
+        </div>
       </div>
     </div>
   );

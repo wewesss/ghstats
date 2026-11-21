@@ -43,21 +43,27 @@
 
 .gs-pane-form {
   grid-column: 1;
-  grid-row: 1 / span 2;
+  grid-row: 1;
+}
+
+.gs-pane-right {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
 }
 
 .gs-pane-preview {
-  grid-column: 2;
-  position: sticky;
-  top: 0.5rem;
   display: grid;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .gs-outputs {
-  grid-column: 2;
   display: grid;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .gs-reset {
@@ -362,14 +368,9 @@
   }
 
   .gs-pane-form,
-  .gs-pane-preview,
-  .gs-outputs {
+  .gs-pane-right {
     grid-column: 1;
     grid-row: auto;
-  }
-
-  .gs-pane-preview {
-    position: static;
   }
 
   .gs-variant .gs-pair {
@@ -423,7 +424,7 @@
 .gs-modal {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 2147483000;
   overflow-y: auto;
   padding: 0 1rem 2rem;
   background: #ffffff;

@@ -110,6 +110,7 @@ export function Canvas({
 
   const fit = Math.min(1, available / COLUMN, height > 0 ? room / height : 1);
   const scale = zoom === "fit" ? Math.max(0.1, Math.floor(fit * 1000) / 1000) : 1;
+  const byWidth = zoom === "fit" && available < COLUMN && (height === 0 || available / COLUMN <= room / height);
 
   const apply = (next: RowState[] | null, item: string) => {
     if (next === null || same(next, state)) return;
@@ -217,7 +218,7 @@ export function Canvas({
         if (target.closest('[data-testid="element"]') === null && target.closest("button") === null) onSelect(null);
       }}
     >
-      <div className="gs-sizer" style={{ width: COLUMN * scale, height: height * scale }}>
+      <div className="gs-sizer" style={{ width: COLUMN * scale, height: height * scale, ...(byWidth ? { marginTop: 0 } : {}) }}>
         <div
           ref={column}
           className="gs-readme"

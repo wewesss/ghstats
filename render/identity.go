@@ -141,7 +141,7 @@ func identityCard(r report.Report, cfg config.Config, mode Mode) string {
 
 	var b []string
 	b = append(b, txt(28, 37, esc(name), topt{fill: th.fg, size: 14, weight: 600}))
-	b = append(b, txt(float64(29+9*utf8.RuneCountInString(name)), 37, "/ profile", topt{fill: th.muted, size: 12, mono: true}))
+	b = append(b, txt(headerSlashX(28, name), 37, "/ profile", topt{fill: th.muted, size: 12, mono: true}))
 	dotX := W - 31
 	if p.Location != "" {
 		dotX = W - 28 - 11*monoAdvance*float64(utf8.RuneCountInString(p.Location)) - 12
@@ -180,10 +180,14 @@ func identityCard(r report.Report, cfg config.Config, mode Mode) string {
 	return accentize(svg, th, rc, mode)
 }
 
+func headerSlashX(mx float64, name string) float64 {
+	return math.Round(mx + sansWidth(name, 14) + 9)
+}
+
 func fitNameSize(name string, avail float64) (size, spacing float64) {
 	size = 76
-	if n := float64(utf8.RuneCountInString(name)); n > 0 {
-		size = math.Max(16, math.Min(76, math.Floor(avail/(n*0.56))))
+	if em := sansWidth(name, 1); em > 0 {
+		size = math.Max(16, math.Min(76, math.Floor(avail/em)))
 	}
 	return size, math.Round(-3*size/76*10) / 10
 }
@@ -218,12 +222,10 @@ func identityFlow(r report.Report, cfg config.Config, mode Mode) string {
 
 	var b []string
 	top := 20
-	if showHeader || showLocation {
+	if showHeader {
 		top = 74
-		if showHeader {
-			b = append(b, txt(mx, 37, esc(name), topt{fill: th.fg, size: 14, weight: 600}))
-			b = append(b, txt(mx+1+9*float64(utf8.RuneCountInString(name)), 37, "/ profile", topt{fill: th.muted, size: 12, mono: true}))
-		}
+		b = append(b, txt(mx, 37, esc(name), topt{fill: th.fg, size: 14, weight: 600}))
+		b = append(b, txt(headerSlashX(mx, name), 37, "/ profile", topt{fill: th.muted, size: 12, mono: true}))
 		dotX := W - mx - 3
 		if showLocation {
 			dotX = W - mx - 11*monoAdvance*float64(utf8.RuneCountInString(p.Location)) - 12
@@ -241,24 +243,88 @@ func identityFlow(r report.Report, cfg config.Config, mode Mode) string {
 		edge = bl + desc + 14
 		return float64(bl)
 	}
+	placeLines := func(n, asc, desc, lead int) []float64 {
+		ys := make([]float64, n)
+		first := edge + asc
+		for i := range ys {
+			ys[i] = float64(first + i*lead)
+		}
+		edge = first + (n-1)*lead + desc + 14
+		return ys
+	}
 	textEnd := func() int { return edge - 14 }
+
+	hoist := showLocation && !showHeader
+	firstPart := ""
+	for _, c := range []struct {
+		part string
+		on   bool
+	}{{"tagline", showTagline}, {"name", showName}, {"building", showBuilding}, {"note", showNote}} {
+		if c.on {
+			firstPart = c.part
+			break
+		}
+	}
+	reserve := func(part string) float64 {
+		if hoist && part == firstPart {
+			return 11*monoAdvance*float64(utf8.RuneCountInString(p.Location)) + 16
+		}
+		return 0
+	}
+	wrapAt := func(part string) float64 {
+		if !stacked {
+			return 0
+		}
+		return W - 2*mx - reserve(part)
+	}
+	locationDone := !hoist
+	putLocation := func(y float64) {
+		if !locationDone {
+			b = append(b, txt(W-mx, y, esc(p.Location), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
+			locationDone = true
+		}
+	}
 
 	availName := W - 2*mx
 	if showFocus && !stacked {
 		availName = 640 - 2*mx
 	}
 	if showTagline {
-		b = append(b, txt(mx, place(9, 3), esc(p.Tagline), topt{fill: th.muted, size: 11, mono: true, ls: 2, cls: "fade"}))
+		lines := wrapMono(p.Tagline, wrapAt("tagline"), 11, 2)
+		ys := placeLines(len(lines), 9, 3, 15)
+		for i, l := range lines {
+			b = append(b, txt(mx, ys[i], esc(l), topt{fill: th.muted, size: 11, mono: true, ls: 2, cls: "fade"}))
+		}
+		putLocation(ys[0])
 	}
 	if showName {
-		size, ls := fitNameSize(name, availName)
+		size, ls := fitNameSize(name, availName-reserve("name"))
+		putLocation(float64(edge + 9))
 		b = append(b, txt(mx-4, place(57, 16), esc(name), topt{fill: th.fg, size: size, weight: 700, ls: ls, cls: "fade", delay: .1}))
 	}
 	if showBuilding {
-		b = append(b, buildingLines(mx, place(14, 3), words, th)...)
+		shown := words
+		if limit := wrapAt("building"); limit > 0 {
+			cols := monoCols(limit, 18, 0) - len("$ building ") - 1
+			shown = make([]string, len(words))
+			for i, wd := range words {
+				shown[i] = clipRunes(wd, max(cols, 1))
+			}
+		}
+		y := place(14, 3)
+		putLocation(y)
+		b = append(b, buildingLines(mx, y, shown, th)...)
 	}
 	if showNote {
-		b = append(b, txt(mx, place(9, 3), esc(p.Note), topt{fill: th.muted, size: 12, mono: true}))
+		lines := wrapMono(p.Note, wrapAt("note"), 12, 0)
+		ys := placeLines(len(lines), 9, 3, 17)
+		for i, l := range lines {
+			b = append(b, txt(mx, ys[i], esc(l), topt{fill: th.muted, size: 12, mono: true}))
+		}
+		putLocation(ys[0])
+	}
+	if !locationDone {
+		putLocation(place(9, 3))
 	}
 
 	leftEnd := textEnd() + 25
@@ -286,7 +352,7 @@ func identityFlow(r report.Report, cfg config.Config, mode Mode) string {
 	h := bodyEnd
 	if showFooter {
 		b = append(b, fmt.Sprintf(`<line x1="%s" x2="%s" y1="%d" y2="%d" stroke="%s"/>`, num(mx), num(W-mx), bodyEnd, bodyEnd, th.border))
-		b = append(b, txt(mx, float64(bodyEnd+24), esc("github.com/"+login), topt{fill: th.muted, size: 11, mono: true}))
+		b = append(b, txt(mx, float64(bodyEnd+24), esc(clipMono("github.com/"+login, wrapAt("footer"), 11, 0)), topt{fill: th.muted, size: 11, mono: true}))
 		h = bodyEnd + 44
 	}
 

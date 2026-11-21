@@ -170,7 +170,9 @@ func TestIdentityCardShrinksLongNamesToFit447(t *testing.T) {
 	if got >= 76 {
 		t.Fatalf("a %d-character name must shrink, got %v", len(long.Profile.Name), got)
 	}
-	if width := float64(len(long.Profile.Name)) * 0.56 * got; width > 447 {
+	spaces := float64(strings.Count(long.Profile.Name, " "))
+	letters := float64(len(long.Profile.Name)) - spaces
+	if width := (letters*0.56 + spaces*0.28) * got; width > 447 {
 		t.Fatalf("estimated width %v exceeds 447", width)
 	}
 }

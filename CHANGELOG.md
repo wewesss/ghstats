@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-11-21
+
+### Changed
+
+- The builder interface is in French on the French site; the cards stay in English.
+- `GHSTATS_ALL_BROWSERS=1` runs the site end-to-end tests on Chromium, Firefox and WebKit.
+
 ## [1.5.0] - 2026-11-21
 
 ### Added

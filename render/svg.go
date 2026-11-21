@@ -138,6 +138,10 @@ func label(y float64, s string, th theme, right string) string {
 }
 
 func SVG(w io.Writer, r report.Report, cfg config.Render, mode Mode) error {
+	return svg(w, r, cfg, mode, true)
+}
+
+func svg(w io.Writer, r report.Report, cfg config.Render, mode Mode, header bool) error {
 	if mode != Dark && mode != Light {
 		return fmt.Errorf("render: unknown mode %q", mode)
 	}
@@ -147,6 +151,7 @@ func SVG(w io.Writer, r report.Report, cfg config.Render, mode Mode) error {
 		return err
 	}
 	rd := newRenderer(r, cfg, mode)
+	rd.header = header
 	if _, err := io.WriteString(w, rd.card()+"\n"); err != nil {
 		return fmt.Errorf("render: write svg: %w", err)
 	}
@@ -304,7 +309,7 @@ func shell(w float64, height int, ariaLabel string, th theme, cfg config.Render,
 
 func (rd *renderer) stack(indexes []int) (body, styles []string, y int) {
 	cfg, th := rd.cfg, rd.th
-	y = 56
+	y = rd.top()
 	for n, bi := range indexes {
 		blk := cfg.Blocks[bi]
 		vs := rd.activeVariants(blk)
@@ -364,26 +369,71 @@ func (rd *renderer) stack(indexes []int) (body, styles []string, y int) {
 	return body, styles, y
 }
 
+func (rd *renderer) top() int {
+	if rd.header {
+		return 56
+	}
+	return 16
+}
+
+func (rd *renderer) columnBlocks() (left, right []int) {
+	cfg := rd.cfg
+	hasLangs := slices.ContainsFunc(cfg.Blocks, func(b config.Block) bool { return b.Name == "languages" })
+	if hasLangs {
+		for i, blk := range cfg.Blocks {
+			if blk.Name == "languages" {
+				right = append(right, i)
+			} else {
+				left = append(left, i)
+			}
+		}
+		return left, right
+	}
+	var ly, ry int
+	for i, blk := range cfg.Blocks {
+		h := 0
+		for _, v := range rd.activeVariants(blk) {
+			h = max(h, rd.blockHeight(blk.Name, v))
+		}
+		if ry < ly {
+			if len(right) > 0 {
+				ry += 8
+			}
+			ry += h + 6
+			right = append(right, i)
+		} else {
+			if len(left) > 0 {
+				ly += 8
+			}
+			ly += h + 6
+			left = append(left, i)
+		}
+	}
+	return left, right
+}
+
 func (rd *renderer) card() string {
 	th, cfg := rd.th, rd.cfg
 	login := rd.rep.Login
-	wide := cfg.Layout == config.LayoutWide
+	wide := effectiveLayout(config.Card{Layout: cfg.Layout, Blocks: cfg.Blocks}) == config.LayoutWide
 	cw := width
 	if wide {
 		cw = wideWidth
 	}
 	var body, styles []string
 
-	body = append(body, txt(24, 31, esc(login), topt{fill: th.fg, size: 14, weight: 600}))
-	body = append(body, txt(float64(23+9*utf8.RuneCountInString(login)), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
-	body = append(body, fmt.Sprintf(`<circle cx="%s" cy="27" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="27" r="3" fill="%s"/>`,
-		num(cw-132), acc, num(cw-132), acc))
-	synced := "never"
-	if !rd.rep.CollectedAt.IsZero() {
-		synced = rd.rep.CollectedAt.UTC().Format("2 Jan")
+	if rd.header {
+		body = append(body, txt(24, 31, esc(login), topt{fill: th.fg, size: 14, weight: 600}))
+		body = append(body, txt(float64(23+9*utf8.RuneCountInString(login)), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
+		body = append(body, fmt.Sprintf(`<circle cx="%s" cy="27" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="27" r="3" fill="%s"/>`,
+			num(cw-132), acc, num(cw-132), acc))
+		synced := "never"
+		if !rd.rep.CollectedAt.IsZero() {
+			synced = rd.rep.CollectedAt.UTC().Format("2 Jan")
+		}
+		body = append(body, txt(cw-24, 31, "synced · "+esc(synced), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
+		body = append(body, fmt.Sprintf(`<line x1="24" x2="%s" y1="46" y2="46" stroke="%s"/>`, num(cw-24), th.border))
 	}
-	body = append(body, txt(cw-24, 31, "synced · "+esc(synced), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
-	body = append(body, fmt.Sprintf(`<line x1="24" x2="%s" y1="46" y2="46" stroke="%s"/>`, num(cw-24), th.border))
 	if cfg.Motion {
 		styles = append(styles, motionCSS()...)
 	}
@@ -397,24 +447,13 @@ func (rd *renderer) card() string {
 		b, s, y := rd.stack(all)
 		body, styles, height = append(body, b...), append(styles, s...), y+8
 	} else {
-		var left, right []int
-		for i, blk := range cfg.Blocks {
-			if blk.Name == "languages" {
-				right = append(right, i)
-			} else {
-				left = append(left, i)
-			}
-		}
+		left, right := rd.columnBlocks()
 		lb, ls, ly := rd.stack(left)
 		rb, rs, ry := rd.stack(right)
 		height = max(ly, ry) + 8
 		body = append(body, lb...)
-		if len(right) > 0 {
-			body = append(body, fmt.Sprintf(`<g transform="translate(%s 0)">%s</g>`, num(wideOffset), strings.Join(rb, "")))
-		}
-		if len(left) > 0 && len(right) > 0 {
-			body = append(body, fmt.Sprintf(`<line x1="%s" x2="%s" y1="62" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), height-14, th.border))
-		}
+		body = append(body, fmt.Sprintf(`<g transform="translate(%s 0)">%s</g>`, num(wideOffset), strings.Join(rb, "")))
+		body = append(body, fmt.Sprintf(`<line x1="%s" x2="%s" y1="%d" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), rd.top()+6, height-14, th.border))
 		styles = append(styles, ls...)
 		styles = append(styles, rs...)
 	}

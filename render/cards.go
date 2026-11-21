@@ -7,6 +7,13 @@ import (
 	"github.com/wewesss/ghstats/report"
 )
 
+func effectiveLayout(c config.Card) string {
+	if c.Layout == config.LayoutWide && len(c.Blocks) >= 2 {
+		return config.LayoutWide
+	}
+	return config.LayoutCard
+}
+
 func Cards(r report.Report, cfg config.Config, mode Mode) (map[string]string, error) {
 	files := map[string]string{}
 	var sb strings.Builder
@@ -14,8 +21,8 @@ func Cards(r report.Report, cfg config.Config, mode Mode) (map[string]string, er
 		sb.Reset()
 		rc := cfg.Render
 		rc.Blocks = c.Blocks
-		rc.Layout = c.Layout
-		if err := SVG(&sb, r, rc, mode); err != nil {
+		rc.Layout = effectiveLayout(c)
+		if err := svg(&sb, r, rc, mode, c.HasHeader()); err != nil {
 			return nil, err
 		}
 		files[c.Name+"-"+string(mode)+".svg"] = sb.String()

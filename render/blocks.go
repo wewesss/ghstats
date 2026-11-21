@@ -33,6 +33,7 @@ type renderer struct {
 	rows    []langRow
 	maxV    float64
 	private bool
+	header  bool
 }
 
 type variantFn func(rd *renderer, p string) string

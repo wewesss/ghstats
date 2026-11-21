@@ -37,8 +37,8 @@ func TestCardsSplitsBlocksIntoFiles(t *testing.T) {
 	if strings.Contains(langs, "STARS") || strings.Contains(langs, "VIEWS") {
 		t.Fatal("langs must hold only the languages block")
 	}
-	if !strings.Contains(overview, `viewBox="0 0 495 `) || !strings.Contains(langs, `viewBox="0 0 1000 `) {
-		t.Fatal("layout must be inherited for overview and wide for langs")
+	if !strings.Contains(overview, `viewBox="0 0 495 `) || !strings.Contains(langs, `viewBox="0 0 495 `) {
+		t.Fatal("overview inherits card and a wide card with one block falls back to 495")
 	}
 }
 
@@ -56,7 +56,7 @@ func TestSnippetListsEveryCard(t *testing.T) {
 	cfg := config.Default()
 	cfg.Render.Cards = []config.Card{
 		{Name: "overview", Blocks: []config.Block{{Name: "stats", Variants: []string{"totals"}}}},
-		{Name: "langs", Layout: config.LayoutWide, Blocks: []config.Block{{Name: "languages", Variants: []string{"treemap"}}}},
+		{Name: "langs", Layout: config.LayoutWide, Blocks: []config.Block{{Name: "languages", Variants: []string{"treemap"}}, {Name: "history", Variants: []string{"views"}}}},
 	}
 	s := render.Snippet(cfg)
 	order := []string{

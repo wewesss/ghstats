@@ -290,7 +290,7 @@ Without `profile.identity`, the card is drawn as before. `identity.show` lists t
 - `header`: the small name, `/ profile` and the pulsing dot, with the rule under them.
 - `name`: the large name.
 - `tagline`, `note`: the lines of the same name.
-- `location`: the location, at the right of the top strip. The strip exists as soon as `header` or `location` is drawn.
+- `location`: the location, at the right of the top strip. The strip, the dot and the rule exist only when `header` is drawn; without `header`, the location sits at the top right of the first content line.
 - `building`: the `$ building` line with the rotating words of `focus`.
 - `focus`: the numbered focus list. Without it, the right column and its vertical rule disappear.
 - `footer`: the rule and `github.com/<login>` at the bottom.

@@ -290,7 +290,7 @@ Sans `profile.identity`, la carte est dessinée comme avant. `identity.show` lis
 - `header` : le petit nom, `/ profile` et le point qui pulse, avec le trait en dessous.
 - `name` : le grand nom.
 - `tagline`, `note` : les lignes du même nom.
-- `location` : le lieu, à droite de la bande du haut. La bande existe dès que `header` ou `location` est dessiné.
+- `location` : le lieu, à droite de la bande du haut. La bande, le point et le trait n'existent que si `header` est dessiné ; sans `header`, le lieu se place en haut à droite de la première ligne de contenu.
 - `building` : la ligne `$ building` avec les mots qui tournent de `focus`.
 - `focus` : la liste numérotée du focus. Sans elle, la colonne de droite et son trait vertical disparaissent.
 - `footer` : le trait et `github.com/<login>` en bas.

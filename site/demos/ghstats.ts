@@ -21,13 +21,13 @@ export interface Options {
 }
 
 export interface Ghstats {
-  render(yaml: string, mode: Mode): RenderResult;
+  render(yaml: string, mode: Mode, report?: string): RenderResult;
   defaults(): string;
   options(): Options;
 }
 
 interface RawGhstats {
-  render(yaml: string, mode: string): RenderResult;
+  render(yaml: string, mode: string, report?: string): RenderResult;
   defaults(): string;
   options(): string;
 }
@@ -82,7 +82,7 @@ async function boot(): Promise<Ghstats> {
   if (raw === undefined) throw new Error("the renderer did not register itself");
   const options = JSON.parse(raw.options()) as Options;
   return {
-    render: (yaml, mode) => raw.render(yaml, mode),
+    render: (yaml, mode, report) => (report === undefined ? raw.render(yaml, mode) : raw.render(yaml, mode, report)),
     defaults: () => raw.defaults(),
     options: () => options,
   };

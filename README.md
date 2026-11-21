@@ -159,7 +159,7 @@ Every variant, with the configuration that produces it, is in the [gallery](./do
 
 ## Stability
 
-From v1.0.0 the configuration `version: 1` and the `stats.json` `schema_version: 1` are stable for the whole v1 series: an added field breaks nothing, and an incompatible change ships as v2. Pin the Action with `wewesss/ghstats@v1`, which follows the newest v1.x.y release and installs the matching binary.
+From v1.0.0 the configuration `version: 1` and the `stats.json` `schema_version: 1` and the Go entry points listed in the [extend guide](./docs/en/guide/extend.md) are stable for the whole v1 series: an added field breaks nothing, and an incompatible change ships as v2. Pin the Action with `wewesss/ghstats@v1`, which follows the newest v1.x.y release and installs the matching binary.
 
 The previous version (`github-stats-api-go`, GPL-3.0) is kept at the [`legacy-v1.0.0`](https://github.com/wewesss/ghstats/tree/legacy-v1.0.0) tag.
 

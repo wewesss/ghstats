@@ -78,7 +78,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), i
 - **Types** used in this repository: `feat`, `fix`, `docs`, `ci`, `chore`, `refactor`, `test`.
 - **Summary**: present-tense imperative, lowercase, no trailing period, at most 72 characters. `feat: add the custom link kind`, not `added` or `Added.`.
 - **No emoji** and no AI or co-author trailer in a commit message.
-- **Breaking changes**: add `!` after the type and a `BREAKING CHANGE:` footer explaining the migration. The configuration `version: 1` and `schema_version: 1` stay stable for the whole v1 series.
+- **Breaking changes**: add `!` after the type and a `BREAKING CHANGE:` footer explaining the migration. The configuration `version: 1` and `schema_version: 1` stay stable for the whole v1 series, and so do the Go entry points listed in the extend guide: changing the signature of one of them is a breaking change, so it ships in v2.
 
 ## What I'll push back on
 

@@ -1,4 +1,5 @@
 import type { Options } from "./ghstats";
+import { t } from "./i18n";
 import { parseYaml, type Yaml } from "./miniyaml";
 
 export interface BlockState {
@@ -95,7 +96,6 @@ function blockStates(value: Yaml | undefined): BlockState[] {
 }
 
 export const SHIFT = "shift";
-export const SHIFT_REASON = "shift shows the weighting; turn on Show weighting to use it.";
 
 export function withoutShift(card: CardState): CardState {
   return {
@@ -114,10 +114,10 @@ export function setWeighting(form: FormState, weighting: boolean): FormState {
 
 export function cardNameProblem(name: string, cards: CardState[], self: number): string {
   const value = name.trim();
-  if (value === "") return "A card needs a name.";
-  if (value === ITEM_IDENTITY || value === ITEM_LINKS) return `"${value}" is reserved.`;
-  if (!CARD_NAME.test(value)) return "Use lowercase letters, digits and hyphens, up to 40 characters.";
-  if (cards.some((card, at) => at !== self && card.name === value)) return "Another card already has this name.";
+  if (value === "") return t("cardNeedsName");
+  if (value === ITEM_IDENTITY || value === ITEM_LINKS) return t("reserved", { value });
+  if (!CARD_NAME.test(value)) return t("nameFormat");
+  if (cards.some((card, at) => at !== self && card.name === value)) return t("nameTaken");
   return "";
 }
 

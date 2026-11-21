@@ -5,6 +5,7 @@ import { DEFAULT_PATH, SAMPLE, loadFromFile, loadFromGithub, type DataSource } f
 import { archive, exportItems, flatName, saveBlob, type Format } from "./export";
 import { fromYaml, linkItem, toConfig, type FormState, type RowState } from "./form";
 import { docsHome, loadGhstats, type Ghstats, type Mode, type Options, type RenderResult } from "./ghstats";
+import { t, type Key } from "./i18n";
 import { parseCanvas, step, toRows, type Direction } from "./layout";
 import { SettingsPanel } from "./panel";
 import { WORKFLOW } from "./workflow";
@@ -19,11 +20,11 @@ type Tab = "preview" | "yaml" | "workflow" | "snippet";
 type Pane = "settings" | "preview" | "files";
 type Theme = "" | "light" | "dark";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "preview", label: "Preview" },
-  { id: "yaml", label: "ghstats.yaml" },
-  { id: "workflow", label: "Workflow" },
-  { id: "snippet", label: "Snippet" },
+const TABS: { id: Tab; label: Key | null }[] = [
+  { id: "preview", label: "preview" },
+  { id: "yaml", label: null },
+  { id: "workflow", label: "workflow" },
+  { id: "snippet", label: "snippet" },
 ];
 
 const FILES: { id: Exclude<Tab, "preview">; label: string }[] = [
@@ -32,17 +33,17 @@ const FILES: { id: Exclude<Tab, "preview">; label: string }[] = [
   { id: "snippet", label: "snippet" },
 ];
 
-const THEMES: { value: Theme; label: string }[] = [
-  { value: "", label: "Auto" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+const THEMES: { value: Theme; label: Key }[] = [
+  { value: "", label: "auto" },
+  { value: "light", label: "light" },
+  { value: "dark", label: "dark" },
 ];
 
-const ARROWS: { direction: Direction; glyph: string; label: string }[] = [
-  { direction: "left", glyph: "←", label: "Move left" },
-  { direction: "right", glyph: "→", label: "Move right" },
-  { direction: "up", glyph: "↑", label: "Move to the row above" },
-  { direction: "down", glyph: "↓", label: "Move to the row below" },
+const ARROWS: { direction: Direction; glyph: string; label: Key }[] = [
+  { direction: "left", glyph: "←", label: "moveLeft" },
+  { direction: "right", glyph: "→", label: "moveRight" },
+  { direction: "up", glyph: "↑", label: "moveUp" },
+  { direction: "down", glyph: "↓", label: "moveDown" },
 ];
 
 function download(name: string, content: string): void {
@@ -67,7 +68,7 @@ function CopyButton({ text }: { text: string }) {
         });
       }}
     >
-      {done ? "Copied" : "Copy"}
+      {done ? t("copied") : t("copy")}
     </button>
   );
 }
@@ -138,9 +139,9 @@ function SiteControls() {
   return (
     <div className="gs-site" data-testid="site-controls">
       <a className="gs-docslink" href={docsHome()} data-testid="docs-link">
-        ← Docs
+        {t("docs")}
       </a>
-      <span role="group" aria-label="Theme" className="gs-segment gs-compact">
+      <span role="group" aria-label={t("theme")} className="gs-segment gs-compact">
         {THEMES.map((entry) => (
           <button
             key={entry.value}
@@ -151,12 +152,12 @@ function SiteControls() {
             data-testid={`theme-${entry.value === "" ? "auto" : entry.value}`}
             aria-pressed={theme === entry.value}
           >
-            {entry.label}
+            {t(entry.label)}
           </button>
         ))}
       </span>
       {languages.length > 1 ? (
-        <span role="group" aria-label="Language" className="gs-segment gs-compact">
+        <span role="group" aria-label={t("language")} className="gs-segment gs-compact">
           {languages.map((entry) => (
             <a
               key={entry.code}
@@ -195,7 +196,7 @@ function DataBar({ source, onChange }: { source: DataSource; onChange: (next: Da
   return (
     <div className="gs-databar" data-testid="data-bar">
       <label className="gs-inline">
-        <span>Data</span>
+        <span>{t("data")}</span>
         <select
           value={kind}
           data-testid="data-kind"
@@ -206,29 +207,29 @@ function DataBar({ source, onChange }: { source: DataSource; onChange: (next: Da
             if (next === "sample") onChange(SAMPLE);
           }}
         >
-          <option value="sample">Sample data</option>
-          <option value="github">GitHub login</option>
-          <option value="file">stats.json file</option>
+          <option value="sample">{t("dataSample")}</option>
+          <option value="github">{t("dataGithub")}</option>
+          <option value="file">{t("dataFile")}</option>
         </select>
       </label>
       {kind === "github" ? (
         <>
           <label className="gs-inline">
-            <span>Login</span>
+            <span>{t("login")}</span>
             <input data-testid="data-login" value={login} onChange={(event) => setLogin(event.target.value.trim())} spellCheck={false} autoCapitalize="off" />
           </label>
           <label className="gs-inline">
-            <span>Path</span>
+            <span>{t("path")}</span>
             <input data-testid="data-path" value={path} onChange={(event) => setPath(event.target.value.trim())} spellCheck={false} />
           </label>
           <button type="button" className="gs-button" data-testid="data-load" disabled={busy || login === ""} onClick={() => run(() => loadFromGithub(login, path))}>
-            Load
+            {t("load")}
           </button>
         </>
       ) : null}
       {kind === "file" ? (
         <label className="gs-inline">
-          <span>File</span>
+          <span>{t("file")}</span>
           <input
             type="file"
             data-testid="data-file"
@@ -259,7 +260,7 @@ function OutputPane({ name, hint, text, downloadable, children }: { name: string
           <CopyButton text={text} />
           {downloadable === true ? (
             <button type="button" className="gs-button" onClick={() => download(name, text)}>
-              Download
+              {t("download")}
             </button>
           ) : null}
         </span>
@@ -338,7 +339,7 @@ function BuilderApp({ api, options, initial }: Ready) {
   }, []);
 
   const arrange = (next: RowState[]) => setForm((previous) => ({ ...previous, rows: next }));
-  const moves = ARROWS.map((entry) => ({ ...entry, to: current === null ? null : step(rows, current, entry.direction) }));
+  const moves = ARROWS.map((entry) => ({ ...entry, label: t(entry.label), to: current === null ? null : step(rows, current, entry.direction) }));
 
   const choose = (next: Tab) => {
     setTab(next);
@@ -372,9 +373,9 @@ function BuilderApp({ api, options, initial }: Ready) {
   return createPortal(
     <div className="gs-frame" style={{ left: frame.left, top: frame.top }}>
     <div className="gs-app" data-testid="builder" data-pane={pane} data-mode={mode}>
-      <div className="gs-mobile-tabs" role="tablist" aria-label="Builder panes">
+      <div className="gs-mobile-tabs" role="tablist" aria-label={t("panes")}>
         <button type="button" role="tab" data-testid="pane-settings" aria-selected={pane === "settings"} onClick={() => setPane("settings")}>
-          Settings
+          {t("settings")}
         </button>
         <button
           type="button"
@@ -386,7 +387,7 @@ function BuilderApp({ api, options, initial }: Ready) {
             setTab("preview");
           }}
         >
-          Preview
+          {t("preview")}
         </button>
         <button
           type="button"
@@ -398,17 +399,17 @@ function BuilderApp({ api, options, initial }: Ready) {
             if (tab === "preview") setTab("yaml");
           }}
         >
-          Files
+          {t("files")}
         </button>
       </div>
 
-      <aside ref={settings} className="gs-settings" data-testid="settings" aria-label="Settings">
+      <aside ref={settings} className="gs-settings" data-testid="settings" aria-label={t("settings")}>
         <SiteControls />
         {override !== null ? (
           <div className="gs-lock">
-            <span>YAML edited by hand: the form is off.</span>
+            <span>{t("yamlLocked")}</span>
             <button type="button" className="gs-button" onClick={() => setOverride(null)}>
-              Back to the form
+              {t("backToForm")}
             </button>
           </div>
         ) : null}
@@ -429,17 +430,17 @@ function BuilderApp({ api, options, initial }: Ready) {
         <div className="gs-bar">
           <DataBar source={data} onChange={setData} />
           <div className="gs-view">
-            <span role="group" aria-label="Preview mode" className="gs-segment">
+            <span role="group" aria-label={t("previewMode")} className="gs-segment">
               <button type="button" className="gs-button" data-testid="mode-light" aria-pressed={mode === "light"} onClick={() => setMode("light")}>
-                Light
+                {t("light")}
               </button>
               <button type="button" className="gs-button" data-testid="mode-dark" aria-pressed={mode === "dark"} onClick={() => setMode("dark")}>
-                Dark
+                {t("dark")}
               </button>
             </span>
-            <span role="group" aria-label="Zoom" className="gs-segment">
+            <span role="group" aria-label={t("zoom")} className="gs-segment">
               <button type="button" className="gs-button" data-testid="zoom-fit" aria-pressed={zoom === "fit"} onClick={() => setZoom("fit")}>
-                Fit
+                {t("fit")}
               </button>
               <button type="button" className="gs-button" data-testid="zoom-100" aria-pressed={zoom === "100"} onClick={() => setZoom("100")}>
                 100%
@@ -448,19 +449,19 @@ function BuilderApp({ api, options, initial }: Ready) {
           </div>
         </div>
 
-        <div className="gs-tabs" role="tablist" aria-label="Outputs">
+        <div className="gs-tabs" role="tablist" aria-label={t("outputs")}>
           {TABS.map((entry) => (
             <button key={entry.id} type="button" role="tab" data-testid={`tab-${entry.id}`} aria-selected={tab === entry.id} onClick={() => choose(entry.id)}>
-              {entry.label}
+              {entry.label === null ? "ghstats.yaml" : t(entry.label)}
             </button>
           ))}
           <span className="gs-source" data-testid="data-source">
-            Showing <strong>{data.label}</strong>
+            {t("source")} <strong>{data.label}</strong>
           </span>
         </div>
 
         {tab !== "preview" ? (
-          <div className="gs-filetabs" role="group" aria-label="Files" data-testid="file-tabs">
+          <div className="gs-filetabs" role="group" aria-label={t("files")} data-testid="file-tabs">
             <span className="gs-segment">
               {FILES.map((entry) => (
                 <button key={entry.id} type="button" className="gs-button" data-testid={`file-${entry.id}`} aria-pressed={tab === entry.id} onClick={() => choose(entry.id)}>
@@ -475,15 +476,15 @@ function BuilderApp({ api, options, initial }: Ready) {
           <div className="gs-previewpane" data-testid="preview">
             <div className="gs-selbar" data-testid="selection-bar">
               {override !== null ? (
-                <span className="gs-hint">The YAML was edited by hand: the canvas only shows it. Use Back to the form to arrange again.</span>
+                <span className="gs-hint">{t("handEdited")}</span>
               ) : current === null ? (
-                <span className="gs-hint">Click an element to select it. Drag it, or use the arrow keys, to arrange the README.</span>
+                <span className="gs-hint">{t("selectHint")}</span>
               ) : (
                 <>
                   <span className="gs-selname">
-                    Selected <strong data-testid="selected-name">{itemLabel(current)}</strong>
+                    {t("selected")} <strong data-testid="selected-name">{itemLabel(current)}</strong>
                   </span>
-                  <span className="gs-arrows" role="group" aria-label="Move the selection">
+                  <span className="gs-arrows" role="group" aria-label={t("moveSelection")}>
                     {moves.map((entry) => (
                       <button
                         key={entry.direction}
@@ -502,10 +503,10 @@ function BuilderApp({ api, options, initial }: Ready) {
                     ))}
                   </span>
                   <button type="button" className="gs-button gs-only-mobile" data-testid="edit-selection" onClick={() => setPane("settings")}>
-                    Edit settings
+                    {t("editSettings")}
                   </button>
                   <button type="button" className="gs-button" onClick={() => setSelected(null)}>
-                    Deselect
+                    {t("deselect")}
                   </button>
                 </>
               )}
@@ -513,15 +514,15 @@ function BuilderApp({ api, options, initial }: Ready) {
                 {current !== null ? (
                   <>
                     <button type="button" className="gs-button" data-testid="download-svg" disabled={!exportable} onClick={() => downloadOne("svg")}>
-                      Download SVG
+                      {t("downloadSvg")}
                     </button>
                     <button type="button" className="gs-button" data-testid="download-png" disabled={!exportable} onClick={() => downloadOne("png")}>
-                      Download PNG
+                      {t("downloadPng")}
                     </button>
                   </>
                 ) : null}
                 <button type="button" className="gs-button" data-testid="download-zip" disabled={!exportable} onClick={downloadAll}>
-                  Download all (.zip)
+                  {t("downloadZip")}
                 </button>
               </span>
               {exportProblem !== "" ? (
@@ -553,7 +554,7 @@ function BuilderApp({ api, options, initial }: Ready) {
             name="ghstats.yaml"
             text={yamlText}
             downloadable
-            hint="Save it at the root of your profile repository: the Action and the CLI read it from there. Editing it here turns the form off."
+            hint={t("hintYaml")}
           >
             <textarea
               className="gs-yaml"
@@ -570,14 +571,14 @@ function BuilderApp({ api, options, initial }: Ready) {
           <OutputPane
             name=".github/workflows/ghstats.yml"
             text={WORKFLOW}
-            hint="Add it to your profile repository and replace <user> with your login, as described in Getting started."
+            hint={t("hintWorkflow")}
           >
             <pre data-testid="workflow-text">{WORKFLOW}</pre>
           </OutputPane>
         ) : null}
 
         {tab === "snippet" ? (
-          <OutputPane name="README.snippet.md" text={shown.snippet} hint="Paste it in your profile README. The Action writes the same file after each run.">
+          <OutputPane name="README.snippet.md" text={shown.snippet} hint={t("hintSnippet")}>
             <pre data-testid="snippet-text">{shown.snippet}</pre>
           </OutputPane>
         ) : null}
@@ -611,10 +612,10 @@ export function Builder() {
   if (failure !== "") {
     return (
       <p className="gs-loading" role="alert">
-        The renderer failed to load: {failure}
+        {t("rendererFailed", { error: failure })}
       </p>
     );
   }
-  if (ready === null) return <p className="gs-loading">Loading the renderer…</p>;
+  if (ready === null) return <p className="gs-loading">{t("rendererLoading")}</p>;
   return <BuilderApp {...ready} />;
 }

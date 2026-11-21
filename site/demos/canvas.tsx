@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent } from "react";
 import { ALIGNS, type RowState } from "./form";
 import { svgUrl, type Mode } from "./ghstats";
+import { t, type Key } from "./i18n";
 import { canPlace, place, same, step, type CanvasEntry, type CanvasRow, type Direction, type Target } from "./layout";
 
 export const COLUMN = 896;
@@ -19,10 +20,10 @@ function imageUrl(svg: string): string {
 }
 
 export function itemLabel(item: string): string {
-  if (item === "identity") return "Identity card";
-  if (item.startsWith("links/")) return `Link ${item.slice(6)}`;
-  if (item === "links") return "Links";
-  return `Card ${item}`;
+  if (item === "identity") return t("identityCard");
+  if (item.startsWith("links/")) return t("linkNamed", { name: item.slice(6) });
+  if (item === "links") return t("links");
+  return t("cardNamed", { name: item });
 }
 
 function widthStyle(width: string | null): CSSProperties {
@@ -30,6 +31,8 @@ function widthStyle(width: string | null): CSSProperties {
   if (width !== null && /^\d+$/.test(width)) return { width: `${width}px`, maxWidth: "100%", flex: "0 1 auto" };
   return { flex: "0 1 auto", maxWidth: "100%" };
 }
+
+const ALIGN_SIDE: Record<string, Key> = { left: "alignLeft", center: "alignCenter", right: "alignRight" };
 
 const JUSTIFY: Record<string, string> = { left: "flex-start", center: "center", right: "flex-end" };
 
@@ -165,7 +168,7 @@ export function Canvas({
     const key = `row:${at}`;
     return (
       <div key={key} className="gs-newrow" data-testid="drop-newrow" data-at={at} aria-hidden="true" {...zoneProps(key, { kind: "row", at })}>
-        <span>New row</span>
+        <span>{t("newRow")}</span>
       </div>
     );
   };
@@ -233,14 +236,14 @@ export function Canvas({
               <div className="gs-line-body" style={{ justifyContent: JUSTIFY[row.align] ?? "flex-start" }}>
                 {row.entries.map((entry, i) => element(entry, r, i))}
                 {editable ? (
-                  <div className="gs-tools" role="group" aria-label={`Row ${r + 1} alignment`} data-testid="row-tools">
+                  <div className="gs-tools" role="group" aria-label={t("rowAlignment", { n: r + 1 })} data-testid="row-tools">
                     {ALIGNS.map((align) => (
                       <button
                         key={align}
                         type="button"
                         data-testid={`align-${align}`}
-                        aria-label={`Align row ${r + 1} ${align}`}
-                        title={`Align ${align}`}
+                        aria-label={t("alignRow", { n: r + 1, side: t(ALIGN_SIDE[align] ?? "alignLeft") })}
+                        title={t("alignTitle", { side: t(ALIGN_SIDE[align] ?? "alignLeft") })}
                         aria-pressed={row.align === align}
                         onClick={() => {
                           const next = state.map((entry, at) => (at === r ? { ...entry, align } : entry));

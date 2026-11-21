@@ -106,6 +106,8 @@ export async function drag(source: Locator, target: Locator): Promise<void> {
   const to = await target.boundingBox();
   if (to === null) throw new Error("the drop zone has no box");
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  await page.mouse.move(to.x + to.width / 2 + 1, to.y + to.height / 2, { steps: 2 });
+  await expect(target).toHaveAttribute("data-over", /^(ok|deny)$/);
   await page.mouse.up();
 }
 

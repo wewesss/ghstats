@@ -55,6 +55,9 @@ Switches for the `distribution` entries of the report: the download count of rel
 | `distribution.release_assets` | `true` |
 | `distribution.clones` | `true` |
 | `distribution.views` | `true` |
+| `distribution.hide_partial` | `false` |
+
+`distribution.hide_partial`: Shows n/a on the cards instead of a traffic total that misses some repositories (reliability `partial`). stats.json keeps the count.
 
 ## render
 
@@ -370,6 +373,7 @@ distribution:
   release_assets: true
   clones: true
   views: true
+  hide_partial: false
 render:
   blocks:
     - stats:

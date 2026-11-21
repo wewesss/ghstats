@@ -42,6 +42,8 @@ distribution:
   release_assets: true
   clones: true
   views: true
+  # Show n/a on the cards instead of a traffic total that misses some repositories.
+  hide_partial: false
 
 render:
   # Blocks are stacked in this order. One variant is fixed, several rotate in place.

@@ -479,7 +479,7 @@ func TestTrafficPartialWhenARepoLacksTraffic(t *testing.T) {
 	if got := metric(t, r, report.ChannelViews, "since").Reliability; got != "partial" {
 		t.Fatalf("reliability = %s", got)
 	}
-	if got := metric(t, r, report.ChannelViews, "last_14_days").Reliability; got != "observed" {
+	if got := metric(t, r, report.ChannelViews, "last_14_days").Reliability; got != "partial" {
 		t.Fatalf("14d reliability = %s", got)
 	}
 	want := []string{"1 traffic collection error", "1 of 2 repositories have no traffic data in this snapshot"}

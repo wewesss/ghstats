@@ -56,6 +56,7 @@ type Distribution struct {
 	ReleaseAssets bool `yaml:"release_assets"`
 	Clones        bool `yaml:"clones"`
 	Views         bool `yaml:"views"`
+	HidePartial   bool `yaml:"hide_partial"`
 }
 
 func Default() Config {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/render"
+	"github.com/wewesss/ghstats/report"
 	"github.com/wewesss/ghstats/sample"
 )
 
@@ -73,5 +74,35 @@ func TestSnippetListsEveryCard(t *testing.T) {
 	}
 	if strings.Contains(s, "stats-dark.svg") {
 		t.Fatalf("no default stats card expected:\n%s", s)
+	}
+}
+
+func TestCardsHidePartialShowsNAOnPartialMetrics(t *testing.T) {
+	rep := sample.Report()
+	for i, m := range rep.Distribution {
+		if m.Channel == report.ChannelViews && m.Window == report.WindowLast14Days {
+			rep.Distribution[i].Reliability = report.ReliabilityPartial
+		}
+	}
+	cfg := config.Default()
+	cfg.Render.Cards = []config.Card{{Name: "traffic", Blocks: []config.Block{{Name: "stats", Variants: []string{"distribution"}}}}}
+	files, err := render.Cards(rep, cfg, render.Dark)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(files["traffic-dark.svg"], ">1,905<") {
+		t.Fatal("a partial count must be shown by default")
+	}
+	cfg.Distribution.HidePartial = true
+	files, err = render.Cards(rep, cfg, render.Dark)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svg := files["traffic-dark.svg"]
+	if strings.Contains(svg, ">1,905<") || !strings.Contains(svg, ">n/a<") {
+		t.Fatal("a partial count must be n/a with hide_partial")
+	}
+	if !strings.Contains(svg, ">5,000<") {
+		t.Fatal("an observed count must stay visible")
 	}
 }

@@ -23,7 +23,7 @@ func Cards(r report.Report, cfg config.Config, mode Mode) (map[string]string, er
 		rc := cfg.Render
 		rc.Blocks = c.Blocks
 		rc.Layout = effectiveLayout(c)
-		h, err := svg(&sb, r, rc, mode, cardOpts{header: c.HasHeader(), minHeight: minHeight})
+		h, err := svg(&sb, r, rc, mode, cardOpts{header: c.HasHeader(), minHeight: minHeight, hidePartial: cfg.Distribution.HidePartial})
 		if err != nil {
 			return 0, err
 		}

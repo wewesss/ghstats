@@ -35,6 +35,8 @@ type renderer struct {
 	private bool
 	header  bool
 
+	hidePartial bool
+
 	minHeight int
 	yshift    int
 }
@@ -259,7 +261,7 @@ func (rd *renderer) langLabel(title string) string {
 func (rd *renderer) metric(channel, window string) string {
 	for _, m := range rd.rep.Distribution {
 		if m.Channel == channel && (m.Window == window || window == report.WindowSincePrefix && strings.HasPrefix(m.Window, window)) {
-			if m.Count == nil || m.Reliability == report.ReliabilityUnavailable {
+			if m.Count == nil || m.Reliability == report.ReliabilityUnavailable || (rd.hidePartial && m.Reliability == report.ReliabilityPartial) {
 				return "n/a"
 			}
 			return commas(*m.Count)

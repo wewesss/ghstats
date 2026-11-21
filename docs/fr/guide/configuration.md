@@ -55,6 +55,9 @@ Interrupteurs des entrées `distribution` du rapport : le nombre de télécharge
 | `distribution.release_assets` | `true` |
 | `distribution.clones` | `true` |
 | `distribution.views` | `true` |
+| `distribution.hide_partial` | `false` |
+
+`distribution.hide_partial` : Affiche n/a sur les cartes au lieu d'un total de trafic auquel manquent des dépôts (fiabilité `partial`). stats.json garde le chiffre.
 
 ## render
 
@@ -370,6 +373,7 @@ distribution:
   release_assets: true
   clones: true
   views: true
+  hide_partial: false
 render:
   blocks:
     - stats:

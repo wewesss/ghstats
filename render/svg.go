@@ -138,8 +138,9 @@ func label(y float64, s string, th theme, right string) string {
 }
 
 type cardOpts struct {
-	header    bool
-	minHeight int
+	header      bool
+	minHeight   int
+	hidePartial bool
 }
 
 func SVG(w io.Writer, r report.Report, cfg config.Render, mode Mode) error {
@@ -159,6 +160,7 @@ func svg(w io.Writer, r report.Report, cfg config.Render, mode Mode, o cardOpts)
 	rd := newRenderer(r, cfg, mode)
 	rd.header = o.header
 	rd.minHeight = o.minHeight
+	rd.hidePartial = o.hidePartial
 	out, height := rd.card()
 	if _, err := io.WriteString(w, out+"\n"); err != nil {
 		return 0, fmt.Errorf("render: write svg: %w", err)

@@ -86,6 +86,7 @@ func TestDefaultValuesMatchDocs(t *testing.T) {
 		"distribution.release_assets": fmt.Sprint(d.Distribution.ReleaseAssets),
 		"distribution.clones":         fmt.Sprint(d.Distribution.Clones),
 		"distribution.views":          fmt.Sprint(d.Distribution.Views),
+		"distribution.hide_partial":   fmt.Sprint(d.Distribution.HidePartial),
 	}
 	for key, doc := range want {
 		code, ok := got[key]

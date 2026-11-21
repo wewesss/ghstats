@@ -174,7 +174,7 @@ L'API :
 
 | Appel | Renvoie |
 | --- | --- |
-| `ghstats.render(yaml, mode, report?)` | `{cards, snippet, yaml, error}`. `yaml` est la configuration (texte YAML ou JSON), `mode` vaut `"dark"` ou `"light"`, et `report` est le texte d'un `stats.json` ; sans lui, le moteur dessine des données d'exemple. `cards` associe des noms de fichiers à du texte SVG, `snippet` est le snippet du README, `yaml` est la configuration normalisée, et `error` est vide en cas de succès. Un `stats.json` dont le `schema_version` n'est pas `1` donne une erreur. |
+| `ghstats.render(yaml, mode, report?, still?)` | `{cards, snippet, yaml, error}`. `yaml` est la configuration (texte YAML ou JSON), `mode` vaut `"dark"` ou `"light"`, et `report` est le texte d'un `stats.json` ; sans lui, le moteur dessine des données d'exemple. `cards` associe des noms de fichiers à du texte SVG, `snippet` est le snippet du README, `yaml` est la configuration normalisée, et `error` est vide en cas de succès. Un `stats.json` dont le `schema_version` n'est pas `1` donne une erreur. `still` est un quatrième argument facultatif : quand il est vrai, les cartes sont dessinées avec `render.motion` coupé, quoi que dise la configuration (passez `undefined` ou une chaîne vide comme `report` pour garder les données d'exemple). |
 | `ghstats.defaults()` | La configuration de départ, en texte YAML. |
 | `ghstats.options()` | Une chaîne JSON qui liste ce que la configuration accepte : blocs et variantes, préréglages, accents, palettes, mises en page, types et styles de liens, et limites. |
 

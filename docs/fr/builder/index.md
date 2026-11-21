@@ -20,7 +20,7 @@ L'aperçu est le README tel que GitHub le dessine, construit à partir du snippe
 - Glissez un élément avant ou après un autre pour le mettre dans la même ligne, ou sur une bande New row pour lui donner sa propre ligne. Une ligne de liens n'accepte que des liens ; un dépôt refusé est entouré de rouge.
 - Avec un élément sélectionné, les boutons fléchés ou les touches fléchées le déplacent dans sa ligne et vers la ligne du dessus ou du dessous.
 - Survolez une ligne, ou sélectionnez l'un de ses éléments, pour afficher ses boutons d'alignement à gauche, au centre et à droite.
-- Sur une carte, Make it a card sort un bloc dans une nouvelle carte placée à côté.
+- Sur une carte, Make it a card sort un bloc dans une nouvelle carte. La nouvelle carte se place à côté de la carte courante seulement quand les deux sont en disposition `card` et que la ligne ne contient aucun lien ; sinon elle va dans une nouvelle ligne en dessous.
 - Avec un élément sélectionné, Download SVG et Download PNG l'enregistrent pour le mode d'aperçu courant ; Download all (.zip) regroupe chaque élément en SVG et en PNG, sombre et clair. Le PNG est dessiné sans animation en double taille, comme `ghstats render --png`, et son moteur ne se charge qu'au premier téléchargement PNG.
 
 ## Utiliser les sorties

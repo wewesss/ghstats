@@ -24,7 +24,7 @@ Une requête GraphQL paginée liste les dépôts avec leurs langages et leurs ve
 
 ### Pourquoi n'y a-t-il plus de tuile `n/a` pour les archives de sources ?
 
-GitHub n'expose aucun compteur de téléchargements pour les archives de sources, donc le chiffre ne peut jamais être rempli. Le rapport liste toujours le canal `source_archives` comme indisponible, avec une note qui dit pourquoi, mais la carte des totaux montre désormais les vues cumulées à la place d'une tuile qui ne pouvait que dire `n/a`.
+GitHub n'expose aucun compteur de téléchargements pour les archives de sources, donc le chiffre ne peut jamais être rempli. Le rapport liste toujours le canal `source_archives` comme indisponible, avec une note qui dit pourquoi, mais la variante `distribution` de la carte stats montre désormais les vues cumulées (`VIEWS TOTAL`) à la place d'une tuile qui ne pouvait que dire `n/a`.
 
 ### Quelle différence entre langages bruts et ajustés ?
 

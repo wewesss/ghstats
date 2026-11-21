@@ -35,7 +35,7 @@ Without `GHSTATS_TOKEN` in the environment, `init` asks for the token when the s
 6. Checks that the token belongs to your account and can read `<user>/ghstats-data`, then stores it as the `GHSTATS_TOKEN` secret of the profile repository. The token goes to `gh` on its standard input and is never printed.
 7. Starts the first run of the workflow and prints the URL of the Actions tab. Skip this step with `--no-run`.
 
-Running `init` again is safe. An existing workflow and `ghstats.yaml` are left as they are unless you pass `--force`. Only the text between the README markers is replaced, and nothing is written when it is already up to date. The secret is left alone when it exists and no token is given. The flags are in [Command line](./cli.md#init).
+Running `init` again is safe for your files, but not free of effects. An existing workflow and `ghstats.yaml` are left as they are unless you pass `--force`. Only the text between the README markers is replaced, and nothing is written when it is already up to date. The secret is left alone when it exists and `GHSTATS_TOKEN` is not set; with `GHSTATS_TOKEN` set, it is written again. Without `--no-run`, a new workflow run starts each time. The flags are in [Command line](./cli.md#init).
 
 ## Manual setup
 

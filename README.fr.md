@@ -170,4 +170,4 @@ L'ancienne version (`github-stats-api-go`, GPL-3.0) est conservée au tag [`lega
 
 ## Licence
 
-[MIT](LICENSE)
+[MIT](LICENSE). La sortie PNG embarque les polices Inter et JetBrains Mono, sous licence SIL Open Font License 1.1 ([Inter](tools/resvgwasm/fonts/Inter-OFL.txt), [JetBrains Mono](tools/resvgwasm/fonts/JetBrainsMono-OFL.txt)).

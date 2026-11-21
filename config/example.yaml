@@ -13,7 +13,8 @@ scope:
   exclude_repos:
     - octocat/dotfiles
     - octocat/*-old
-  # Multiplier applied to every language of a repository (adjusted mode only).
+  # Multiplier applied to every language of a repository. It always feeds languages.adjusted
+  # in stats.json; only what the cards display depends on languages.mode: adjusted.
   repo_weights:
     octocat/generated-bindings: 0.25
 
@@ -81,7 +82,7 @@ render:
     # accent | github | mono | spectrum | duotone | a map such as {TypeScript: "#3178c6"}
     colors: accent
     # false hides every trace of language weighting: the ×<n> labels, the adjusted/raw tag,
-    # the RAW/ADJ strip of bars and the --adjusted flag of terminal (shares are unchanged).
+    # the RAW/ADJ strip of bars and the --raw or --adjusted flag of terminal (shares are unchanged).
     # The shift variant shows the weighting, so it cannot be listed when this is false.
     weighting: true
   theme:

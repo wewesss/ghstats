@@ -67,7 +67,7 @@ The parts and the layout are described in [Configuration](../guide/configuration
   <img alt="wide layout" src="../../../showcase/wide-dark.svg" width="100%">
 </picture>
 
-`render.layout: wide` makes the stats card 1000 px wide, with `languages` in a right column and the other blocks stacked on the left. The identity card has the same width. The default `card` layout is 495 px.
+`render.layout: wide` makes the stats card 1000 px wide, with `languages` in a right column and the other blocks stacked on the left. The identity card does not follow `render.layout`: its width comes from `profile.identity.layout`, `wide` (1000 px, the default) or `card` (495 px). The default `card` layout of `render.layout` is 495 px.
 
 ## Link badges
 

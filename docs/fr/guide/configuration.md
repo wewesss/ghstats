@@ -24,7 +24,7 @@ Quels dépôts sont comptés.
 | `scope.include_archived` | `false` | Compter les dépôts archivés. |
 | `scope.include_private` | `true` | Compter les dépôts privés dans les agrégats. Leurs noms ne sont jamais écrits. |
 | `scope.exclude_repos` | vide | `owner/name` ou un glob comme `owner/*-old` (insensible à la casse). |
-| `scope.repo_weights` | vide | Table de `owner/name` vers un multiplicateur (>= 0) appliqué à tous les langages de ce dépôt, en mode adjusted uniquement. |
+| `scope.repo_weights` | vide | Table de `owner/name` vers un multiplicateur (>= 0) appliqué à tous les langages de ce dépôt. Les poids alimentent toujours `languages.adjusted` dans `stats.json` ; seul ce que les cartes affichent dépend de `languages.mode: adjusted`. |
 
 ## languages
 
@@ -68,20 +68,20 @@ L'apparence des cartes. Voir la [galerie](../cards/gallery.md) pour chaque bloc 
 | `render.blocks` | Liste de `block: [variantes]`, empilés dans cet ordre. `stats` : `totals`, `distribution`. `languages` : `bars`, `iso`, `cells`, `treemap`, `shift`, `terminal`. `history` : `views`, `clones`. |
 | `render.cards` | Liste facultative de cartes, chacune avec `name`, `blocks` et un `layout` facultatif. Découpe le rendu en plusieurs images ; `render.blocks` est alors ignoré. Voir [Plusieurs cartes](#plusieurs-cartes). |
 | `render.rows` | Liste facultative de lignes du README, chacune avec un `align` et les `items` qu'elle contient. Règle l'agencement des cartes dans `README.snippet.md`. Voir [Agencement dans le README](#agencement-dans-le-readme). |
-| `render.private_bar` | `true` (défaut) ou `false`. Remplace les noms des dépôts privés par une barre noire. |
+| `render.private_bar` | `true` (défaut) ou `false`. Quand au moins un dépôt privé est compté, ajoute à la variante `totals` de la carte stats une ligne `PRIVATE <n>`, quatre barres pleines et `names hidden` (le bloc fait 92 px de haut au lieu de 66). Aucun nom n'est dans le rapport : rien n'est donc remplacé. |
 | `render.languages.colors` | `accent` (défaut), `github`, `mono`, `spectrum`, `duotone`, ou une table de langage vers `"#rrggbb"`. |
-| `render.languages.weighting` | `true` (défaut) ou `false`. `false` masque toute trace de la pondération des langages : l'étiquette `×<n>` à côté d'un langage qui a un poids, l'étiquette `adjusted` / `raw` en haut à droite des blocs de langages, la bande RAW / ADJ sous la variante `bars` (la carte est plus courte) et l'option `--adjusted` de la commande `terminal`. Les parts ne changent pas. Avec `false`, lister la variante `shift` est une erreur, car elle montre la pondération. |
+| `render.languages.weighting` | `true` (défaut) ou `false`. `false` masque toute trace de la pondération des langages : l'étiquette `×<n>` à côté d'un langage qui a un poids, l'étiquette `adjusted` / `raw` en haut à droite des blocs de langages, la bande RAW / ADJ sous la variante `bars` (la carte est plus courte) et l'option `--raw` ou `--adjusted` de la commande `terminal`. Les parts ne changent pas. Avec `false`, lister la variante `shift` est une erreur, car elle montre la pondération. |
 | `render.theme.preset` | `noir` (défaut), `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent`. |
 | `render.theme.accent` | `ice` (défaut), `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, ou `{dark: "#rrggbb", light: "#rrggbb"}`. |
 | `render.theme.overrides` | Clés `bg`, `border`, `fg`, `muted`, `faint` en `"#rrggbb"` ; `bg` accepte aussi `none`. |
-| `render.motion` | `true` (défaut) ou `false`. `false` coupe toutes les animations. Le mouvement réduit est toujours respecté. |
+| `render.motion` | `true` (défaut) ou `false`. `false` coupe toutes les animations : un bloc qui liste plusieurs variantes n'en montre alors que la première, et l'accent `cycle` s'affiche en `ice`. La sortie PNG coupe toujours le mouvement. Le mouvement réduit est toujours respecté. |
 | `render.png` | `false` (défaut) ou `true`. `true` écrit aussi `<nom>-dark.png` et `<nom>-light.png` à côté de chaque SVG (les cartes, la carte identité et les badges de liens), rendus en 2x sans aucune animation. Le drapeau `--png` de `ghstats render` et l'entrée `png` de l'Action font de même. |
 | `render.layout` | `card` (495 px, défaut) ou `wide` (1000 px, deux colonnes de 495 px). Avec `languages`, il va dans la colonne de droite et les autres blocs à gauche ; sans lui, les blocs sont répartis pour équilibrer les deux colonnes. Une carte `wide` à un seul bloc est dessinée en 495 px. |
 | `render.base_path` | Préfixe de chaque chemin écrit dans `README.snippet.md`, terminé par `/` (défaut `ghstats/`). |
 
 ### Blocs et variantes
 
-Chaque bloc apparaît une seule fois. Un bloc à une variante l'affiche fixe ; un bloc à plusieurs variantes les fait alterner sur place :
+Chaque bloc apparaît une seule fois. Un bloc à une variante l'affiche fixe ; un bloc à plusieurs variantes les fait alterner sur place quand `render.motion` vaut `true`, et n'affiche que la première quand il vaut `false` :
 
 ```yaml
 render:
@@ -301,7 +301,7 @@ Sans `profile.identity`, la carte est dessinée comme avant. `identity.show` lis
 
 Une partie sans valeur (une `tagline` non renseignée, par exemple) n'est pas dessinée. Une partie inconnue ou répétée est une erreur de validation.
 
-`identity.layout: card` dessine la carte en 495 de large sur une seule colonne : en-tête, nom (sa taille est réduite pour tenir en 447 px), tagline, ligne `building`, note, puis la liste du focus sous le texte, puis le pied de page. Dans `render.rows` et dans le snippet, cette carte compte pour 495 de large.
+`identity.layout: card` dessine la carte en 495 de large sur une seule colonne : en-tête, tagline, nom (sa taille est réduite pour tenir en 447 px), ligne `building`, note, puis la liste du focus sous le texte, puis le pied de page. Dans `render.rows` et dans le snippet, cette carte compte pour 495 de large.
 
 ```yaml
 profile:

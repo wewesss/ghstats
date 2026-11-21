@@ -24,7 +24,7 @@ One paged GraphQL query lists the repositories with their languages and recent r
 
 ### Why is there no longer an `n/a` tile for source archives?
 
-GitHub exposes no download counter for source archives, so the number can never be filled in. The report still lists the `source_archives` channel as unavailable, with a note saying why, but the totals card now shows cumulative views instead of a tile that could only ever say `n/a`.
+GitHub exposes no download counter for source archives, so the number can never be filled in. The report still lists the `source_archives` channel as unavailable, with a note saying why, but the `distribution` variant of the stats card now shows cumulative views (`VIEWS TOTAL`) instead of a tile that could only ever say `n/a`.
 
 ### What is the difference between raw and adjusted languages?
 

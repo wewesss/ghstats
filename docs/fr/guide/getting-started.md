@@ -35,7 +35,7 @@ Sans `GHSTATS_TOKEN` dans l'environnement, `init` demande le token quand le secr
 6. Vérifie que le token appartient à votre compte et peut lire `<user>/ghstats-data`, puis l'enregistre comme secret `GHSTATS_TOKEN` du dépôt de profil. Le token passe à `gh` par son entrée standard et n'est jamais affiché.
 7. Lance le premier run du workflow et affiche l'URL de l'onglet Actions. Passez cette étape avec `--no-run`.
 
-Relancer `init` est sans risque. Un workflow et un `ghstats.yaml` existants sont laissés tels quels sauf avec `--force`. Seul le texte entre les marqueurs du README est remplacé, et rien n'est écrit quand il est déjà à jour. Le secret est laissé tel quel quand il existe et qu'aucun token n'est fourni. Les flags sont dans [Ligne de commande](./cli.md#init).
+Relancer `init` est sans risque pour vos fichiers, mais pas sans effet. Un workflow et un `ghstats.yaml` existants sont laissés tels quels sauf avec `--force`. Seul le texte entre les marqueurs du README est remplacé, et rien n'est écrit quand il est déjà à jour. Le secret est laissé tel quel quand il existe et que `GHSTATS_TOKEN` n'est pas défini ; avec `GHSTATS_TOKEN` défini, il est réécrit. Sans `--no-run`, un nouveau run du workflow démarre à chaque fois. Les flags sont dans [Ligne de commande](./cli.md#init).
 
 ## Installation manuelle
 

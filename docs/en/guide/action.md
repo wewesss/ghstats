@@ -18,7 +18,7 @@ The repository is a composite Action for Linux and macOS runners. It installs th
 | `output-dir` | `ghstats` | Directory receiving the cards and `README.snippet.md`. |
 | `traffic` | `true` | Set to `false` to skip the traffic API calls. |
 | `keep-snapshots` | `30` | Number of snapshots kept in `data-dir/snapshots`; `0` keeps them all. |
-| `png` | `false` | Set to `true` to also write a `-dark.png` and a `-light.png` next to every SVG (2x, no animation). Same as `render.png: true`. |
+| `png` | `false` | Set to `true` to also write a `-dark.png` and a `-light.png` next to every SVG (2x, no animation: a block that lists several variants shows only the first one, and the `cycle` accent shows as `ice`). Same as `render.png: true`. |
 
 ## Outputs
 
@@ -50,8 +50,9 @@ Pinning the Action by commit SHA protects `action.yml`, not the binary: a SHA re
 | `<output-dir>/stats.json` | `render` | The report, without any private repository name. |
 | `<output-dir>/stats-dark.svg`, `stats-light.svg` | `render` | The default stats card. |
 | `<output-dir>/<name>-dark.svg`, `<name>-light.svg` | `render` | One pair per entry of `render.cards`. |
-| `<output-dir>/identity-dark.svg`, `identity-light.svg` | `render` | The identity card, when `profile` has `focus` or `tagline`. |
+| `<output-dir>/identity-dark.svg`, `identity-light.svg` | `render` | The identity card, when `profile` has `focus` or `tagline`, when `profile.identity.show` is set, or when `identity` is placed in `render.rows`. |
 | `<output-dir>/links/<kind>-dark.svg`, `<kind>-light.svg` | `render` | One badge per non-empty profile link. |
+| `<output-dir>/<name>-dark.png`, `<name>-light.png` | `render` | A PNG next to every SVG above (cards, identity card, `links/` badges), only when the `png` input or `render.png` is on. |
 | `<output-dir>/README.snippet.md` | `render` | The markup to paste in your profile README. |
 
 The report itself is written to the runner temporary directory and returned by the `report` output. Keep `<data-dir>` in a private repository and commit `<output-dir>` to the public one. See [Privacy](./privacy.md).

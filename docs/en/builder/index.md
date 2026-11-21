@@ -20,7 +20,7 @@ The preview is the README as GitHub draws it, built from the snippet the Action 
 - Drag an element before or after another one to put it in the same row, or onto a New row band to give it a row of its own. A row of links only accepts links; a refused drop is outlined in red.
 - With an element selected, the arrow buttons or the arrow keys move it in its row and to the row above or below.
 - Hover a row, or select one of its elements, to get its left, center and right alignment buttons.
-- On a card, Make it a card moves a block into a new card placed next to it.
+- On a card, Make it a card moves a block into a new card. The new card goes next to the current one only when both are in the `card` layout and the row holds no link; otherwise it goes in a new row below.
 - With an element selected, Download SVG and Download PNG save it for the current preview mode; Download all (.zip) packs every element in SVG and PNG, dark and light. The PNG is drawn without animation at twice the size, like `ghstats render --png`, and its renderer loads on the first PNG download.
 
 ## Use the outputs

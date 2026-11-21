@@ -63,7 +63,7 @@ Writes the files of a report.
 | `--report` | yes | Report file. |
 | `--out-dir` | yes | Directory receiving the files. |
 | `--config` | no | Configuration file; the defaults apply when omitted. |
-| `--png` | no | Also write `<name>-dark.png` and `<name>-light.png` next to every SVG, at 2x with every animation off. Same as `render.png: true`. |
+| `--png` | no | Also write `<name>-dark.png` and `<name>-light.png` next to every SVG, at 2x with every animation off (a block that lists several variants shows only the first one, and the `cycle` accent shows as `ice`). Same as `render.png: true`. |
 
 `render` writes `stats.json`, `stats-dark.svg` and `stats-light.svg` into `--out-dir`, plus the identity card and the link badges when the configuration has a `profile` section (see [Profile cards](../cards/profile.md)), and `README.snippet.md`. With `render.cards`, the stats files are `<name>-dark.svg` and `<name>-light.svg` instead, one pair per card (see [Several cards](./configuration.md#several-cards)).
 
@@ -78,7 +78,7 @@ Sets up a profile repository from your machine, through the GitHub CLI (`gh`), w
 | `--force` | off | Rewrite the workflow and `ghstats.yaml` even when they exist. |
 | `--no-run` | off | Do not start the first run. |
 
-Each step prints `ok` (already in place), `created`, `updated` or `skipped`, so running `init` again changes nothing that is already set up. `init` stops with an error when `<user>/ghstats-data` is public, even with `--force`.
+Each step prints `ok` (already in place), `created`, `updated` or `skipped`, so running `init` again leaves the files that are already set up as they are. Without `--no-run` it starts a new workflow run each time, and with `GHSTATS_TOKEN` set it stores that token again as the secret, which then shows as `updated`. `init` stops with an error when `<user>/ghstats-data` is public, even with `--force`.
 
 ## version
 

@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-Chaque image ci-dessous est générée à partir d'un rapport d'exemple fixe, avec `motion: false` et l'accent `cycle`, en sombre et en clair. Les deux modes suivent le thème de couleur du visiteur. Sous chaque image, l'entrée `render.blocks` qui la produit ; les autres clés sont dans [Configuration](../guide/configuration.md). Lister plusieurs variantes d'un bloc les fait alterner sur place.
+Chaque image ci-dessous est générée à partir d'un rapport d'exemple fixe, avec `motion: false`, en sombre et en clair. Quand le mouvement est coupé, l'accent `cycle` s'affiche en `ice` et un bloc qui liste plusieurs variantes n'en montre que la première : chaque image ci-dessous montre donc une seule variante. Les deux modes suivent le thème de couleur du visiteur. Sous chaque image, l'entrée `render.blocks` qui la produit ; les autres clés sont dans [Configuration](../guide/configuration.md). Avec le mouvement activé, lister plusieurs variantes d'un bloc les fait alterner sur place.
 
 ## Galerie vivante
 
@@ -174,7 +174,7 @@ render:
 
 ## Disposition large
 
-`render.layout: wide` produit une carte de 1000 px avec `languages` dans une colonne de droite et les autres blocs empilés à gauche. Celle-ci liste toutes les variantes de tous les blocs, qui alternent donc sur place.
+`render.layout: wide` produit une carte de 1000 px avec `languages` dans une colonne de droite et les autres blocs empilés à gauche. Celle-ci liste toutes les variantes de tous les blocs : avec le mouvement activé elles alternent sur place, et cette image, dessinée sans mouvement, montre la première variante de chaque bloc.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/wide-dark.svg">

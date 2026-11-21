@@ -63,7 +63,7 @@ Les avertissements sont affichés sur la sortie d'erreur.
 | `--report` | oui | Fichier de rapport. |
 | `--out-dir` | oui | Dossier qui reçoit les fichiers. |
 | `--config` | non | Fichier de configuration ; les valeurs par défaut s'appliquent s'il est omis. |
-| `--png` | non | Écrit aussi `<nom>-dark.png` et `<nom>-light.png` à côté de chaque SVG, en 2x sans aucune animation. Équivaut à `render.png: true`. |
+| `--png` | non | Écrit aussi `<nom>-dark.png` et `<nom>-light.png` à côté de chaque SVG, en 2x sans aucune animation (un bloc qui liste plusieurs variantes n'en montre que la première, et l'accent `cycle` s'affiche en `ice`). Équivaut à `render.png: true`. |
 
 `render` écrit `stats.json`, `stats-dark.svg` et `stats-light.svg` dans `--out-dir`, plus la carte identité et les badges de liens quand la configuration a une section `profile` (voir [Cartes de profil](../cards/profile.md)), et `README.snippet.md`. Avec `render.cards`, les fichiers de statistiques sont `<name>-dark.svg` et `<name>-light.svg`, une paire par carte (voir [Plusieurs cartes](./configuration.md#plusieurs-cartes)).
 
@@ -78,7 +78,7 @@ Configure un dépôt de profil depuis votre machine, par la CLI GitHub (`gh`), q
 | `--force` | désactivé | Réécrit le workflow et `ghstats.yaml` même s'ils existent. |
 | `--no-run` | désactivé | Ne lance pas le premier run. |
 
-Chaque étape affiche `ok` (déjà en place), `created`, `updated` ou `skipped` : relancer `init` ne modifie rien de ce qui est déjà configuré. `init` s'arrête sur une erreur quand `<user>/ghstats-data` est public, même avec `--force`.
+Chaque étape affiche `ok` (déjà en place), `created`, `updated` ou `skipped` : relancer `init` laisse tels quels les fichiers déjà en place. Sans `--no-run`, il lance un nouveau run du workflow à chaque fois, et avec `GHSTATS_TOKEN` défini il enregistre de nouveau ce token comme secret, qui s'affiche alors `updated`. `init` s'arrête sur une erreur quand `<user>/ghstats-data` est public, même avec `--force`.
 
 ## version
 

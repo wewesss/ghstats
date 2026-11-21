@@ -17,6 +17,7 @@ jobs:
         with:
           go-version-file: go.mod
           check-latest: true
+      - run: test -z "$(gofmt -l .)"
       - run: go vet ./...
       - run: go test -race ./...
       - run: GOOS=js GOARCH=wasm go vet ./cmd/wasm

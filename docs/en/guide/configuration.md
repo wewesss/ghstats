@@ -24,7 +24,7 @@ Which repositories are counted.
 | `scope.include_archived` | `false` | Count archived repositories. |
 | `scope.include_private` | `true` | Count private repositories in the aggregates. Their names are never output. |
 | `scope.exclude_repos` | empty | `owner/name` or a glob such as `owner/*-old` (case-insensitive). |
-| `scope.repo_weights` | empty | Map of `owner/name` to a multiplier (>= 0) applied to every language of that repository, in adjusted mode only. |
+| `scope.repo_weights` | empty | Map of `owner/name` to a multiplier (>= 0) applied to every language of that repository. The weights always feed `languages.adjusted` in `stats.json`; only what the cards display depends on `languages.mode: adjusted`. |
 
 ## languages
 
@@ -68,20 +68,20 @@ How the cards look. See the [gallery](../cards/gallery.md) for every block and v
 | `render.blocks` | List of `block: [variants]`, stacked in this order. `stats`: `totals`, `distribution`. `languages`: `bars`, `iso`, `cells`, `treemap`, `shift`, `terminal`. `history`: `views`, `clones`. |
 | `render.cards` | Optional list of cards, each with `name`, `blocks` and an optional `layout`. Splits the render into several images; `render.blocks` is then ignored. See [Several cards](#several-cards). |
 | `render.rows` | Optional list of README rows, each with an `align` and the `items` it holds. Controls how `README.snippet.md` lays out the cards. See [Layout in the README](#layout-in-the-readme). |
-| `render.private_bar` | `true` (default) or `false`. Replaces the names of private repositories with a black bar. |
+| `render.private_bar` | `true` (default) or `false`. When at least one private repository is counted, adds to the `totals` variant of the stats card a `PRIVATE <n>` line, four solid bars and `names hidden` (the block is 92 px high instead of 66). No name appears in the report, so nothing is replaced. |
 | `render.languages.colors` | `accent` (default), `github`, `mono`, `spectrum`, `duotone`, or a map of language to `"#rrggbb"`. |
-| `render.languages.weighting` | `true` (default) or `false`. `false` hides every trace of language weighting: the `×<n>` label next to a language that has a weight, the `adjusted` / `raw` tag at the top right of the language blocks, the RAW / ADJ strip under the `bars` variant (the card is shorter) and the `--adjusted` flag in the `terminal` command. The shares are unchanged. With `false`, listing the `shift` variant is an error, since it shows the weighting. |
+| `render.languages.weighting` | `true` (default) or `false`. `false` hides every trace of language weighting: the `×<n>` label next to a language that has a weight, the `adjusted` / `raw` tag at the top right of the language blocks, the RAW / ADJ strip under the `bars` variant (the card is shorter) and the `--raw` or `--adjusted` flag in the `terminal` command. The shares are unchanged. With `false`, listing the `shift` variant is an error, since it shows the weighting. |
 | `render.theme.preset` | `noir` (default), `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent`. |
 | `render.theme.accent` | `ice` (default), `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, or `{dark: "#rrggbb", light: "#rrggbb"}`. |
 | `render.theme.overrides` | Keys `bg`, `border`, `fg`, `muted`, `faint` as `"#rrggbb"`; `bg` also accepts `none`. |
-| `render.motion` | `true` (default) or `false`. `false` turns every animation off. Reduced motion is always honored. |
+| `render.motion` | `true` (default) or `false`. `false` turns every animation off: a block that lists several variants then shows only the first one, and the `cycle` accent shows as `ice`. PNG output always forces motion off. Reduced motion is always honored. |
 | `render.png` | `false` (default) or `true`. `true` also writes `<name>-dark.png` and `<name>-light.png` next to every SVG (the cards, the identity card and the link badges), rendered at 2x with every animation off. The `--png` flag of `ghstats render` and the `png` input of the Action do the same. |
 | `render.layout` | `card` (495 px, default) or `wide` (1000 px, two columns of 495 px). With `languages`, it sits in the right column and the other blocks on the left; without it, the blocks are spread to keep the two columns level. A `wide` card with a single block is drawn at 495 px. |
 | `render.base_path` | Prefix of every path written in `README.snippet.md`, ending with `/` (default `ghstats/`). |
 
 ### Blocks and variants
 
-Each block appears once. A block with one variant shows it fixed; a block with several variants rotates them in place:
+Each block appears once. A block with one variant shows it fixed; a block with several variants rotates them in place when `render.motion` is `true`, and shows only the first one when it is `false`:
 
 ```yaml
 render:
@@ -301,7 +301,7 @@ Without `profile.identity`, the card is drawn as before. `identity.show` lists t
 
 A part with no value (a `tagline` that is not set, for example) is not drawn. An unknown or repeated part is a validation error.
 
-`identity.layout: card` draws the card 495 px wide with one column: header, name (its size is reduced so that it fits 447 px), tagline, `building` line, note, then the focus list under the text, then the footer. In `render.rows` and in the snippet, this card counts as 495 wide.
+`identity.layout: card` draws the card 495 px wide with one column: header, tagline, name (its size is reduced so that it fits 447 px), `building` line, note, then the focus list under the text, then the footer. In `render.rows` and in the snippet, this card counts as 495 wide.
 
 ```yaml
 profile:

@@ -67,7 +67,7 @@ Les parties et la disposition sont décrites dans [Configuration](../guide/confi
   <img alt="disposition large" src="../../../showcase/wide-dark.svg" width="100%">
 </picture>
 
-`render.layout: wide` donne à la carte de statistiques une largeur de 1000 px, avec `languages` dans une colonne de droite et les autres blocs empilés à gauche. La carte identité a la même largeur. La disposition `card` par défaut fait 495 px.
+`render.layout: wide` donne à la carte de statistiques une largeur de 1000 px, avec `languages` dans une colonne de droite et les autres blocs empilés à gauche. La carte identité ne suit pas `render.layout` : sa largeur vient de `profile.identity.layout`, `wide` (1000 px, le défaut) ou `card` (495 px). La disposition `card` par défaut de `render.layout` fait 495 px.
 
 ## Badges de liens
 

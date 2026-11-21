@@ -14,7 +14,7 @@ bun run build
 
 `bun run build` runs three steps:
 
-1. `bun run wasm` compiles `../cmd/wasm` to `public/ghstats.wasm` and copies Go's `wasm_exec.js` next to it. Both files are git-ignored.
+1. `bun run wasm` compiles `../cmd/wasm` to `public/ghstats.wasm`, copies `../png/resvg.wasm` to `public/resvg.wasm` and copies Go's `wasm_exec.js` next to them. The three files are git-ignored.
 2. `mdocs build` writes the pages to `dist/`, under the base path `/ghstats/`.
 3. `bun run assets` copies `public/` and `../showcase/` into `dist/`.
 
@@ -35,4 +35,4 @@ Then open `http://127.0.0.1:4500/ghstats/en/builder/`.
 
 ## Deployment
 
-`.github/workflows/pages.yml` builds and deploys the site on every `v*.*.*` tag and on demand. In the repository settings, Pages must use GitHub Actions as its source.
+`.github/workflows/pages.yml` builds and deploys the site on every tag matching `v[0-9]+.[0-9]+.[0-9]+` (pre-release tags such as `v1.2.0-rc.1` are excluded) and on demand. In the repository settings, Pages must use GitHub Actions as its source.

@@ -4,13 +4,30 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- PNG output: `render.png: true`, the `--png` flag of `ghstats render` and the `png` input of the Action write a `-dark.png` and a `-light.png` next to every SVG (cards, identity card and link badges). PNGs are drawn at scale 2 with motion off, by resvg compiled to WebAssembly and run with wazero, with Inter and JetBrains Mono embedded in the binary.
+- The builder downloads the selected element as SVG or PNG, and every element in a zip.
+- `distribution.hide_partial: true` shows `n/a` on the cards instead of a traffic total that misses some repositories; `stats.json` keeps the count.
+
+### Changed
+
+- The 14-day traffic metrics are now marked with the reliability `partial` when a repository lacks data, like the cumulative ones already were.
+- The `/ ghstats` slash in the stats card header is placed from the measured width of the login.
+
+### Fixed
+
+- Output drawn with motion off no longer duplicates the pulse dot of the header.
+
 ## [1.5.0] - 2026-11-21
 
 ### Added
 
 - `render.rows`: lay the cards out in `README.snippet.md`. Each row is a `<p align="left|center|right">` holding one or more items (card names, `identity`, `links`) side by side, with a `width` in percent proportional to their natural widths. Without `rows`, the snippet is unchanged.
 - `header: false` on a card removes the `login / ghstats` line, the sync date and the rule under them; the card is 40 px shorter.
-- `render.languages.weighting: false` hides every trace of language weighting: the `×<n>` label, the `adjusted` / `raw` tag of the language blocks, the RAW / ADJ strip under `bars` (the card is shorter) and the `--adjusted` flag of `terminal`. The shares are unchanged. Listing the `shift` variant with `weighting: false` is a validation error.
+- `render.languages.weighting: false` hides every trace of language weighting: the `×<n>` label, the `adjusted` / `raw` tag of the language blocks, the RAW / ADJ strip under `bars` (the card is shorter) and the `--raw` or `--adjusted` flag of `terminal`. The shares are unchanged. Listing the `shift` variant with `weighting: false` is a validation error.
 
 ### Changed
 

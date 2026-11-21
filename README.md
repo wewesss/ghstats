@@ -170,4 +170,4 @@ The previous version (`github-stats-api-go`, GPL-3.0) is kept at the [`legacy-v1
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). The PNG output embeds the fonts Inter and JetBrains Mono, under the SIL Open Font License 1.1 ([Inter](tools/resvgwasm/fonts/Inter-OFL.txt), [JetBrains Mono](tools/resvgwasm/fonts/JetBrainsMono-OFL.txt)).

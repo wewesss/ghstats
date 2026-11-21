@@ -36,6 +36,8 @@ archives:
     files:
       - LICENSE
       - README.md
+      - tools/resvgwasm/fonts/Inter-OFL.txt
+      - tools/resvgwasm/fonts/JetBrainsMono-OFL.txt
 
 release:
   prerelease: auto

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { createPortal } from "react-dom";
 import { Canvas, itemLabel } from "./canvas";
 import { DEFAULT_PATH, SAMPLE, loadFromFile, loadFromGithub, type DataSource } from "./data";
+import { archive, exportItems, flatName, saveBlob, type Format } from "./export";
 import { fromYaml, linkItem, toConfig, type FormState, type RowState } from "./form";
 import { docsHome, loadGhstats, type Ghstats, type Mode, type Options, type RenderResult } from "./ghstats";
 import { parseCanvas, step, toRows, type Direction } from "./layout";
@@ -278,6 +279,8 @@ function BuilderApp({ api, options, initial }: Ready) {
   const [zoom, setZoom] = useState<"fit" | "100">("fit");
   const [pane, setPane] = useState<Pane>("preview");
   const [selected, setSelected] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportProblem, setExportProblem] = useState("");
   const settings = useRef<HTMLDivElement>(null);
   const frame = useFrame();
 
@@ -343,6 +346,28 @@ function BuilderApp({ api, options, initial }: Ready) {
   };
 
   const editYaml = (value: string) => setOverride(value === lastYaml.current ? null : value);
+
+  const exportable = result.error === "" && onCanvas.length > 0 && !exporting;
+  const runExport = (job: () => Promise<void>) => {
+    setExporting(true);
+    setExportProblem("");
+    job()
+      .catch((error: unknown) => setExportProblem(error instanceof Error ? error.message : String(error)))
+      .finally(() => setExporting(false));
+  };
+  const exportSource = { api, config: override ?? formSource, report: data.report };
+  const downloadOne = (format: Format) => {
+    if (current === null) return;
+    runExport(async () => {
+      const [file] = await exportItems(exportSource, [current], [format], [mode]);
+      if (file !== undefined) saveBlob(flatName(file.path), file.blob);
+    });
+  };
+  const downloadAll = () =>
+    runExport(async () => {
+      const files = await exportItems(exportSource, onCanvas, ["svg", "png"], ["dark", "light"]);
+      saveBlob("ghstats.zip", await archive(files));
+    });
 
   return createPortal(
     <div className="gs-frame" style={{ left: frame.left, top: frame.top }}>
@@ -484,6 +509,26 @@ function BuilderApp({ api, options, initial }: Ready) {
                   </button>
                 </>
               )}
+              <span className="gs-actions gs-push">
+                {current !== null ? (
+                  <>
+                    <button type="button" className="gs-button" data-testid="download-svg" disabled={!exportable} onClick={() => downloadOne("svg")}>
+                      Download SVG
+                    </button>
+                    <button type="button" className="gs-button" data-testid="download-png" disabled={!exportable} onClick={() => downloadOne("png")}>
+                      Download PNG
+                    </button>
+                  </>
+                ) : null}
+                <button type="button" className="gs-button" data-testid="download-zip" disabled={!exportable} onClick={downloadAll}>
+                  Download all (.zip)
+                </button>
+              </span>
+              {exportProblem !== "" ? (
+                <span className="gs-error gs-span" role="alert" data-testid="export-error">
+                  {exportProblem}
+                </span>
+              ) : null}
             </div>
             {result.error !== "" ? (
               <pre className="gs-error gs-banner" role="alert" data-testid="error">

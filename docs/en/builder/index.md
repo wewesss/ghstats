@@ -21,6 +21,7 @@ The preview is the README as GitHub draws it, built from the snippet the Action 
 - With an element selected, the arrow buttons or the arrow keys move it in its row and to the row above or below.
 - Hover a row, or select one of its elements, to get its left, center and right alignment buttons.
 - On a card, Make it a card moves a block into a new card placed next to it.
+- With an element selected, Download SVG and Download PNG save it for the current preview mode; Download all (.zip) packs every element in SVG and PNG, dark and light. The PNG is drawn without animation at twice the size, like `ghstats render --png`, and its renderer loads on the first PNG download.
 
 ## Use the outputs
 

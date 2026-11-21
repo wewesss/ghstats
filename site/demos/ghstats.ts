@@ -22,12 +22,13 @@ export interface Options {
 
 export interface Ghstats {
   render(yaml: string, mode: Mode, report?: string): RenderResult;
+  renderStill(yaml: string, mode: Mode, report?: string): RenderResult;
   defaults(): string;
   options(): Options;
 }
 
 interface RawGhstats {
-  render(yaml: string, mode: string, report?: string): RenderResult;
+  render(yaml: string, mode: string, report?: string, still?: boolean): RenderResult;
   defaults(): string;
   options(): string;
 }
@@ -41,7 +42,7 @@ type Scope = typeof globalThis & { Go?: typeof Go; ghstats?: RawGhstats };
 
 let loading: Promise<Ghstats> | undefined;
 
-function baseUrl(path: string): string {
+export function baseUrl(path: string): string {
   const base = normalizeBase(document.documentElement.getAttribute(BASE_ATTRIBUTE) ?? "/");
   return withBase(base, path);
 }
@@ -87,6 +88,7 @@ async function boot(): Promise<Ghstats> {
   const options = JSON.parse(raw.options()) as Options;
   return {
     render: (yaml, mode, report) => (report === undefined ? raw.render(yaml, mode) : raw.render(yaml, mode, report)),
+    renderStill: (yaml, mode, report) => raw.render(yaml, mode, report ?? "", true),
     defaults: () => raw.defaults(),
     options: () => options,
   };

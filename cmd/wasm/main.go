@@ -36,8 +36,8 @@ func failure(msg string) any {
 }
 
 func renderFunc(_ js.Value, args []js.Value) any {
-	if len(args) < 2 || len(args) > 3 {
-		return failure("render: want (yaml, mode[, report])")
+	if len(args) < 2 || len(args) > 4 {
+		return failure("render: want (yaml, mode[, report[, still]])")
 	}
 	mode := render.Mode(args[1].String())
 	if mode != render.Dark && mode != render.Light {
@@ -47,8 +47,11 @@ func renderFunc(_ js.Value, args []js.Value) any {
 	if err != nil {
 		return failure(err.Error())
 	}
+	if len(args) == 4 && args[3].Truthy() {
+		cfg.Render.Motion = false
+	}
 	rep := sample.Report()
-	if len(args) == 3 {
+	if len(args) >= 3 {
 		if rep, err = reportFrom(args[2], rep); err != nil {
 			return failure(err.Error())
 		}

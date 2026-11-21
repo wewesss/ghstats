@@ -2,6 +2,7 @@ node_modules/
 dist/
 .mdocs/
 public/ghstats.wasm
+public/resvg.wasm
 public/wasm_exec.js
 test-results/
 playwright-report/

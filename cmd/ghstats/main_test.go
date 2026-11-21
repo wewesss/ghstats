@@ -53,6 +53,10 @@ func (f *apiFake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}})
 		return
 	}
+	if r.URL.Path == "/repos/me/ghstats-data" {
+		fmt.Fprint(w, `{"name":"ghstats-data","private":true}`)
+		return
+	}
 	f.rest.Add(1)
 	if f.forbidden.Load() {
 		w.WriteHeader(http.StatusForbidden)

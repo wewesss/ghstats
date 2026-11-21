@@ -18,6 +18,10 @@ func sansWidth(s string, size float64) float64 {
 	return (sansAdvance*float64(letters) + sansSpace*float64(spaces)) * size
 }
 
+func statsSlashX(login string) float64 {
+	return math.Round(24 + sansWidth(login, 14) + 7)
+}
+
 func monoCols(width, size, ls float64) int {
 	if width <= 0 {
 		return 0

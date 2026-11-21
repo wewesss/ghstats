@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/report"
@@ -442,7 +441,7 @@ func (rd *renderer) card() (string, int) {
 
 	if rd.header {
 		body = append(body, txt(24, 31, esc(login), topt{fill: th.fg, size: 14, weight: 600}))
-		body = append(body, txt(float64(23+9*utf8.RuneCountInString(login)), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
+		body = append(body, txt(statsSlashX(login), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
 		body = append(body, headerDot(cw-132, 27, cfg.Motion))
 		synced := "never"
 		if !rd.rep.CollectedAt.IsZero() {

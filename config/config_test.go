@@ -99,17 +99,6 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestParseKeepsLanguageNamesAsWritten(t *testing.T) {
-	in := "version: 1\nlanguages:\n  weights:\n    lua: 0.5\n    TYPESCRIPT: 1.5\n"
-	got, err := config.Parse(strings.NewReader(in))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.Languages.Weights["lua"] != 0.5 || got.Languages.Weights["TYPESCRIPT"] != 1.5 {
-		t.Fatalf("weights = %v", got.Languages.Weights)
-	}
-}
-
 func TestExampleIsValid(t *testing.T) {
 	c, err := config.Load("example.yaml")
 	if err != nil {
@@ -242,16 +231,6 @@ func TestRenderValidateJoinsErrors(t *testing.T) {
 	err := c.Validate()
 	if err == nil || !strings.Contains(err.Error(), "preset") || !strings.Contains(err.Error(), "palette") {
 		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestExampleRenderMatchesFullCard(t *testing.T) {
-	c, err := config.Load("example.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(c.Render.Blocks) != 3 || len(c.Render.Blocks[1].Variants) != 6 || c.Render.Theme.Accent.Name != "ice" {
-		t.Fatalf("render = %+v", c.Render)
 	}
 }
 

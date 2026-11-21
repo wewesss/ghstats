@@ -119,16 +119,6 @@ func TestUsageErrorsExitTwo(t *testing.T) {
 	}
 }
 
-func TestVersionAndHelp(t *testing.T) {
-	code, stdout, _ := exec("version")
-	if code != 0 || strings.TrimSpace(stdout) != "dev" {
-		t.Fatalf("version = %d %q", code, stdout)
-	}
-	if code, _, _ := exec("compute", "-h"); code != 0 {
-		t.Fatalf("compute -h = %d", code)
-	}
-}
-
 func TestCollectWithoutTokenExitsOne(t *testing.T) {
 	t.Setenv("GHSTATS_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "")

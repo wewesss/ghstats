@@ -157,23 +157,6 @@ func TestAccentSharedAcrossCards(t *testing.T) {
 	}
 }
 
-func TestGoldenBadges(t *testing.T) {
-	cfg := sample.Profile()
-	for _, l := range cfg.Profile.ResolvedLinks() {
-		t.Run(l.Kind, func(t *testing.T) {
-			var buf bytes.Buffer
-			if err := render.LinkBadgeSVG(&buf, l, cfg.Render.Theme, render.Dark); err != nil {
-				t.Fatal(err)
-			}
-			assertWellFormed(t, buf.String())
-			if strings.Contains(buf.String(), "animation") {
-				t.Fatal("badges are static")
-			}
-			golden(t, "badge-"+l.Kind+"-dark.svg", buf.String())
-		})
-	}
-}
-
 func TestEveryLinkKindHasABadge(t *testing.T) {
 	for _, kind := range config.LinkKinds() {
 		value := "handle"

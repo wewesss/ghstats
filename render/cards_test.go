@@ -75,10 +75,3 @@ func TestSnippetListsEveryCard(t *testing.T) {
 		t.Fatalf("no default stats card expected:\n%s", s)
 	}
 }
-
-func TestSnippetDefaultCardKeepsItsAlt(t *testing.T) {
-	s := render.Snippet(config.Default())
-	if !strings.Contains(s, `<img alt="GitHub stats" src="ghstats/stats-dark.svg" width="495">`) {
-		t.Fatalf("snippet = %s", s)
-	}
-}

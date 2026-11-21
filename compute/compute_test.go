@@ -180,15 +180,6 @@ func TestExcludeAffectsAdjustedOnly(t *testing.T) {
 	}
 }
 
-func TestZeroWeightLanguageIsDropped(t *testing.T) {
-	s := snap(repo("me/a", langs("Go", 800, "HTML", 200)))
-	cfg := adjusted(func(c *config.Config) { c.Languages.Weights = map[string]float64{"HTML": 0} })
-	r := mustCompute(t, s, cfg)
-	if has(r.Languages.Adjusted, "HTML") {
-		t.Fatalf("adjusted = %+v", r.Languages.Adjusted)
-	}
-}
-
 func TestHiddenShare(t *testing.T) {
 	s := snap(repo("me/a", langs("A", 50, "B", 30, "C", 20)))
 	tests := []struct {

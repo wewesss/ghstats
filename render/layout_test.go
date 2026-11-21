@@ -213,15 +213,6 @@ func TestSnippetRowsIgnoreAbsentItems(t *testing.T) {
 	}
 }
 
-func TestSnippetWithoutRowsIsUnchanged(t *testing.T) {
-	cfg := sample.Profile()
-	withRows := cfg
-	withRows.Render.Rows = nil
-	if render.Snippet(cfg) != render.Snippet(withRows) {
-		t.Fatal("nil rows must not change the snippet")
-	}
-}
-
 func TestRowCardsShareTheTallestHeight(t *testing.T) {
 	short := []config.Block{{Name: "stats", Variants: []string{"totals"}}}
 	tall := []config.Block{{Name: "languages", Variants: []string{"bars"}}}

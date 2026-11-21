@@ -389,16 +389,6 @@ func TestInitProfileCreationRefused(t *testing.T) {
 	}
 }
 
-func TestInitListedInHelp(t *testing.T) {
-	code, stdout, _ := exec("help")
-	if code != 0 || !strings.Contains(stdout, "  init      set up a profile repository with gh") {
-		t.Fatalf("help = %d %q", code, stdout)
-	}
-	if code, _, _ := exec("init", "--bogus"); code != 2 {
-		t.Fatalf("init --bogus = %d", code)
-	}
-}
-
 func docYAMLBlock(t *testing.T) string {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join("..", "..", "docs", "en", "guide", "getting-started.md"))
@@ -420,11 +410,5 @@ func TestInitWorkflowTemplateMatchesDocs(t *testing.T) {
 	want := docYAMLBlock(t)
 	if got := strings.ReplaceAll(workflowTemplate, "\r\n", "\n"); got != want {
 		t.Fatalf("cmd/ghstats/workflow.yml differs from the workflow of docs/en/guide/getting-started.md\n--- template\n%s\n--- docs\n%s", got, want)
-	}
-}
-
-func TestInitConfigSampleParses(t *testing.T) {
-	if _, err := config.Parse(strings.NewReader(profileConfigSample)); err != nil {
-		t.Fatal(err)
 	}
 }

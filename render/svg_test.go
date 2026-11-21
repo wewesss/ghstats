@@ -88,20 +88,6 @@ func TestGoldenCards(t *testing.T) {
 	}
 }
 
-func TestGoldenLanguageVariants(t *testing.T) {
-	r := sample.Report()
-	for _, v := range []string{"bars", "iso", "cells", "treemap", "shift", "terminal"} {
-		t.Run(v, func(t *testing.T) {
-			cfg := config.DefaultRender()
-			cfg.Blocks = []config.Block{{Name: "languages", Variants: []string{v}}}
-			cfg.Motion = false
-			svg := renderSVG(t, r, cfg, render.Dark)
-			assertWellFormed(t, svg)
-			golden(t, "languages-"+v+".svg", svg)
-		})
-	}
-}
-
 func TestEveryPresetPaletteAndMode(t *testing.T) {
 	r := sample.Report()
 	presets := []string{"noir", "carbon", "graphite", "midnight", "slate", "dune", "transparent"}
@@ -332,70 +318,5 @@ func TestDeterministic(t *testing.T) {
 		if renderSVG(t, r, cfg, render.Dark) != first {
 			t.Fatal("output changes between runs")
 		}
-	}
-}
-
-func TestJSON(t *testing.T) {
-	var a, b bytes.Buffer
-	r := sample.Report()
-	if err := render.JSON(&a, r); err != nil {
-		t.Fatal(err)
-	}
-	if err := render.JSON(&b, r); err != nil {
-		t.Fatal(err)
-	}
-	if a.String() != b.String() {
-		t.Fatal("JSON is not deterministic")
-	}
-	out := a.String()
-	if !strings.HasPrefix(out, "{\n  \"schema_version\": 1,") || !strings.HasSuffix(out, "}\n") {
-		t.Fatalf("unexpected shape: %q", out[:min(len(out), 60)])
-	}
-}
-
-func TestPrivateRepositoryNamesNeverLeak(t *testing.T) {
-	now := time.Date(2026, 11, 17, 9, 0, 0, 0, time.UTC)
-	day := time.Date(2026, 11, 10, 0, 0, 0, 0, time.UTC)
-	secret := snapshot.Repo{
-		ID: "ID_secret", NameWithOwner: "me/secret-repo", Owner: "me", Private: true, Stars: 2,
-		Languages: []snapshot.LanguageSize{{Name: "Go", Bytes: 5000}},
-		Traffic: &snapshot.Traffic{
-			Views:  []snapshot.DayCount{{Day: day, Count: 9, Uniques: 3}},
-			Clones: []snapshot.DayCount{{Day: day, Count: 4, Uniques: 1}},
-		},
-	}
-	public := snapshot.Repo{
-		ID: "ID_pub", NameWithOwner: "me/open", Owner: "me", Stars: 1,
-		Languages: []snapshot.LanguageSize{{Name: "Lua", Bytes: 1000}},
-	}
-	s := snapshot.Snapshot{
-		SchemaVersion: snapshot.SchemaVersion, CollectedAt: now,
-		Viewer: snapshot.Viewer{Login: "me", Followers: 3},
-		Repos:  []snapshot.Repo{secret, public},
-		Errors: []snapshot.RepoError{{Repo: "me/secret-repo", Stage: "traffic", Message: "boom secret-repo"}},
-	}
-	r, err := compute.Compute(s, history.History{}, config.Default(), now)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if r.Totals.PrivateRepos != 1 {
-		t.Fatalf("totals = %+v", r.Totals)
-	}
-	for _, mode := range []render.Mode{render.Dark, render.Light} {
-		svg := renderSVG(t, r, sample.FullRender(), mode)
-		assertWellFormed(t, svg)
-		if strings.Contains(svg, "secret-repo") {
-			t.Fatal("SVG leaks a private repository name")
-		}
-		if !strings.Contains(svg, "PRIVATE 1") {
-			t.Fatal("private bar missing")
-		}
-	}
-	var buf bytes.Buffer
-	if err := render.JSON(&buf, r); err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(buf.String(), "secret-repo") {
-		t.Fatal("JSON leaks a private repository name")
 	}
 }

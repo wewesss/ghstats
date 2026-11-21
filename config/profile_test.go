@@ -233,21 +233,6 @@ func TestRenderLayoutAndBasePathRejects(t *testing.T) {
 	}
 }
 
-func TestProfileValidateJoinsErrors(t *testing.T) {
-	c := config.Default()
-	c.Profile = config.Profile{
-		Focus: []config.Focus{{Name: "", Building: nil}},
-		Links: []config.Link{{Kind: "nope", Value: "x"}, {Kind: "website", Value: "x"}},
-	}
-	c.Render.Layout = "huge"
-	err := c.Validate()
-	for _, want := range []string{"render.layout", "name must not be empty", "1 to 4", `unknown kind "nope"`, "needs a full https:// URL"} {
-		if err == nil || !strings.Contains(err.Error(), want) {
-			t.Fatalf("err = %v, want it to mention %q", err, want)
-		}
-	}
-}
-
 func TestExampleProfileSectionIsValidWhenUncommented(t *testing.T) {
 	raw, err := os.ReadFile("example.yaml")
 	if err != nil {

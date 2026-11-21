@@ -7,6 +7,40 @@ sidebar:
 
 Cette page vous mène de zéro à des cartes publiées dans le README de votre profil.
 
+## Installation rapide avec ghstats init
+
+`ghstats init` configure le dépôt de votre profil depuis votre machine, par la CLI GitHub. Le token est la seule chose que vous créez à la main.
+
+Avant de commencer :
+
+1. Installez la [CLI GitHub](https://cli.github.com) et connectez-vous avec `gh auth login`.
+2. Donnez-lui le scope `workflow`, nécessaire pour écrire sous `.github/workflows/` et que `gh auth login` n'accorde pas par défaut : `gh auth refresh -h github.com -s workflow`.
+3. Installez ghstats avec `go install github.com/wewesss/ghstats/cmd/ghstats@latest`, ou téléchargez un binaire depuis la [page des releases](https://github.com/wewesss/ghstats/releases).
+4. Créez le token fine-grained décrit dans [Créer le token](#1-créer-le-token). Donnez-lui accès à tous les dépôts, pour qu'il couvre aussi `<user>/ghstats-data`, que `init` crée.
+
+Lancez ensuite la commande :
+
+```sh
+export GHSTATS_TOKEN=<token>
+ghstats init
+```
+
+Sans `GHSTATS_TOKEN` dans l'environnement, `init` demande le token quand le secret manque ; la saisie est masquée dans un terminal. `init` enchaîne ces étapes dans l'ordre et affiche `ok`, `created`, `updated` ou `skipped` pour chacune :
+
+1. Vérifie que `gh` est installé et possède le scope `workflow`, et lit votre login (remplaçable avec `--user`).
+2. Vérifie que le dépôt de profil `<user>/<user>` existe, et le crée après confirmation s'il manque.
+3. Vérifie que le dépôt de données privé `<user>/ghstats-data` existe, et le crée s'il manque. Il s'arrête sur une erreur si ce dépôt est public, même avec `--force`, car il contient des noms de dépôts privés.
+4. Écrit `.github/workflows/ghstats.yml` et un `ghstats.yaml` minimal dans le dépôt de profil.
+5. Ajoute le code des cartes au `README.md`, entre les marqueurs `<!-- ghstats:start -->` et `<!-- ghstats:end -->`, après l'avoir affiché et demandé une confirmation.
+6. Vérifie que le token appartient à votre compte et peut lire `<user>/ghstats-data`, puis l'enregistre comme secret `GHSTATS_TOKEN` du dépôt de profil. Le token passe à `gh` par son entrée standard et n'est jamais affiché.
+7. Lance le premier run du workflow et affiche l'URL de l'onglet Actions. Passez cette étape avec `--no-run`.
+
+Relancer `init` est sans risque. Un workflow et un `ghstats.yaml` existants sont laissés tels quels sauf avec `--force`. Seul le texte entre les marqueurs du README est remplacé, et rien n'est écrit quand il est déjà à jour. Le secret est laissé tel quel quand il existe et qu'aucun token n'est fourni. Les flags sont dans [Ligne de commande](./cli.md#init).
+
+## Installation manuelle
+
+Les étapes ci-dessous font à la main ce que fait `ghstats init`.
+
 ## Prérequis
 
 - Un compte GitHub avec un dépôt de profil nommé `<user>/<user>`.

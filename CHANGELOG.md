@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-11-21
+
+### Added
+
+- `ghstats init`: sets up a profile repository from your machine through the GitHub CLI. It creates `<user>/<user>` and the private `<user>/ghstats-data` when they are missing, writes the workflow and a minimal `ghstats.yaml`, adds the cards to the profile README between `<!-- ghstats:start -->` and `<!-- ghstats:end -->`, stores the token as the `GHSTATS_TOKEN` secret after checking it, and starts the first run. Every step is idempotent and prints `ok`, `created`, `updated` or `skipped`. Flags: `--user`, `--yes`, `--force`, `--no-run`.
+- The getting-started guide opens with the `ghstats init` setup; the manual steps stay under Manual setup.
+
 ## [1.2.0] - 2026-11-21
 
 ### Added

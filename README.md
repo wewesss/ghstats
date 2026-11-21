@@ -50,6 +50,8 @@ It ships as a composite GitHub Action and as a CLI. A scheduled workflow refresh
 
 ## Quick start
 
+The fastest way is `ghstats init`: with the GitHub CLI (`gh`) signed in, it creates the repositories, the workflow, the configuration, the README block and the secret for you (see [Quick setup](./docs/en/guide/getting-started.md#quick-setup-with-ghstats-init)). To set it up by hand instead:
+
 1. Create a private `<user>/ghstats-data` repository, and a fine-grained token on your account with read-only Metadata, Contents and Administration on all repositories, plus Contents read and write on `<user>/ghstats-data`. Store it as the `GHSTATS_TOKEN` secret of your profile repository.
 2. Add this workflow to your `<user>/<user>` repository, then run it once from the Actions tab:
 

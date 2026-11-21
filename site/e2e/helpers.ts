@@ -94,7 +94,19 @@ export function itemsOf(row: SnippetRow): string[] {
 }
 
 export async function drag(source: Locator, target: Locator): Promise<void> {
-  await source.dragTo(target, { force: true, steps: 12 });
+  const page = source.page();
+  await source.scrollIntoViewIfNeeded();
+  await source.hover();
+  await page.mouse.down();
+  const from = await source.boundingBox();
+  if (from === null) throw new Error("the dragged element has no box");
+  await page.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2 + 12, { steps: 6 });
+  await expect(page.getByTestId("canvas-scroll")).toHaveAttribute("data-dragging", "true");
+  await expect(target).toBeVisible();
+  const to = await target.boundingBox();
+  if (to === null) throw new Error("the drop zone has no box");
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  await page.mouse.up();
 }
 
 export async function selectCard(page: Page, name: string): Promise<void> {

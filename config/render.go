@@ -249,11 +249,29 @@ func (r Render) validateCards(fail func(format string, args ...any)) {
 	}
 }
 
+func LinkItem(kind string) string { return ItemLinks + "/" + kind }
+
+func LinkItemKind(item string) (string, bool) {
+	kind, ok := strings.CutPrefix(item, ItemLinks+"/")
+	return kind, ok
+}
+
+func IsLinkItem(item string) bool {
+	if item == ItemLinks {
+		return true
+	}
+	_, ok := LinkItemKind(item)
+	return ok
+}
+
 func (r Render) validateRows(fail func(format string, args ...any)) {
 	if len(r.Rows) > maxRows {
 		fail("render.rows: at most %d rows, got %d", maxRows, len(r.Rows))
 	}
 	known := map[string]bool{ItemIdentity: true, ItemLinks: true}
+	for _, kind := range LinkKinds() {
+		known[LinkItem(kind)] = true
+	}
 	for _, c := range r.CardList() {
 		known[c.Name] = true
 	}
@@ -268,16 +286,27 @@ func (r Render) validateRows(fail func(format string, args ...any)) {
 		for j, item := range row.Items {
 			switch {
 			case !known[item]:
-				fail("render.rows[%d].items[%d]: unknown item %q (want a card name, %q or %q)", i, j, item, ItemIdentity, ItemLinks)
+				fail("render.rows[%d].items[%d]: unknown item %q (want a card name, %q, %q or \"%s/<kind>\")", i, j, item, ItemIdentity, ItemLinks, ItemLinks)
 			case placed[item]:
 				fail("render.rows[%d].items[%d]: %q is already placed in a row", i, j, item)
 			}
 			placed[item] = true
-			if item == ItemLinks && len(row.Items) > 1 {
-				fail("render.rows[%d].items[%d]: %q must be alone in its row", i, j, item)
-			}
+		}
+		if hasLinks, hasOther := rowKinds(row); hasLinks && hasOther {
+			fail("render.rows[%d].items: link items cannot share a row with %q or a card", i, ItemIdentity)
 		}
 	}
+}
+
+func rowKinds(row Row) (links, other bool) {
+	for _, item := range row.Items {
+		if IsLinkItem(item) {
+			links = true
+		} else {
+			other = true
+		}
+	}
+	return links, other
 }
 
 func validateBlocks(path string, blocks []Block, fail func(format string, args ...any)) {

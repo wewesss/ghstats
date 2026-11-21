@@ -146,7 +146,7 @@ func TestProfileRejects(t *testing.T) {
 		{"custom icon path with an ampersand", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: \"M0 0&amp;\"}", "must not contain"},
 		{"custom icon not a string", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: [a]}", "must be a string"},
 		{"icon on another kind", "links:\n    - youtube: {url: \"https://www.youtube.com/@a\", icon: discord}", "only valid for"},
-		{"custom unknown key", "links:\n    - custom: {url: \"https://example.com\", label: blog, name: x}", "url, label and icon"},
+		{"custom unknown key", "links:\n    - custom: {url: \"https://example.com\", label: blog, name: x}", "url, label, icon and style"},
 		{"unknown link style", "link_style: round", "profile.link_style"},
 		{"link style lists the values", "link_style: round", "full, icon, text"},
 		{"link style is case sensitive", "link_style: Icon", "profile.link_style"},

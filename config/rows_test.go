@@ -29,8 +29,8 @@ func TestRenderRowsReject(t *testing.T) {
 		{"unknown item", "    - items: [nope]\n", `unknown item "nope"`},
 		{"placed twice in a row", "    - items: [overview, overview]\n", `"overview" is already placed`},
 		{"placed in two rows", "    - items: [overview]\n    - items: [overview]\n", `"overview" is already placed`},
-		{"links with another item", "    - items: [links, overview]\n", `"links" must be alone`},
-		{"links after another item", "    - items: [overview, links]\n", `"links" must be alone`},
+		{"links with another item", "    - items: [links, overview]\n", `link items cannot share a row`},
+		{"links after another item", "    - items: [overview, links]\n", `link items cannot share a row`},
 		{"13 rows", strings.Repeat("    - items: [identity]\n", 13), "at most 12 rows"},
 	}
 	for _, tt := range tests {

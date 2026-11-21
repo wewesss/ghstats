@@ -67,8 +67,9 @@ render:
   #       - history: [clones]
   # A card with "header: false" drops its login / ghstats line and the rule under it.
   # Optional: lay the cards out in README.snippet.md. Each row is a <p align>; its items
-  # (card names, "identity", "links") sit side by side. An item is placed once, "links"
-  # stays alone in its row, and 12 rows at most. Items left out follow the rows.
+  # (card names, "identity", "links", "links/<kind>" for one badge) sit side by side.
+  # An item is placed once, a row with link items holds only link items, and 12 rows
+  # at most. Items left out follow the rows.
   # rows:
   #   - align: center       # left | center | right
   #     items: [overview, langs]
@@ -95,7 +96,7 @@ render:
   base_path: ghstats/
 
 # Optional profile cards: identity-dark.svg and identity-light.svg (when focus or
-# tagline is set), one links/<kind>-<mode>.svg badge per non-empty link, and
+# tagline or identity.show is set, or identity is placed in a row), one links/<kind>-<mode>.svg badge per non-empty link, and
 # README.snippet.md. Badges of links removed from this file are not cleaned up.
 # profile:
 #   name: octocat                    # default: the report login
@@ -107,10 +108,13 @@ render:
 #       building: [full-stack apps, desktop software]
 #     - name: GAMES
 #       building: [gameplay systems, game engines]
+#   identity:                        # optional
+#     layout: wide                   # wide (1000 px) or card (495 px, one column)
+#     show: [header, name, tagline, location, note, building, focus, footer]
 #   link_style: full                 # full (icon + label), icon (icon only) or text (label only)
 #   links:                           # kept in this order; an empty value is skipped
 #     - youtube: "@octocat"          # a handle or a full https:// URL
-#     - website: https://example.com # website, mastodon and steam need a full URL
+#     - website: {url: "https://example.com", style: icon}   # style: this link only; website, mastodon and steam need a full URL
 #     - discord: {url: "https://discord.com/invite/xyz", label: discord}
 #     - github_sponsors: octocat
 #     - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}

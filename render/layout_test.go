@@ -242,7 +242,7 @@ func TestStretchedCardCentersItsBlocks(t *testing.T) {
 
 func TestSnippetRowsIgnoreAbsentItems(t *testing.T) {
 	cfg := config.Default()
-	cfg.Render.Rows = []config.Row{{Items: []string{"identity"}}, {Items: []string{"links"}}, {Align: "right", Items: []string{"stats"}}}
+	cfg.Render.Rows = []config.Row{{Items: []string{"links"}}, {Items: []string{"links/youtube"}}, {Align: "right", Items: []string{"stats"}}}
 	s := render.Snippet(cfg)
 	if strings.Contains(s, "identity") || strings.Contains(s, `<a href`) || !strings.HasPrefix(s, `<p align="right">`) {
 		t.Fatalf("snippet = %s", s)
@@ -354,7 +354,7 @@ func docSnippetExample(t *testing.T, heading string) (yamlSrc, html string) {
 }
 
 func TestDocSnippetExamplesMatchSnippet(t *testing.T) {
-	for _, heading := range []string{"Several cards", "Layout in the README"} {
+	for _, heading := range []string{"Several cards", "Layout in the README", "Placing link badges"} {
 		t.Run(heading, func(t *testing.T) {
 			src, want := docSnippetExample(t, heading)
 			cfg, err := config.Parse(strings.NewReader(src))

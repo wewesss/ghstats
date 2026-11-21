@@ -189,12 +189,57 @@ The snippet becomes:
 GitHub keeps `align` on `<p>` and `width` on `<img>`, so the two cards of the first row share the line.
 
 - `align` is `left`, `center` or `right`; it defaults to `center`.
-- `items` lists card names, `identity` and `links`. An item can be placed once in all the rows, and `links` must be alone in its row.
+- `items` lists card names, `identity`, `links` and `links/<kind>` (a single link badge, see [Placing link badges](#placing-link-badges)). An item can be placed once in all the rows. A row that holds a link item holds only link items.
 - With several items in a row, each `width` is a percentage of the natural widths of the row (495 for a `card`, 1000 for the identity card and a `wide` card), with 2 % left free. An item alone in its row is drawn at 98 % when it is a `wide` card or the identity card, and keeps 495 when it is a `card`.
 - Cards in the same row are drawn at the height of the tallest one: the frame and background are extended, the header stays at the top and the blocks are centered vertically in the extra space. The identity card keeps its height.
-- `identity` without an identity card and `links` without links are skipped, and a row left empty is not written.
-- Items that appear in no row are added after the rows, in the default order: identity, cards, links, with the usual widths (495 for a `card`, `100%` for a `wide` card and the identity card).
+- `links` without links and a `links/<kind>` whose link is missing or empty are skipped, and a row left empty is not written. `identity` placed in a row always draws the identity card (see [Identity card](#identity-card)).
+- Items that appear in no row are added after the rows, in the default order: identity, cards, links, with the usual widths (495 for a `card`, `100%` for a `wide` card, 495 for an identity card in the `card` layout, `100%` for the other identity cards). Links that no row places are added last in one centered row.
 - At most 12 rows.
+
+### Placing link badges
+
+`links/<kind>` places the badge of one link, for any link kind of the profile. `links` places every badge that no `links/<kind>` places elsewhere. The badges of a row are written one after the other in a single `<p align>`, so a row can hold badges only, never badges and cards.
+
+```yaml
+version: 1
+render:
+  rows:
+    - align: center
+      items: [identity, stats]
+    - align: left
+      items: [links/youtube, links/website]
+    - align: right
+      items: [links]
+profile:
+  name: octocat
+  tagline: SOFTWARE
+  identity:
+    layout: card
+    show: [header, name, tagline, footer]
+  links:
+    - youtube: "@octocat"
+    - website: {url: "https://example.com", style: icon}
+    - github_sponsors: octocat
+```
+
+The snippet becomes:
+
+```html
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/identity-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/identity-light.svg"><img alt="profile" src="ghstats/identity-dark.svg" width="49%"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/stats-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/stats-light.svg"><img alt="GitHub stats" src="ghstats/stats-dark.svg" width="49%"></picture>
+</p>
+
+<p align="left">
+<a href="https://www.youtube.com/@octocat"><picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/links/youtube-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/links/youtube-light.svg"><img alt="youtube" src="ghstats/links/youtube-dark.svg"></picture></a>
+<a href="https://example.com"><picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/links/website-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/links/website-light.svg"><img alt="website" src="ghstats/links/website-dark.svg"></picture></a>
+</p>
+
+<p align="right">
+<a href="https://github.com/sponsors/octocat"><picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/links/github_sponsors-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/links/github_sponsors-light.svg"><img alt="github_sponsors" src="ghstats/links/github_sponsors-dark.svg"></picture></a>
+</p>
+```
+
+The identity card is 495 wide here (`identity.layout: card`), so it shares the first row with the stats card at 49 % each.
 
 ### Theme
 
@@ -232,15 +277,42 @@ An optional section that adds an identity card and one badge per link. Everythin
 | `profile.note` | Optional. |
 | `profile.focus` | 1 to 6 entries, each `{name, building}` where `building` holds 1 to 4 words. |
 | `profile.links` | List of `kind: value`, kept in this order; an empty value is skipped. |
-| `profile.link_style` | Look of every link button: `full` (default, icon and label), `icon` (icon only) or `text` (label only). |
+| `profile.link_style` | Look of every link button: `full` (default, icon and label), `icon` (icon only) or `text` (label only). A link can override it with its own `style`. |
+| `profile.identity.show` | Parts of the identity card to draw, among `header`, `name`, `tagline`, `location`, `note`, `building`, `focus` and `footer`. Default: every part that has a value. |
+| `profile.identity.layout` | `wide` (default, 1000 px) or `card` (495 px, everything in one column). |
 
-The identity card is generated when `profile` has at least `focus` or `tagline`.
+The identity card is generated when `profile` has at least `focus` or `tagline`, when `profile.identity.show` is set, or when `identity` is placed in `render.rows`.
+
+### Identity card
+
+Without `profile.identity`, the card is drawn as before. `identity.show` lists the parts to draw; a part that is not listed is not drawn, the card height follows the parts that remain and no gap is left:
+
+- `header`: the small name, `/ profile` and the pulsing dot, with the rule under them.
+- `name`: the large name.
+- `tagline`, `note`: the lines of the same name.
+- `location`: the location, at the right of the top strip. The strip exists as soon as `header` or `location` is drawn.
+- `building`: the `$ building` line with the rotating words of `focus`.
+- `focus`: the numbered focus list. Without it, the right column and its vertical rule disappear.
+- `footer`: the rule and `github.com/<login>` at the bottom.
+
+A part with no value (a `tagline` that is not set, for example) is not drawn. An unknown or repeated part is a validation error.
+
+`identity.layout: card` draws the card 495 px wide with one column: header, name (its size is reduced so that it fits 447 px), tagline, `building` line, note, then the focus list under the text, then the footer. In `render.rows` and in the snippet, this card counts as 495 wide.
+
+```yaml
+profile:
+  name: octocat
+  location: caen, fr
+  identity:
+    show: [name, location]
+    layout: card
+```
 
 ### Links
 
 Link kinds: `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom`. Each kind can be listed once.
 
-A value is a handle (a leading `@` is optional) or a full `https://` URL; `mastodon`, `steam` and `website` need a full URL. The map form `{url, label}` overrides the label:
+A value is a handle (a leading `@` is optional) or a full `https://` URL; `mastodon`, `steam` and `website` need a full URL. The map form `{url, label, style}` overrides the label and the style:
 
 ```yaml
 profile:
@@ -267,6 +339,16 @@ The scalar form `custom: https://...`, a missing `url` or `label`, an `icon` on 
 ```yaml
 profile:
   link_style: icon
+```
+
+A link written in the map form can carry its own `style`, which replaces `link_style` for that link only:
+
+```yaml
+profile:
+  link_style: full
+  links:
+    - youtube: "@octocat"
+    - website: {url: "https://example.com", style: icon}
 ```
 
 See [Profile cards](../cards/profile.md#button-styles) for the rendering of each style.

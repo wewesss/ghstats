@@ -61,7 +61,7 @@ func Cards(r report.Report, cfg config.Config, mode Mode) (map[string]string, er
 			}
 		}
 	}
-	if cfg.Profile.HasIdentity() {
+	if cfg.HasIdentity() {
 		sb.Reset()
 		if err := IdentitySVG(&sb, r, cfg, mode); err != nil {
 			return nil, err

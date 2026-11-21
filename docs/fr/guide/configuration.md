@@ -189,12 +189,57 @@ Le snippet devient :
 GitHub garde `align` sur `<p>` et `width` sur `<img>` : les deux cartes de la première ligne se partagent la ligne.
 
 - `align` vaut `left`, `center` ou `right` ; `center` par défaut.
-- `items` liste des noms de cartes, `identity` et `links`. Un élément se place une seule fois dans l'ensemble des lignes, et `links` doit être seul dans sa ligne.
+- `items` liste des noms de cartes, `identity`, `links` et `links/<kind>` (le badge d'un seul lien, voir [Placer les badges de liens](#placer-les-badges-de-liens)). Un élément se place une seule fois dans l'ensemble des lignes. Une ligne qui contient un élément de lien ne contient que des éléments de lien.
 - Quand une ligne a plusieurs éléments, chaque `width` est un pourcentage proportionnel aux largeurs naturelles de la ligne (495 pour une `card`, 1000 pour la carte identité et une carte `wide`), avec 2 % laissés libres. Un élément seul dans sa ligne est dessiné à 98 % quand c'est une carte `wide` ou la carte identité, et garde 495 quand c'est une `card`.
 - Les cartes d'une même ligne sont dessinées à la hauteur de la plus haute : le cadre et le fond sont prolongés, l'en-tête reste en haut et les blocs sont centrés verticalement dans l'espace ajouté. La carte identité garde sa hauteur.
-- `identity` sans carte identité et `links` sans lien sont ignorés, et une ligne devenue vide n'est pas écrite.
-- Les éléments absents de toutes les lignes sont ajoutés après les lignes, dans l'ordre par défaut : identité, cartes, liens, avec les largeurs habituelles (495 pour une `card`, `100%` pour une carte `wide` et la carte identité).
+- `links` sans lien et un `links/<kind>` dont le lien n'existe pas ou est vide sont ignorés, et une ligne devenue vide n'est pas écrite. `identity` placé dans une ligne dessine toujours la carte identité (voir [Carte identité](#carte-identité)).
+- Les éléments absents de toutes les lignes sont ajoutés après les lignes, dans l'ordre par défaut : identité, cartes, liens, avec les largeurs habituelles (495 pour une `card`, `100%` pour une carte `wide`, 495 pour une carte identité en disposition `card`, `100%` pour les autres cartes identité). Les liens qu'aucune ligne ne place sont ajoutés en dernier dans une ligne centrée.
 - 12 lignes au plus.
+
+### Placer les badges de liens
+
+`links/<kind>` place le badge d'un seul lien, pour n'importe quel type de lien du profil. `links` place tous les badges qu'aucun `links/<kind>` ne place ailleurs. Les badges d'une ligne sont écrits l'un après l'autre dans un seul `<p align>` : une ligne contient des badges seulement, jamais des badges avec des cartes.
+
+```yaml
+version: 1
+render:
+  rows:
+    - align: center
+      items: [identity, stats]
+    - align: left
+      items: [links/youtube, links/website]
+    - align: right
+      items: [links]
+profile:
+  name: octocat
+  tagline: SOFTWARE
+  identity:
+    layout: card
+    show: [header, name, tagline, footer]
+  links:
+    - youtube: "@octocat"
+    - website: {url: "https://example.com", style: icon}
+    - github_sponsors: octocat
+```
+
+Le snippet devient :
+
+```html
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/identity-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/identity-light.svg"><img alt="profile" src="ghstats/identity-dark.svg" width="49%"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/stats-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/stats-light.svg"><img alt="GitHub stats" src="ghstats/stats-dark.svg" width="49%"></picture>
+</p>
+
+<p align="left">
+<a href="https://www.youtube.com/@octocat"><picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/links/youtube-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/links/youtube-light.svg"><img alt="youtube" src="ghstats/links/youtube-dark.svg"></picture></a>
+<a href="https://example.com"><picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/links/website-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/links/website-light.svg"><img alt="website" src="ghstats/links/website-dark.svg"></picture></a>
+</p>
+
+<p align="right">
+<a href="https://github.com/sponsors/octocat"><picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/links/github_sponsors-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/links/github_sponsors-light.svg"><img alt="github_sponsors" src="ghstats/links/github_sponsors-dark.svg"></picture></a>
+</p>
+```
+
+La carte identité fait ici 495 de large (`identity.layout: card`) : elle partage la première ligne avec la carte de statistiques, à 49 % chacune.
 
 ### Thème
 
@@ -232,15 +277,42 @@ Une section facultative qui ajoute une carte identité et un badge par lien. Tou
 | `profile.note` | Facultatif. |
 | `profile.focus` | 1 à 6 entrées, chacune `{name, building}` où `building` contient 1 à 4 mots. |
 | `profile.links` | Liste de `kind: valeur`, gardée dans cet ordre ; une valeur vide est ignorée. |
-| `profile.link_style` | Apparence de chaque bouton de lien : `full` (par défaut, icône et libellé), `icon` (icône seule) ou `text` (libellé seul). |
+| `profile.link_style` | Apparence de chaque bouton de lien : `full` (par défaut, icône et libellé), `icon` (icône seule) ou `text` (libellé seul). Un lien peut le remplacer par son propre `style`. |
+| `profile.identity.show` | Parties de la carte identité à dessiner, parmi `header`, `name`, `tagline`, `location`, `note`, `building`, `focus` et `footer`. Par défaut : toutes celles qui ont une valeur. |
+| `profile.identity.layout` | `wide` (par défaut, 1000 px) ou `card` (495 px, tout dans une seule colonne). |
 
-La carte identité est générée quand `profile` contient au moins `focus` ou `tagline`.
+La carte identité est générée quand `profile` contient au moins `focus` ou `tagline`, quand `profile.identity.show` est donné, ou quand `identity` est placé dans `render.rows`.
+
+### Carte identité
+
+Sans `profile.identity`, la carte est dessinée comme avant. `identity.show` liste les parties à dessiner ; une partie absente de la liste n'est pas dessinée, la hauteur de la carte suit les parties restantes et aucun trou n'est laissé :
+
+- `header` : le petit nom, `/ profile` et le point qui pulse, avec le trait en dessous.
+- `name` : le grand nom.
+- `tagline`, `note` : les lignes du même nom.
+- `location` : le lieu, à droite de la bande du haut. La bande existe dès que `header` ou `location` est dessiné.
+- `building` : la ligne `$ building` avec les mots qui tournent de `focus`.
+- `focus` : la liste numérotée du focus. Sans elle, la colonne de droite et son trait vertical disparaissent.
+- `footer` : le trait et `github.com/<login>` en bas.
+
+Une partie sans valeur (une `tagline` non renseignée, par exemple) n'est pas dessinée. Une partie inconnue ou répétée est une erreur de validation.
+
+`identity.layout: card` dessine la carte en 495 de large sur une seule colonne : en-tête, nom (sa taille est réduite pour tenir en 447 px), tagline, ligne `building`, note, puis la liste du focus sous le texte, puis le pied de page. Dans `render.rows` et dans le snippet, cette carte compte pour 495 de large.
+
+```yaml
+profile:
+  name: octocat
+  location: caen, fr
+  identity:
+    show: [name, location]
+    layout: card
+```
 
 ### Liens
 
 Types de liens : `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom`. Chaque type ne peut être listé qu'une fois.
 
-Une valeur est un identifiant (le `@` initial est facultatif) ou une URL `https://` complète ; `mastodon`, `steam` et `website` exigent une URL complète. La forme `{url, label}` remplace le libellé :
+Une valeur est un identifiant (le `@` initial est facultatif) ou une URL `https://` complète ; `mastodon`, `steam` et `website` exigent une URL complète. La forme `{url, label, style}` remplace le libellé et le style :
 
 ```yaml
 profile:
@@ -267,6 +339,16 @@ La forme scalaire `custom: https://...`, un `url` ou un `label` manquant, un `ic
 ```yaml
 profile:
   link_style: icon
+```
+
+Un lien écrit en forme map peut porter son propre `style`, qui remplace `link_style` pour ce lien seulement :
+
+```yaml
+profile:
+  link_style: full
+  links:
+    - youtube: "@octocat"
+    - website: {url: "https://example.com", style: icon}
 ```
 
 Voir [Cartes de profil](../cards/profile.md#styles-de-bouton) pour le rendu de chaque style.

@@ -47,7 +47,8 @@ Pinning the Action by commit SHA protects `action.yml`, not the binary: a SHA re
 | `<data-dir>/snapshots/snapshot-<timestamp>.json` | `collect` | The raw snapshot. It contains private repository names. |
 | `<data-dir>/history.json` | `collect` | The traffic history, merged at each run. It contains private repository names. |
 | `<output-dir>/stats.json` | `render` | The report, without any private repository name. |
-| `<output-dir>/stats-dark.svg`, `stats-light.svg` | `render` | The stats cards. |
+| `<output-dir>/stats-dark.svg`, `stats-light.svg` | `render` | The default stats card. |
+| `<output-dir>/<name>-dark.svg`, `<name>-light.svg` | `render` | One pair per entry of `render.cards`. |
 | `<output-dir>/identity-dark.svg`, `identity-light.svg` | `render` | The identity card, when `profile` has `focus` or `tagline`. |
 | `<output-dir>/links/<kind>-dark.svg`, `<kind>-light.svg` | `render` | One badge per non-empty profile link. |
 | `<output-dir>/README.snippet.md` | `render` | The markup to paste in your profile README. |

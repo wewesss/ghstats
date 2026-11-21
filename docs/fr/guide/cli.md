@@ -63,7 +63,7 @@ Les avertissements sont affichés sur la sortie d'erreur.
 | `--out-dir` | oui | Dossier qui reçoit les fichiers. |
 | `--config` | non | Fichier de configuration ; les valeurs par défaut s'appliquent s'il est omis. |
 
-`render` écrit `stats.json`, `stats-dark.svg` et `stats-light.svg` dans `--out-dir`, plus la carte identité et les badges de liens quand la configuration a une section `profile` (voir [Cartes de profil](../cards/profile.md)), et `README.snippet.md`.
+`render` écrit `stats.json`, `stats-dark.svg` et `stats-light.svg` dans `--out-dir`, plus la carte identité et les badges de liens quand la configuration a une section `profile` (voir [Cartes de profil](../cards/profile.md)), et `README.snippet.md`. Avec `render.cards`, les fichiers de statistiques sont `<name>-dark.svg` et `<name>-light.svg`, une paire par carte (voir [Plusieurs cartes](./configuration.md#plusieurs-cartes)).
 
 ## version
 

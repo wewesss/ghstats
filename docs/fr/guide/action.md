@@ -47,7 +47,8 @@ L'input `version` décide quelle release du binaire est installée :
 | `<data-dir>/snapshots/snapshot-<timestamp>.json` | `collect` | Le snapshot brut. Il contient des noms de dépôts privés. |
 | `<data-dir>/history.json` | `collect` | L'historique de trafic, fusionné à chaque exécution. Il contient des noms de dépôts privés. |
 | `<output-dir>/stats.json` | `render` | Le rapport, sans aucun nom de dépôt privé. |
-| `<output-dir>/stats-dark.svg`, `stats-light.svg` | `render` | Les cartes de statistiques. |
+| `<output-dir>/stats-dark.svg`, `stats-light.svg` | `render` | La carte de statistiques par défaut. |
+| `<output-dir>/<name>-dark.svg`, `<name>-light.svg` | `render` | Une paire par entrée de `render.cards`. |
 | `<output-dir>/identity-dark.svg`, `identity-light.svg` | `render` | La carte identité, quand `profile` contient `focus` ou `tagline`. |
 | `<output-dir>/links/<kind>-dark.svg`, `<kind>-light.svg` | `render` | Un badge par lien de profil non vide. |
 | `<output-dir>/README.snippet.md` | `render` | Le code à coller dans le README de votre profil. |

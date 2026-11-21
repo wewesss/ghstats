@@ -50,6 +50,8 @@ Il est fourni sous forme d'Action GitHub composite et de CLI. Un workflow planif
 
 ## Démarrage rapide
 
+Le plus rapide est `ghstats init` : avec la CLI GitHub (`gh`) connectée, il crée les dépôts, le workflow, la configuration, le bloc du README et le secret à votre place (voir [Installation rapide](./docs/fr/guide/getting-started.md#installation-rapide-avec-ghstats-init)). Pour tout faire à la main :
+
 1. Créez un dépôt privé `<user>/ghstats-data`, et un token fine-grained sur votre compte avec Metadata, Contents et Administration en lecture seule sur tous les dépôts, plus Contents en lecture et écriture sur `<user>/ghstats-data`. Enregistrez-le comme secret `GHSTATS_TOKEN` du dépôt de votre profil.
 2. Ajoutez ce workflow à votre dépôt `<user>/<user>`, puis lancez-le une fois depuis l'onglet Actions :
 

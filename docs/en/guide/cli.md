@@ -21,6 +21,7 @@ go install github.com/wewesss/ghstats/cmd/ghstats@latest
 ghstats collect [--out data/snapshots] [--history data/history.json] [--no-traffic] [--concurrency N] [--keep N]
 ghstats compute --snapshot <file> --history <file> --out <report.json> [--config <file>]
 ghstats render  --report <report.json> --out-dir <dir> [--config <file>]
+ghstats init    [--user <login>] [--yes] [--force] [--no-run]
 ghstats version
 ```
 
@@ -65,6 +66,19 @@ Writes the files of a report.
 
 `render` writes `stats.json`, `stats-dark.svg` and `stats-light.svg` into `--out-dir`, plus the identity card and the link badges when the configuration has a `profile` section (see [Profile cards](../cards/profile.md)), and `README.snippet.md`. With `render.cards`, the stats files are `<name>-dark.svg` and `<name>-light.svg` instead, one pair per card (see [Several cards](./configuration.md#several-cards)).
 
+## init
+
+Sets up a profile repository from your machine, through the GitHub CLI (`gh`), which must be installed and signed in with the `workflow` scope. The steps and the prerequisites are in [Getting started](./getting-started.md#quick-setup-with-ghstats-init).
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--user` | account of `gh` | GitHub login. |
+| `--yes` | off | Answer yes to the confirmations (README, creation of the profile repository). |
+| `--force` | off | Rewrite the workflow and `ghstats.yaml` even when they exist. |
+| `--no-run` | off | Do not start the first run. |
+
+Each step prints `ok` (already in place), `created`, `updated` or `skipped`, so running `init` again changes nothing that is already set up. `init` stops with an error when `<user>/ghstats-data` is public, even with `--force`.
+
 ## version
 
 Prints the version.
@@ -73,12 +87,14 @@ Prints the version.
 
 `ghstats collect` reads the token from `GHSTATS_TOKEN`, then from `GITHUB_TOKEN`, and fails when neither is set. The permissions the token needs are in [Getting started](./getting-started.md#1-create-the-token).
 
+`ghstats init` reads `GHSTATS_TOKEN` and stores it as the `GHSTATS_TOKEN` secret of the profile repository after checking that it belongs to `<user>` and can read `<user>/ghstats-data`. When the variable is empty and the secret is missing, `init` asks for the token; when the secret already exists, it asks for nothing. `GHSTATS_GRAPHQL_URL` and `GHSTATS_REST_URL` change the API endpoints used for that check.
+
 ## Exit codes
 
 | Code | Meaning |
 | --- | --- |
 | `0` | Success. |
-| `1` | Runtime error. |
+| `1` | Runtime error (for `init`: `gh` missing, a missing scope, a public data repository, a refused token). |
 | `2` | Usage error. |
 
 ## Example

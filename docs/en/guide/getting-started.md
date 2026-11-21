@@ -7,6 +7,40 @@ sidebar:
 
 This page takes you from nothing to cards published in your profile README.
 
+## Quick setup with ghstats init
+
+`ghstats init` sets up your profile repository from your machine, through the GitHub CLI. The token is the only thing you create by hand.
+
+Before you start:
+
+1. Install the [GitHub CLI](https://cli.github.com) and sign in with `gh auth login`.
+2. Give it the `workflow` scope, which it needs to write under `.github/workflows/` and which `gh auth login` does not grant by default: `gh auth refresh -h github.com -s workflow`.
+3. Install ghstats with `go install github.com/wewesss/ghstats/cmd/ghstats@latest`, or download a binary from the [releases page](https://github.com/wewesss/ghstats/releases).
+4. Create the fine-grained token described in [Create the token](#1-create-the-token). Give it access to all repositories, so it also covers `<user>/ghstats-data`, which `init` creates.
+
+Then run it:
+
+```sh
+export GHSTATS_TOKEN=<token>
+ghstats init
+```
+
+Without `GHSTATS_TOKEN` in the environment, `init` asks for the token when the secret is missing; the typed value is hidden in a terminal. `init` does these steps in order, and prints `ok`, `created`, `updated` or `skipped` for each:
+
+1. Checks that `gh` is installed and has the `workflow` scope, and reads your login (override it with `--user`).
+2. Makes sure the profile repository `<user>/<user>` exists, and creates it after a confirmation if it does not.
+3. Makes sure the private data repository `<user>/ghstats-data` exists, and creates it if it does not. It stops with an error if that repository is public, even with `--force`, because it holds private repository names.
+4. Writes `.github/workflows/ghstats.yml` and a minimal `ghstats.yaml` in the profile repository.
+5. Adds the card markup to `README.md` between the markers `<!-- ghstats:start -->` and `<!-- ghstats:end -->`, after showing it and asking for a confirmation.
+6. Checks that the token belongs to your account and can read `<user>/ghstats-data`, then stores it as the `GHSTATS_TOKEN` secret of the profile repository. The token goes to `gh` on its standard input and is never printed.
+7. Starts the first run of the workflow and prints the URL of the Actions tab. Skip this step with `--no-run`.
+
+Running `init` again is safe. An existing workflow and `ghstats.yaml` are left as they are unless you pass `--force`. Only the text between the README markers is replaced, and nothing is written when it is already up to date. The secret is left alone when it exists and no token is given. The flags are in [Command line](./cli.md#init).
+
+## Manual setup
+
+The steps below do by hand what `ghstats init` does.
+
 ## Prerequisites
 
 - A GitHub account with a profile repository named `<user>/<user>`.

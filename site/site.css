@@ -29,7 +29,8 @@
 }
 
 html[data-gs-builder] .mira-docs__main,
-html[data-gs-builder] .docs-toc--rail {
+html[data-gs-builder] .docs-toc--rail,
+html[data-gs-builder] .mira-docs > .mira-docs__sidebar {
   display: none;
 }
 
@@ -74,6 +75,54 @@ html[data-gs-builder] .docs-toc--rail {
   padding: 0.75rem;
   border-inline-end: 1px solid var(--docs-border);
   background: var(--docs-surface);
+}
+
+.gs-site {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--docs-border);
+}
+
+.gs-docslink {
+  margin-inline-end: auto;
+  color: var(--docs-link);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.gs-docslink:hover {
+  text-decoration: underline;
+}
+
+.gs-compact .gs-button {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+a.gs-button {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.gs-button[aria-current="page"] {
+  border-color: var(--docs-accent);
+  background: var(--docs-accent);
+  color: var(--docs-on-accent);
+}
+
+.gs-button[aria-current="page"]:hover {
+  color: var(--docs-on-accent);
+}
+
+.gs-filetabs {
+  display: none;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--docs-border);
 }
 
 .gs-reset {
@@ -554,6 +603,7 @@ html[data-gs-builder] .docs-toc--rail {
 }
 
 .gs-canvas {
+  display: flex;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -562,7 +612,8 @@ html[data-gs-builder] .docs-toc--rail {
 }
 
 .gs-sizer {
-  margin: 0 auto;
+  flex: none;
+  margin: auto;
 }
 
 .gs-readme {
@@ -890,20 +941,23 @@ html[data-gs-builder] .docs-toc--rail {
     flex: 1;
   }
 
-  .gs-mobile-tabs a {
-    align-self: center;
-    padding: 0.5rem 0.75rem;
-    color: var(--docs-muted);
-    text-decoration: none;
-  }
-
   .gs-settings {
     border-inline-end: 0;
   }
 
   .gs-app[data-pane="settings"] .gs-workspace,
-  .gs-app[data-pane="preview"] .gs-settings {
+  .gs-app[data-pane="preview"] .gs-settings,
+  .gs-app[data-pane="files"] .gs-settings {
     display: none;
+  }
+
+  .gs-tabs,
+  .gs-app[data-pane="files"] .gs-bar {
+    display: none;
+  }
+
+  .gs-filetabs {
+    display: block;
   }
 
   .gs-only-mobile {

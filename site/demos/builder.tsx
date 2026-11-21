@@ -15,12 +15,26 @@ interface Ready {
 }
 
 type Tab = "preview" | "yaml" | "workflow" | "snippet";
+type Pane = "settings" | "preview" | "files";
+type Theme = "" | "light" | "dark";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "preview", label: "Preview" },
   { id: "yaml", label: "ghstats.yaml" },
   { id: "workflow", label: "Workflow" },
   { id: "snippet", label: "Snippet" },
+];
+
+const FILES: { id: Exclude<Tab, "preview">; label: string }[] = [
+  { id: "yaml", label: "yaml" },
+  { id: "workflow", label: "workflow" },
+  { id: "snippet", label: "snippet" },
+];
+
+const THEMES: { value: Theme; label: string }[] = [
+  { value: "", label: "Auto" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
 ];
 
 const ARROWS: { direction: Direction; glyph: string; label: string }[] = [
@@ -87,6 +101,78 @@ function useFrame(): { left: number; top: number } {
     };
   }, []);
   return frame;
+}
+
+interface Language {
+  href: string;
+  code: string;
+  label: string;
+  current: boolean;
+}
+
+function readTheme(): Theme {
+  const value = document.documentElement.getAttribute("data-mira-theme");
+  return value === "light" || value === "dark" ? value : "";
+}
+
+function readLanguages(): Language[] {
+  return Array.from(document.querySelectorAll<HTMLAnchorElement>(".mira-docs__languages a")).map((link) => {
+    const code = link.getAttribute("lang") ?? link.textContent ?? "";
+    return { href: link.getAttribute("href") ?? "", code, label: code.toUpperCase(), current: link.getAttribute("aria-current") === "page" };
+  });
+}
+
+function SiteControls() {
+  const [theme, setTheme] = useState<Theme>("");
+  const [languages, setLanguages] = useState<Language[]>([]);
+
+  useEffect(() => {
+    setTheme(readTheme());
+    setLanguages(readLanguages());
+    const watch = new MutationObserver(() => setTheme(readTheme()));
+    watch.observe(document.documentElement, { attributes: true, attributeFilter: ["data-mira-theme"] });
+    return () => watch.disconnect();
+  }, []);
+
+  return (
+    <div className="gs-site" data-testid="site-controls">
+      <a className="gs-docslink" href={docsHome()} data-testid="docs-link">
+        ← Docs
+      </a>
+      <span role="group" aria-label="Theme" className="gs-segment gs-compact">
+        {THEMES.map((entry) => (
+          <button
+            key={entry.value}
+            type="button"
+            className="gs-button"
+            data-mira-axis="theme"
+            data-mira-axis-value={entry.value}
+            data-testid={`theme-${entry.value === "" ? "auto" : entry.value}`}
+            aria-pressed={theme === entry.value}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </span>
+      {languages.length > 1 ? (
+        <span role="group" aria-label="Language" className="gs-segment gs-compact">
+          {languages.map((entry) => (
+            <a
+              key={entry.code}
+              className="gs-button"
+              href={entry.href}
+              lang={entry.code}
+              hrefLang={entry.code}
+              data-testid={`lang-${entry.code}`}
+              {...(entry.current ? { "aria-current": "page" as const } : {})}
+            >
+              {entry.label}
+            </a>
+          ))}
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 function DataBar({ source, onChange }: { source: DataSource; onChange: (next: DataSource) => void }) {
@@ -190,7 +276,7 @@ function BuilderApp({ api, options, initial }: Ready) {
   const [data, setData] = useState<DataSource>(SAMPLE);
   const [tab, setTab] = useState<Tab>("preview");
   const [zoom, setZoom] = useState<"fit" | "100">("fit");
-  const [pane, setPane] = useState<"settings" | "preview">("preview");
+  const [pane, setPane] = useState<Pane>("preview");
   const [selected, setSelected] = useState<string | null>(null);
   const settings = useRef<HTMLDivElement>(null);
   const frame = useFrame();
@@ -216,7 +302,11 @@ function BuilderApp({ api, options, initial }: Ready) {
   const yamlText = override ?? lastYaml.current;
 
   const canvasRows = useMemo(() => parseCanvas(shown.snippet, mode, shown.cards), [shown, mode]);
-  const rows = useMemo(() => toRows(canvasRows), [canvasRows]);
+  const blank = form.rows.length === 0;
+  const rows = useMemo(() => {
+    const base = toRows(canvasRows);
+    return blank ? base.map((row) => ({ ...row, align: "center" })) : base;
+  }, [canvasRows, blank]);
   const onCanvas = useMemo(() => rows.flatMap((row) => row.items), [rows]);
   const editable = override === null && result.error === "";
 
@@ -247,6 +337,11 @@ function BuilderApp({ api, options, initial }: Ready) {
   const arrange = (next: RowState[]) => setForm((previous) => ({ ...previous, rows: next }));
   const moves = ARROWS.map((entry) => ({ ...entry, to: current === null ? null : step(rows, current, entry.direction) }));
 
+  const choose = (next: Tab) => {
+    setTab(next);
+    if (pane !== "settings") setPane(next === "preview" ? "preview" : "files");
+  };
+
   const editYaml = (value: string) => setOverride(value === lastYaml.current ? null : value);
 
   return createPortal(
@@ -256,15 +351,34 @@ function BuilderApp({ api, options, initial }: Ready) {
         <button type="button" role="tab" data-testid="pane-settings" aria-selected={pane === "settings"} onClick={() => setPane("settings")}>
           Settings
         </button>
-        <button type="button" role="tab" data-testid="pane-preview" aria-selected={pane === "preview"} onClick={() => setPane("preview")}>
+        <button
+          type="button"
+          role="tab"
+          data-testid="pane-preview"
+          aria-selected={pane === "preview"}
+          onClick={() => {
+            setPane("preview");
+            setTab("preview");
+          }}
+        >
           Preview
         </button>
-        <a href={docsHome()} data-testid="docs-link">
-          Docs
-        </a>
+        <button
+          type="button"
+          role="tab"
+          data-testid="pane-files"
+          aria-selected={pane === "files"}
+          onClick={() => {
+            setPane("files");
+            if (tab === "preview") setTab("yaml");
+          }}
+        >
+          Files
+        </button>
       </div>
 
       <aside ref={settings} className="gs-settings" data-testid="settings" aria-label="Settings">
+        <SiteControls />
         {override !== null ? (
           <div className="gs-lock">
             <span>YAML edited by hand: the form is off.</span>
@@ -311,7 +425,7 @@ function BuilderApp({ api, options, initial }: Ready) {
 
         <div className="gs-tabs" role="tablist" aria-label="Outputs">
           {TABS.map((entry) => (
-            <button key={entry.id} type="button" role="tab" data-testid={`tab-${entry.id}`} aria-selected={tab === entry.id} onClick={() => setTab(entry.id)}>
+            <button key={entry.id} type="button" role="tab" data-testid={`tab-${entry.id}`} aria-selected={tab === entry.id} onClick={() => choose(entry.id)}>
               {entry.label}
             </button>
           ))}
@@ -319,6 +433,18 @@ function BuilderApp({ api, options, initial }: Ready) {
             Showing <strong>{data.label}</strong>
           </span>
         </div>
+
+        {tab !== "preview" ? (
+          <div className="gs-filetabs" role="group" aria-label="Files" data-testid="file-tabs">
+            <span className="gs-segment">
+              {FILES.map((entry) => (
+                <button key={entry.id} type="button" className="gs-button" data-testid={`file-${entry.id}`} aria-pressed={tab === entry.id} onClick={() => choose(entry.id)}>
+                  {entry.label}
+                </button>
+              ))}
+            </span>
+          </div>
+        ) : null}
 
         {tab === "preview" ? (
           <div className="gs-previewpane" data-testid="preview">
@@ -366,6 +492,7 @@ function BuilderApp({ api, options, initial }: Ready) {
             ) : null}
             <Canvas
               rows={canvasRows}
+              state={rows}
               mode={mode}
               selected={current}
               editable={editable}

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent } from "react";
 import { ALIGNS, type RowState } from "./form";
 import { svgUrl, type Mode } from "./ghstats";
-import { canPlace, place, same, step, toRows, type CanvasEntry, type CanvasRow, type Direction, type Target } from "./layout";
+import { canPlace, place, same, step, type CanvasEntry, type CanvasRow, type Direction, type Target } from "./layout";
 
 export const COLUMN = 896;
 const GUTTER = 16;
@@ -51,6 +51,7 @@ interface Over {
 
 export function Canvas({
   rows,
+  state,
   mode,
   selected,
   editable,
@@ -59,6 +60,7 @@ export function Canvas({
   onArrange,
 }: {
   rows: CanvasRow[];
+  state: RowState[];
   mode: Mode;
   selected: string | null;
   editable: boolean;
@@ -66,11 +68,11 @@ export function Canvas({
   onSelect: (item: string | null) => void;
   onArrange: (rows: RowState[], item: string) => void;
 }) {
-  const state = toRows(rows);
   const scroller = useRef<HTMLDivElement>(null);
   const column = useRef<HTMLDivElement>(null);
   const focusAfter = useRef<string | null>(null);
   const [available, setAvailable] = useState(COLUMN);
+  const [room, setRoom] = useState(0);
   const [height, setHeight] = useState(0);
   const [drag, setDrag] = useState<string | null>(null);
   const [over, setOver] = useState<Over | null>(null);
@@ -78,7 +80,10 @@ export function Canvas({
   useLayoutEffect(() => {
     const node = scroller.current;
     if (node === null) return;
-    const measure = () => setAvailable(Math.max(120, node.clientWidth - GUTTER * 2));
+    const measure = () => {
+      setAvailable(Math.max(120, node.clientWidth - GUTTER * 2));
+      setRoom(Math.max(120, node.clientHeight - GUTTER * 2));
+    };
     measure();
     const watch = new ResizeObserver(measure);
     watch.observe(node);
@@ -103,7 +108,8 @@ export function Canvas({
     Array.from(nodes ?? []).find((node) => node.dataset.item === item)?.focus({ preventScroll: true });
   }, [rows]);
 
-  const scale = zoom === "fit" ? Math.min(1, available / COLUMN) : 1;
+  const fit = Math.min(1, available / COLUMN, height > 0 ? room / height : 1);
+  const scale = zoom === "fit" ? Math.max(0.1, Math.floor(fit * 1000) / 1000) : 1;
 
   const apply = (next: RowState[] | null, item: string) => {
     if (next === null || same(next, state)) return;

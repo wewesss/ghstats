@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const site = resolve(import.meta.dir, "..");
@@ -27,4 +27,8 @@ await run(
 const goroot = await run(["go", "env", "GOROOT"], root);
 const exec = [join(goroot, "lib", "wasm", "wasm_exec.js"), join(goroot, "misc", "wasm", "wasm_exec.js")].find(existsSync);
 if (exec === undefined) throw new Error(`wasm_exec.js not found under ${goroot}`);
-copyFileSync(exec, join(out, "wasm_exec.js"));
+const dest = join(out, "wasm_exec.js");
+// The Go module cache is read-only and copyFileSync keeps that mode, so the next build could not overwrite the copy.
+if (existsSync(dest)) chmodSync(dest, 0o644);
+copyFileSync(exec, dest);
+chmodSync(dest, 0o644);

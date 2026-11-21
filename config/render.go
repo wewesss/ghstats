@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -33,14 +34,25 @@ var (
 	overrideKeys = []string{"bg", "border", "fg", "muted", "faint"}
 )
 
+const maxCards = 12
+
+var cardName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,39}$`)
+
 type Render struct {
-	Blocks     []Block         `yaml:"blocks"`
+	Blocks     []Block         `yaml:"blocks,omitempty"`
+	Cards      []Card          `yaml:"cards,omitempty"`
 	PrivateBar bool            `yaml:"private_bar"`
 	Languages  RenderLanguages `yaml:"languages"`
 	Theme      Theme           `yaml:"theme"`
 	Motion     bool            `yaml:"motion"`
 	Layout     string          `yaml:"layout"`
 	BasePath   string          `yaml:"base_path"`
+}
+
+type Card struct {
+	Name   string  `yaml:"name"`
+	Blocks []Block `yaml:"blocks"`
+	Layout string  `yaml:"layout,omitempty"`
 }
 
 type Block struct {
@@ -141,32 +153,10 @@ func (r Render) validate(fail func(format string, args ...any)) {
 	if !validBasePath(r.BasePath) {
 		fail("render.base_path: must be a non-empty path ending with \"/\" without spaces, quotes, backslashes or \"..\", got %q", r.BasePath)
 	}
-	seen := map[string]bool{}
-	if len(r.Blocks) == 0 {
-		fail("render.blocks: must list at least one block")
-	}
-	for i, b := range r.Blocks {
-		allowed, ok := blockVariants[b.Name]
-		switch {
-		case !ok:
-			fail("render.blocks[%d]: unknown block %q (want %s)", i, b.Name, strings.Join(sortedKeys(blockVariants), ", "))
-		case seen[b.Name]:
-			fail("render.blocks[%d]: block %q is listed more than once", i, b.Name)
-		}
-		seen[b.Name] = true
-		if len(b.Variants) == 0 {
-			fail("render.blocks[%d]: block %q needs at least one variant", i, b.Name)
-		}
-		dups := map[string]bool{}
-		for _, v := range b.Variants {
-			switch {
-			case ok && !slices.Contains(allowed, v):
-				fail("render.blocks[%d]: unknown variant %q for block %q (want %s)", i, v, b.Name, strings.Join(allowed, ", "))
-			case dups[v]:
-				fail("render.blocks[%d]: variant %q is listed more than once in block %q", i, v, b.Name)
-			}
-			dups[v] = true
-		}
+	if len(r.Cards) == 0 {
+		validateBlocks("render.blocks", r.Blocks, fail)
+	} else {
+		r.validateCards(fail)
 	}
 
 	c := r.Languages.Colors
@@ -208,6 +198,74 @@ func (r Render) validate(fail func(format string, args ...any)) {
 			fail("render.theme.overrides[%q]: must be \"#rrggbb\"%s, got %q", key, bgNone(key), v)
 		}
 	}
+}
+
+func (r Render) validateCards(fail func(format string, args ...any)) {
+	if len(r.Cards) > maxCards {
+		fail("render.cards: at most %d cards, got %d", maxCards, len(r.Cards))
+	}
+	names := map[string]bool{}
+	for i, c := range r.Cards {
+		switch {
+		case c.Name == "":
+			fail("render.cards[%d].name: must not be empty", i)
+		case !cardName.MatchString(c.Name):
+			fail("render.cards[%d].name: %q must match %s", i, c.Name, cardName)
+		case c.Name == "identity" || c.Name == "links":
+			fail("render.cards[%d].name: %q is reserved", i, c.Name)
+		case names[c.Name]:
+			fail("render.cards[%d].name: %q is used by more than one card", i, c.Name)
+		}
+		names[c.Name] = true
+		if c.Layout != "" && !validLayout(c.Layout) {
+			fail("render.cards[%d].layout: must be %q or %q, got %q", i, LayoutCard, LayoutWide, c.Layout)
+		}
+		validateBlocks(fmt.Sprintf("render.cards[%d].blocks", i), c.Blocks, fail)
+	}
+}
+
+func validateBlocks(path string, blocks []Block, fail func(format string, args ...any)) {
+	if len(blocks) == 0 {
+		fail("%s: must list at least one block", path)
+	}
+	seen := map[string]bool{}
+	for i, b := range blocks {
+		allowed, ok := blockVariants[b.Name]
+		switch {
+		case !ok:
+			fail("%s[%d]: unknown block %q (want %s)", path, i, b.Name, strings.Join(sortedKeys(blockVariants), ", "))
+		case seen[b.Name]:
+			fail("%s[%d]: block %q is listed more than once", path, i, b.Name)
+		}
+		seen[b.Name] = true
+		if len(b.Variants) == 0 {
+			fail("%s[%d]: block %q needs at least one variant", path, i, b.Name)
+		}
+		dups := map[string]bool{}
+		for _, v := range b.Variants {
+			switch {
+			case ok && !slices.Contains(allowed, v):
+				fail("%s[%d]: unknown variant %q for block %q (want %s)", path, i, v, b.Name, strings.Join(allowed, ", "))
+			case dups[v]:
+				fail("%s[%d]: variant %q is listed more than once in block %q", path, i, v, b.Name)
+			}
+			dups[v] = true
+		}
+	}
+}
+
+func (r Render) CardList() []Card {
+	if len(r.Cards) == 0 {
+		return []Card{{Name: "stats", Blocks: r.Blocks, Layout: r.Layout}}
+	}
+	out := make([]Card, len(r.Cards))
+	for i, c := range r.Cards {
+		if c.Layout == "" {
+			c.Layout = r.Layout
+		}
+		out[i] = c
+	}
+	return out
 }
 
 func bgNone(key string) string {

@@ -49,6 +49,20 @@ render:
     - stats: [totals, distribution]
     - languages: [bars, iso, cells, treemap, shift, terminal]
     - history: [views, clones]
+  # Optional: split the render into several images. Each card lists its own blocks,
+  # and "layout" (card or wide) defaults to render.layout. When cards is set,
+  # render.blocks is ignored. A card named "overview" writes overview-dark.svg and
+  # overview-light.svg. Names: lowercase letters, digits and "-" (40 max), not
+  # "identity" or "links"; 12 cards at most.
+  # cards:
+  #   - name: overview
+  #     blocks:
+  #       - stats: [totals]
+  #       - history: [views]
+  #   - name: langs
+  #     layout: wide
+  #     blocks:
+  #       - languages: [treemap]
   # Replace the names of private repositories with a black bar.
   private_bar: true
   languages:

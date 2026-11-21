@@ -1,5 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { CUSTOM, fromYaml, toConfig, type FocusState, type FormState, type LinkState } from "./form";
+import {
+  CUSTOM,
+  MAX_CARDS,
+  cardNames,
+  fromYaml,
+  isSplit,
+  newCard,
+  toConfig,
+  type BlockState,
+  type CardState,
+  type FocusState,
+  type FormState,
+  type LinkState,
+} from "./form";
 import { loadGhstats, svgUrl, type Ghstats, type Mode, type Options, type RenderResult } from "./ghstats";
 import { WORKFLOW } from "./workflow";
 
@@ -76,11 +89,13 @@ function Select({ value, values, onChange }: { value: string; values: readonly s
   );
 }
 
-function Preview({ result, mode }: { result: RenderResult; mode: Mode }) {
+function Preview({ result, mode, order }: { result: RenderResult; mode: Mode; order: string[] }) {
   const names = Object.keys(result.cards);
   const identity = names.filter((name) => name.startsWith("identity-"));
-  const stats = names.filter((name) => name.startsWith("stats-"));
   const links = names.filter((name) => name.startsWith("links/"));
+  const rest = names.filter((name) => !name.startsWith("identity-") && !name.startsWith("links/"));
+  const ordered = order.map((card) => `${card}-${mode}.svg`).filter((name) => rest.includes(name));
+  const stats = [...ordered, ...rest.filter((name) => !ordered.includes(name)).sort()];
   const image = (name: string) => (
     <img key={name} alt={name} src={svgUrl(result.cards[name] ?? "")} className="gs-card" />
   );
@@ -93,22 +108,119 @@ function Preview({ result, mode }: { result: RenderResult; mode: Mode }) {
   );
 }
 
+function BlocksEditor({ blocks, options, onChange }: { blocks: BlockState[]; options: Options; onChange: (next: BlockState[]) => void }) {
+  const updateBlock = (index: number, variants: string[]) =>
+    onChange(blocks.map((block, at) => (at === index ? { ...block, variants } : block)));
+  const moveBlock = (index: number, by: number) => {
+    const target = index + by;
+    if (target < 0 || target >= blocks.length) return;
+    const next = [...blocks];
+    const [moved] = next.splice(index, 1);
+    if (moved !== undefined) next.splice(target, 0, moved);
+    onChange(next);
+  };
+  return (
+    <>
+      {blocks.map((block, index) => {
+        const known = options.blocks.find((entry) => entry.name === block.name);
+        return (
+          <div className="gs-block" key={block.name}>
+            <div className="gs-block-head">
+              <strong>{block.name}</strong>
+              <span>
+                <button type="button" className="gs-button" aria-label={`Move ${block.name} up`} disabled={index === 0} onClick={() => moveBlock(index, -1)}>
+                  Up
+                </button>
+                <button type="button" className="gs-button" aria-label={`Move ${block.name} down`} disabled={index === blocks.length - 1} onClick={() => moveBlock(index, 1)}>
+                  Down
+                </button>
+              </span>
+            </div>
+            <div className="gs-variants">
+              {(known?.variants ?? []).map((variant) => (
+                <label className="gs-check" key={variant}>
+                  <input
+                    type="checkbox"
+                    checked={block.variants.includes(variant)}
+                    onChange={(event) =>
+                      updateBlock(
+                        index,
+                        (known?.variants ?? []).filter((entry) => (entry === variant ? event.target.checked : block.variants.includes(entry))),
+                      )
+                    }
+                  />
+                  <span>{variant}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function CardsEditor({ cards, options, onChange }: { cards: CardState[]; options: Options; onChange: (next: CardState[]) => void }) {
+  const update = (index: number, patch: Partial<CardState>) =>
+    onChange(cards.map((card, at) => (at === index ? { ...card, ...patch } : card)));
+  const unnamed = (list: CardState[]) => list.map((card) => ({ ...card, name: "", layout: "" }));
+  const remove = (index: number) => {
+    const next = cards.filter((_, at) => at !== index);
+    onChange(next.length <= 1 ? unnamed(next.length === 0 ? cards : next) : next);
+  };
+  const add = () => {
+    const taken = new Set(cards.map((card) => card.name));
+    let at = cards.length + 1;
+    while (taken.has(`card-${at}`)) at += 1;
+    onChange([...cards, newCard(`card-${at}`, options)]);
+  };
+  const first = cards[0];
+  if (!isSplit(cards)) {
+    return (
+      <fieldset>
+        <legend>Blocks</legend>
+        <BlocksEditor blocks={first?.blocks ?? []} options={options} onChange={(blocks) => update(0, { blocks })} />
+        <button
+          type="button"
+          className="gs-button"
+          onClick={() => onChange(first === undefined ? [newCard("overview", options)] : [{ ...first, name: "overview" }, newCard("card-2", options)])}
+        >
+          Split into cards
+        </button>
+      </fieldset>
+    );
+  }
+  return (
+    <>
+      {cards.map((card, index) => (
+        <fieldset key={index}>
+          <legend>Card {index + 1}</legend>
+          <div className="gs-row">
+            <input aria-label={`Card ${index + 1} name`} placeholder="Name" value={card.name} onChange={(event) => update(index, { name: event.target.value })} />
+            <select aria-label={`Card ${index + 1} layout`} value={card.layout} onChange={(event) => update(index, { layout: event.target.value })}>
+              {["", ...options.layouts].map((entry) => (
+                <option key={entry} value={entry}>
+                  {entry === "" ? "default" : entry}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="gs-button" onClick={() => remove(index)}>
+              Remove
+            </button>
+          </div>
+          <BlocksEditor blocks={card.blocks} options={options} onChange={(blocks) => update(index, { blocks })} />
+        </fieldset>
+      ))}
+      <button type="button" className="gs-button" disabled={cards.length >= MAX_CARDS} onClick={add}>
+        Add card ({cards.length}/{MAX_CARDS})
+      </button>
+    </>
+  );
+}
+
 function BuilderForm({ form, options, onChange }: { form: FormState; options: Options; onChange: (next: FormState) => void }) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => onChange({ ...form, [key]: value });
   const kinds = options.link_kinds.map((entry) => entry.kind);
-  const updateBlock = (index: number, variants: string[]) =>
-    set(
-      "blocks",
-      form.blocks.map((block, at) => (at === index ? { ...block, variants } : block)),
-    );
-  const moveBlock = (index: number, by: number) => {
-    const target = index + by;
-    if (target < 0 || target >= form.blocks.length) return;
-    const blocks = [...form.blocks];
-    const [moved] = blocks.splice(index, 1);
-    if (moved !== undefined) blocks.splice(target, 0, moved);
-    set("blocks", blocks);
-  };
   const updateFocus = (index: number, patch: Partial<FocusState>) =>
     set(
       "focus",
@@ -157,44 +269,7 @@ function BuilderForm({ form, options, onChange }: { form: FormState; options: Op
         </label>
       </fieldset>
 
-      <fieldset>
-        <legend>Blocks</legend>
-        {form.blocks.map((block, index) => {
-          const known = options.blocks.find((entry) => entry.name === block.name);
-          return (
-            <div className="gs-block" key={block.name}>
-              <div className="gs-block-head">
-                <strong>{block.name}</strong>
-                <span>
-                  <button type="button" className="gs-button" aria-label={`Move ${block.name} up`} disabled={index === 0} onClick={() => moveBlock(index, -1)}>
-                    Up
-                  </button>
-                  <button type="button" className="gs-button" aria-label={`Move ${block.name} down`} disabled={index === form.blocks.length - 1} onClick={() => moveBlock(index, 1)}>
-                    Down
-                  </button>
-                </span>
-              </div>
-              <div className="gs-variants">
-                {(known?.variants ?? []).map((variant) => (
-                  <label className="gs-check" key={variant}>
-                    <input
-                      type="checkbox"
-                      checked={block.variants.includes(variant)}
-                      onChange={(event) =>
-                        updateBlock(
-                          index,
-                          (known?.variants ?? []).filter((entry) => (entry === variant ? event.target.checked : block.variants.includes(entry))),
-                        )
-                      }
-                    />
-                    <span>{variant}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </fieldset>
+      <CardsEditor cards={form.cards} options={options} onChange={(cards) => set("cards", cards)} />
 
       <fieldset>
         <legend>Profile</legend>
@@ -323,7 +398,7 @@ function BuilderApp({ api, options, initial }: Ready) {
             {result.error}
           </pre>
         ) : null}
-        <Preview result={shown} mode={mode} />
+        <Preview result={shown} mode={mode} order={override === null ? cardNames(form.cards) : []} />
       </div>
 
       <div className="gs-pane gs-outputs">

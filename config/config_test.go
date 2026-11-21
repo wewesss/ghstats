@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -251,5 +252,93 @@ func TestExampleRenderMatchesFullCard(t *testing.T) {
 	}
 	if len(c.Render.Blocks) != 3 || len(c.Render.Blocks[1].Variants) != 6 || c.Render.Theme.Accent.Name != "ice" {
 		t.Fatalf("render = %+v", c.Render)
+	}
+}
+
+const twoCards = `version: 1
+render:
+  layout: card
+  cards:
+    - name: overview
+      blocks:
+        - stats: [totals]
+        - history: [views]
+    - name: langs
+      layout: wide
+      blocks:
+        - languages: [treemap]
+`
+
+func TestRenderParsesCards(t *testing.T) {
+	got, err := config.Parse(strings.NewReader(twoCards))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cards := got.Render.CardList()
+	if len(cards) != 2 || cards[0].Name != "overview" || cards[0].Layout != config.LayoutCard || cards[1].Name != "langs" || cards[1].Layout != config.LayoutWide {
+		t.Fatalf("cards = %+v", cards)
+	}
+	if len(cards[0].Blocks) != 2 || cards[1].Blocks[0].Variants[0] != "treemap" {
+		t.Fatalf("blocks = %+v", cards)
+	}
+}
+
+func TestRenderCardsIgnoreBlocks(t *testing.T) {
+	in := "version: 1\nrender:\n  blocks: []\n  cards:\n    - name: a\n      blocks:\n        - stats: [totals]\n"
+	if _, err := config.Parse(strings.NewReader(in)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRenderCardsRejects(t *testing.T) {
+	card := func(name string) string {
+		return "    - name: " + name + "\n      blocks:\n        - stats: [totals]\n"
+	}
+	many := ""
+	for i := range 13 {
+		many += card(fmt.Sprintf("c%d", i))
+	}
+	tests := []struct {
+		name, cards, want string
+	}{
+		{"duplicate name", card("a") + card("a"), "used by more than one card"},
+		{"reserved identity", card("identity"), `"identity" is reserved`},
+		{"reserved links", card("links"), `"links" is reserved`},
+		{"uppercase and space", card(`"My Card"`), "must match"},
+		{"leading dash", card("-x"), "must match"},
+		{"too long", card(strings.Repeat("a", 41)), "must match"},
+		{"empty name", card(`""`), "name: must not be empty"},
+		{"no blocks", "    - name: a\n      blocks: []\n", "render.cards[0].blocks: must list at least one block"},
+		{"unknown block", "    - name: a\n      blocks:\n        - bogus: [x]\n", `render.cards[0].blocks[0]: unknown block "bogus"`},
+		{"unknown layout", "    - name: a\n      layout: tall\n      blocks:\n        - stats: [totals]\n", `render.cards[0].layout: must be "card" or "wide"`},
+		{"13 cards", many, "at most 12 cards"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := config.Parse(strings.NewReader("version: 1\nrender:\n  cards:\n" + tt.cards))
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("err = %v, want it to mention %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestRenderAcceptsTwelveCards(t *testing.T) {
+	var sb strings.Builder
+	sb.WriteString("version: 1\nrender:\n  cards:\n")
+	for i := range 12 {
+		fmt.Fprintf(&sb, "    - name: c%d\n      blocks:\n        - stats: [totals]\n", i)
+	}
+	if _, err := config.Parse(strings.NewReader(sb.String())); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCardListFallsBackToBlocks(t *testing.T) {
+	r := config.Default().Render
+	r.Layout = config.LayoutWide
+	cards := r.CardList()
+	if len(cards) != 1 || cards[0].Name != "stats" || cards[0].Layout != config.LayoutWide || len(cards[0].Blocks) != 3 {
+		t.Fatalf("cards = %+v", cards)
 	}
 }

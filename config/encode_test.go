@@ -80,6 +80,29 @@ func TestEncodeRoundTrip(t *testing.T) {
 	}
 }
 
+func TestEncodeRoundTripCards(t *testing.T) {
+	c := config.Default()
+	c.Render.Cards = []config.Card{
+		{Name: "overview", Blocks: []config.Block{{Name: "stats", Variants: []string{"totals"}}, {Name: "history", Variants: []string{"views"}}}},
+		{Name: "langs", Layout: config.LayoutWide, Blocks: []config.Block{{Name: "languages", Variants: []string{"treemap"}}}},
+	}
+	var buf bytes.Buffer
+	if err := config.Encode(&buf, c); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if strings.Contains(out, "\n  blocks:") || !strings.Contains(out, "\n  cards:\n") {
+		t.Fatalf("want cards without render.blocks:\n%s", out)
+	}
+	got, err := config.Parse(strings.NewReader(out))
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !reflect.DeepEqual(got, c) {
+		t.Fatalf("round trip differs\ngot:  %+v\nwant: %+v\n%s", got, c, out)
+	}
+}
+
 func TestEncodeIndentsTwoSpaces(t *testing.T) {
 	var buf bytes.Buffer
 	if err := config.Encode(&buf, config.Default()); err != nil {

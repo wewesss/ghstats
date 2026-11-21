@@ -46,6 +46,10 @@ function baseUrl(path: string): string {
   return withBase(base, path);
 }
 
+export function docsHome(): string {
+  return baseUrl(`/${document.documentElement.lang || "en"}/`);
+}
+
 function injectScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");

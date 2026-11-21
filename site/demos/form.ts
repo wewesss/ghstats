@@ -28,6 +28,7 @@ export interface LinkState {
   value: string;
   label: string;
   icon: string;
+  style: string;
 }
 
 export interface FormState {
@@ -49,6 +50,8 @@ export interface FormState {
   focus: FocusState[];
   links: LinkState[];
   linkStyle: string;
+  identityShow: string[];
+  identityLayout: string;
 }
 
 export const CUSTOM = "custom";
@@ -57,7 +60,10 @@ export const MAX_CARDS = 12;
 export const MAX_ROWS = 12;
 export const ITEM_IDENTITY = "identity";
 export const ITEM_LINKS = "links";
+export const LINK_PREFIX = "links/";
 export const ALIGNS = ["left", "center", "right"] as const;
+export const IDENTITY_PARTS = ["header", "name", "tagline", "location", "note", "building", "focus", "footer"] as const;
+export const CARD_NAME = /^[a-z0-9][a-z0-9-]{0,39}$/;
 
 type Dict = { [key: string]: Yaml };
 
@@ -73,66 +79,133 @@ function text(value: Yaml | undefined): string {
   return typeof value === "string" ? value : typeof value === "number" ? String(value) : "";
 }
 
-function blockStates(value: Yaml | undefined, options: Options): BlockState[] {
-  const blocks: BlockState[] = list(value).map((item) => {
+export function isLinkItem(item: string): boolean {
+  return item === ITEM_LINKS || item.startsWith(LINK_PREFIX);
+}
+
+export function linkItem(kind: string): string {
+  return `${LINK_PREFIX}${kind}`;
+}
+
+function blockStates(value: Yaml | undefined): BlockState[] {
+  return list(value).map((item) => {
     const [name = "", variants] = Object.entries(dict(item))[0] ?? [];
     return { name, variants: list(variants).map(text) };
   });
-  for (const known of options.blocks) {
-    if (!blocks.some((block) => block.name === known.name)) blocks.push({ name: known.name, variants: [] });
+}
+
+export function cardNameProblem(name: string, cards: CardState[], self: number): string {
+  const value = name.trim();
+  if (value === "") return "A card needs a name.";
+  if (value === ITEM_IDENTITY || value === ITEM_LINKS) return `"${value}" is reserved.`;
+  if (!CARD_NAME.test(value)) return "Use lowercase letters, digits and hyphens, up to 40 characters.";
+  if (cards.some((card, at) => at !== self && card.name === value)) return "Another card already has this name.";
+  return "";
+}
+
+export function uniqueName(base: string, taken: Iterable<string>): string {
+  const used = new Set(taken);
+  if (!used.has(base)) return base;
+  let at = 2;
+  while (used.has(`${base}-${at}`)) at += 1;
+  return `${base}-${at}`;
+}
+
+function takenNames(form: FormState): string[] {
+  return [...form.cards.map((card) => card.name), ITEM_IDENTITY, ITEM_LINKS];
+}
+
+export function effectiveLayout(form: FormState, card: CardState): string {
+  return card.layout !== "" ? card.layout : form.layout !== "" ? form.layout : "card";
+}
+
+export function newCard(form: FormState, options: Options): CardState {
+  const shown = new Set(form.cards.flatMap((card) => card.blocks.flatMap((block) => block.variants.map((variant) => `${block.name}/${variant}`))));
+  const pairs = options.blocks.flatMap((block) => block.variants.map((variant) => ({ block: block.name, variant })));
+  const pick = pairs.find((pair) => !shown.has(`${pair.block}/${pair.variant}`)) ?? pairs[0];
+  const block = pick?.block ?? DEFAULT_CARD;
+  return {
+    name: uniqueName(block, takenNames(form)),
+    layout: "",
+    header: true,
+    blocks: pick === undefined ? [] : [{ name: pick.block, variants: [pick.variant] }],
+  };
+}
+
+export function addCard(form: FormState, options: Options): { form: FormState; name: string } {
+  const card = newCard(form, options);
+  return { form: { ...form, cards: [...form.cards, card] }, name: card.name };
+}
+
+export function renameItem(rows: RowState[], from: string, to: string): RowState[] {
+  return rows.map((row) => ({ ...row, items: row.items.map((item) => (item === from ? to : item)) }));
+}
+
+export function dropItem(rows: RowState[], item: string): RowState[] {
+  return rows.map((row) => ({ ...row, items: row.items.filter((entry) => entry !== item) })).filter((row) => row.items.length > 0);
+}
+
+export function removeCard(form: FormState, name: string): FormState {
+  if (form.cards.length <= 1) return form;
+  return { ...form, cards: form.cards.filter((card) => card.name !== name), rows: dropItem(form.rows, name) };
+}
+
+export function makeCard(form: FormState, rows: RowState[], from: string, block: string): { form: FormState; name: string } | null {
+  const source = form.cards.find((card) => card.name === from);
+  const moved = source?.blocks.find((entry) => entry.name === block);
+  if (source === undefined || moved === undefined || source.blocks.length < 2) return null;
+  const name = uniqueName(moved.name, takenNames(form));
+  const created: CardState = { name, layout: "", header: !source.header, blocks: [moved] };
+  const cards = form.cards.flatMap((card) =>
+    card === source ? [{ ...card, blocks: card.blocks.filter((entry) => entry !== moved) }, created] : [card],
+  );
+  const sourceRow = rows.findIndex((row) => row.items.includes(from));
+  const fits = effectiveLayout(form, source) === "card" && effectiveLayout(form, created) === "card";
+  const next = rows.map((row) => ({ ...row, items: [...row.items] }));
+  const only = sourceRow >= 0 ? next[sourceRow] : undefined;
+  if (only !== undefined && fits && !only.items.some(isLinkItem)) {
+    only.items.splice(only.items.indexOf(from) + 1, 0, name);
+  } else if (only !== undefined) {
+    next.splice(sourceRow + 1, 0, { align: only.align, items: [name] });
+  } else {
+    next.push({ align: "center", items: [name] });
   }
-  return blocks;
+  return { form: { ...form, cards, rows: next.length > MAX_ROWS ? rows : next }, name };
 }
 
-export function isSplit(cards: CardState[]): boolean {
-  return cards.length > 1 || (cards[0]?.name ?? "") !== "";
+export function identityPartsOn(form: FormState): string[] {
+  return form.identityShow.length === 0 ? [...IDENTITY_PARTS] : IDENTITY_PARTS.filter((part) => form.identityShow.includes(part));
 }
 
-export function cardNames(cards: CardState[]): string[] {
-  return isSplit(cards) ? cards.map((card) => card.name) : [DEFAULT_CARD];
+export function toggleIdentityPart(form: FormState, part: string, on: boolean): FormState {
+  const current = identityPartsOn(form);
+  const next = IDENTITY_PARTS.filter((entry) => (entry === part ? on : current.includes(entry)));
+  if (next.length === 0) return form;
+  return { ...form, identityShow: next.length === IDENTITY_PARTS.length ? [] : next };
 }
 
-export function newCard(name: string, options: Options): CardState {
-  const blocks = options.blocks.map((block, at) => ({ name: block.name, variants: at === 0 ? block.variants.slice(0, 1) : [] }));
-  return { name, layout: "", header: true, blocks };
+export function partHasValue(form: FormState, part: string): boolean {
+  switch (part) {
+    case "tagline":
+      return form.tagline.trim() !== "";
+    case "location":
+      return form.location.trim() !== "";
+    case "note":
+      return form.note.trim() !== "";
+    case "building":
+    case "focus":
+      return form.focus.some((entry) => entry.name.trim() !== "" || words(entry.building).length > 0);
+    default:
+      return true;
+  }
 }
 
-export function hasIdentity(form: FormState): boolean {
+export function identityFromProfile(form: FormState): boolean {
   return form.tagline.trim() !== "" || form.focus.some((entry) => entry.name.trim() !== "" || entry.building.trim() !== "");
 }
 
-export function hasLinks(form: FormState): boolean {
-  return form.links.some((link) => link.value.trim() !== "");
-}
-
-export function splitCards(form: FormState, options: Options): { cards: CardState[]; rows: RowState[] } {
-  const first = form.cards[0];
-  const checked = (first?.blocks ?? []).filter((block) => block.variants.length > 0);
-  const cards: CardState[] = checked.map((block, at) => ({
-    name: block.name,
-    layout: "",
-    header: at === 0,
-    blocks: options.blocks.map((known) => (known.name === block.name ? block : { name: known.name, variants: [] })),
-  }));
-  const rows: RowState[] = cards.map((card) => ({ align: "center", items: [card.name] }));
-  if (hasIdentity(form)) rows.unshift({ align: "center", items: [ITEM_IDENTITY] });
-  if (hasLinks(form)) rows.push({ align: "center", items: [ITEM_LINKS] });
-  return { cards, rows };
-}
-
-export function reconcileRows(rows: RowState[], before: CardState[], after: CardState[]): RowState[] {
-  const known = new Set(after.map((card) => card.name));
-  const renamed = new Map<string, string>();
-  if (before.length === after.length) {
-    before.forEach((card, at) => {
-      const to = after[at]?.name;
-      if (to !== undefined && to !== card.name) renamed.set(card.name, to);
-    });
-  }
-  return rows.map((row) => ({
-    ...row,
-    items: row.items.map((item) => renamed.get(item) ?? item).filter((item) => item === ITEM_IDENTITY || item === ITEM_LINKS || known.has(item)),
-  }));
+export function linkReady(link: LinkState): boolean {
+  return link.value.trim() !== "";
 }
 
 export function fromYaml(source: string, options: Options): FormState {
@@ -140,6 +213,7 @@ export function fromYaml(source: string, options: Options): FormState {
   const render = dict(root.render);
   const theme = dict(render.theme);
   const profile = dict(root.profile);
+  const identity = dict(profile.identity);
   const accent = theme.accent;
   const accentMap = dict(accent);
   const palette = dict(render.languages).colors;
@@ -151,9 +225,13 @@ export function fromYaml(source: string, options: Options): FormState {
           name: text(dict(entry).name),
           layout: text(dict(entry).layout),
           header: dict(entry).header !== false,
-          blocks: blockStates(dict(entry).blocks, options),
+          blocks: blockStates(dict(entry).blocks),
         }))
-      : [{ name: "", layout: "", header: true, blocks: blockStates(render.blocks, options) }];
+      : [{ name: DEFAULT_CARD, layout: "", header: true, blocks: blockStates(render.blocks) }];
+  const first = options.blocks[0];
+  if (cards.length === 1 && cards[0]?.blocks.length === 0 && first !== undefined) {
+    cards[0].blocks = [{ name: first.name, variants: first.variants.slice(0, 1) }];
+  }
 
   return {
     preset: text(theme.preset) || (options.presets[0] ?? ""),
@@ -182,11 +260,14 @@ export function fromYaml(source: string, options: Options): FormState {
     })),
     links: list(profile.links).map((entry) => {
       const [kind = "", value] = Object.entries(dict(entry))[0] ?? [];
-      const detail = dict(value);
-      if (kind === CUSTOM) return { kind, value: text(detail.url), label: text(detail.label), icon: text(detail.icon) };
-      return { kind, value: text(value), label: "", icon: "" };
+      if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+        return { kind, value: text(value.url), label: text(value.label), icon: text(value.icon), style: text(value.style) };
+      }
+      return { kind, value: text(value), label: "", icon: "", style: "" };
     }),
     linkStyle: text(profile.link_style),
+    identityShow: list(identity.show).map(text),
+    identityLayout: text(identity.layout),
   };
 }
 
@@ -209,21 +290,28 @@ function paletteMap(value: string): Record<string, string> {
 }
 
 function outputRows(form: FormState): { align: string; items: string[] }[] {
-  if (!isSplit(form.cards)) return [];
   const names = new Set(form.cards.map((card) => card.name.trim()).filter((name) => name !== ""));
+  const kinds = new Set(form.links.map((link) => link.kind));
   const placed = new Set<string>();
   const out: { align: string; items: string[] }[] = [];
   for (const row of form.rows) {
     const items: string[] = [];
     for (const raw of row.items) {
       const item = raw.trim();
-      if (placed.has(item) || !(item === ITEM_IDENTITY || item === ITEM_LINKS || names.has(item))) continue;
+      const known =
+        item === ITEM_IDENTITY || item === ITEM_LINKS || names.has(item) || (item.startsWith(LINK_PREFIX) && kinds.has(item.slice(LINK_PREFIX.length)));
+      if (placed.has(item) || !known) continue;
       placed.add(item);
       items.push(item);
     }
     if (items.length > 0) out.push({ align: row.align, items });
   }
   return out;
+}
+
+export function isPlain(form: FormState): boolean {
+  const card = form.cards[0];
+  return form.cards.length === 1 && card?.name === DEFAULT_CARD && card.header && card.layout === "" && outputRows(form).length === 0;
 }
 
 export function toConfig(form: FormState): Record<string, unknown> {
@@ -239,20 +327,27 @@ export function toConfig(form: FormState): Record<string, unknown> {
   const links = form.links
     .filter((link) => link.value.trim() !== "")
     .map((link) => {
-      if (link.kind !== CUSTOM) return { [link.kind]: link.value.trim() };
-      const detail: Record<string, string> = { url: link.value.trim() };
+      const value = link.value.trim();
+      if (link.kind !== CUSTOM && link.label.trim() === "" && link.style === "") return { [link.kind]: value };
+      const detail: Record<string, string> = { url: value };
       if (link.label.trim() !== "") detail.label = link.label.trim();
-      if (link.icon.trim() !== "") detail.icon = link.icon.trim();
-      return { [CUSTOM]: detail };
+      if (link.kind === CUSTOM && link.icon.trim() !== "") detail.icon = link.icon.trim();
+      if (link.style !== "") detail.style = link.style;
+      return { [link.kind]: detail };
     });
   if (links.length > 0) profile.links = links;
   if (form.linkStyle !== "") profile.link_style = form.linkStyle;
+  const identity: Record<string, unknown> = {};
+  if (form.identityShow.length > 0) identity.show = IDENTITY_PARTS.filter((part) => form.identityShow.includes(part));
+  if (form.identityLayout !== "") identity.layout = form.identityLayout;
+  if (Object.keys(identity).length > 0) profile.identity = identity;
 
   const blocksOf = (blocks: BlockState[]) =>
     blocks.filter((block) => block.variants.length > 0).map((block) => ({ [block.name]: block.variants }));
   const rows = outputRows(form);
-  const content = isSplit(form.cards)
-    ? {
+  const content = isPlain(form)
+    ? { blocks: blocksOf(form.cards[0]?.blocks ?? []) }
+    : {
         cards: form.cards.map((card) => ({
           name: card.name.trim(),
           ...(card.layout !== "" ? { layout: card.layout } : {}),
@@ -260,8 +355,7 @@ export function toConfig(form: FormState): Record<string, unknown> {
           blocks: blocksOf(card.blocks),
         })),
         ...(rows.length > 0 ? { rows } : {}),
-      }
-    : { blocks: blocksOf(form.cards[0]?.blocks ?? []) };
+      };
 
   const config: Record<string, unknown> = {
     version: 1,

@@ -1,20 +1,29 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  ALIGNS,
   CUSTOM,
+  ITEM_IDENTITY,
+  ITEM_LINKS,
   MAX_CARDS,
-  cardNames,
+  MAX_ROWS,
   fromYaml,
+  hasIdentity,
+  hasLinks,
   isSplit,
   newCard,
+  reconcileRows,
+  splitCards,
   toConfig,
   type BlockState,
   type CardState,
   type FocusState,
   type FormState,
   type LinkState,
+  type RowState,
 } from "./form";
 import { DEFAULT_PATH, SAMPLE, loadFromFile, loadFromGithub, type DataSource } from "./data";
 import { loadGhstats, svgUrl, type Ghstats, type Mode, type Options, type RenderResult } from "./ghstats";
+import { ReadmePreviewButton, previewOrder } from "./readme";
 import { WORKFLOW } from "./workflow";
 
 interface Ready {
@@ -90,21 +99,22 @@ function Select({ value, values, onChange }: { value: string; values: readonly s
   );
 }
 
-function Preview({ result, mode, order }: { result: RenderResult; mode: Mode; order: string[] }) {
-  const names = Object.keys(result.cards);
-  const identity = names.filter((name) => name.startsWith("identity-"));
-  const links = names.filter((name) => name.startsWith("links/"));
-  const rest = names.filter((name) => !name.startsWith("identity-") && !name.startsWith("links/"));
-  const ordered = order.map((card) => `${card}-${mode}.svg`).filter((name) => rest.includes(name));
-  const stats = [...ordered, ...rest.filter((name) => !ordered.includes(name)).sort()];
+function Preview({ result, mode }: { result: RenderResult; mode: Mode }) {
+  const entries = useMemo(() => previewOrder(result.snippet, mode, Object.keys(result.cards)), [result, mode]);
   const image = (name: string) => (
     <img key={name} alt={name} src={svgUrl(result.cards[name] ?? "")} className="gs-card" />
   );
   return (
     <div className="gs-stage" data-mode={mode}>
-      {identity.map(image)}
-      {stats.map(image)}
-      {links.length > 0 ? <div className="gs-badges">{links.map(image)}</div> : null}
+      {entries.map((entry) =>
+        entry.badges ? (
+          <div className="gs-badges" key={entry.keys.join()}>
+            {entry.keys.map(image)}
+          </div>
+        ) : (
+          entry.keys.map(image)
+        ),
+      )}
     </div>
   );
 }
@@ -161,19 +171,35 @@ function BlocksEditor({ blocks, options, onChange }: { blocks: BlockState[]; opt
   );
 }
 
-function CardsEditor({ cards, options, onChange }: { cards: CardState[]; options: Options; onChange: (next: CardState[]) => void }) {
+function CardsEditor({
+  cards,
+  rows,
+  options,
+  canSplit,
+  onChange,
+  onSplit,
+}: {
+  cards: CardState[];
+  rows: RowState[];
+  options: Options;
+  canSplit: boolean;
+  onChange: (cards: CardState[], rows: RowState[]) => void;
+  onSplit: () => void;
+}) {
+  const commit = (next: CardState[]) => onChange(next, reconcileRows(rows, cards, next));
   const update = (index: number, patch: Partial<CardState>) =>
-    onChange(cards.map((card, at) => (at === index ? { ...card, ...patch } : card)));
-  const unnamed = (list: CardState[]) => list.map((card) => ({ ...card, name: "", layout: "" }));
+    commit(cards.map((card, at) => (at === index ? { ...card, ...patch } : card)));
+  const unnamed = (list: CardState[]) => list.map((card) => ({ ...card, name: "", layout: "", header: true }));
   const remove = (index: number) => {
     const next = cards.filter((_, at) => at !== index);
-    onChange(next.length <= 1 ? unnamed(next.length === 0 ? cards : next) : next);
+    if (next.length <= 1) onChange(unnamed(next.length === 0 ? cards : next), []);
+    else commit(next);
   };
   const add = () => {
     const taken = new Set(cards.map((card) => card.name));
     let at = cards.length + 1;
     while (taken.has(`card-${at}`)) at += 1;
-    onChange([...cards, newCard(`card-${at}`, options)]);
+    commit([...cards, newCard(`card-${at}`, options)]);
   };
   const first = cards[0];
   if (!isSplit(cards)) {
@@ -181,11 +207,7 @@ function CardsEditor({ cards, options, onChange }: { cards: CardState[]; options
       <fieldset>
         <legend>Blocks</legend>
         <BlocksEditor blocks={first?.blocks ?? []} options={options} onChange={(blocks) => update(0, { blocks })} />
-        <button
-          type="button"
-          className="gs-button"
-          onClick={() => onChange(first === undefined ? [newCard("overview", options)] : [{ ...first, name: "overview" }, newCard("card-2", options)])}
-        >
+        <button type="button" className="gs-button" disabled={!canSplit} onClick={onSplit}>
           Split into cards
         </button>
       </fieldset>
@@ -196,26 +218,124 @@ function CardsEditor({ cards, options, onChange }: { cards: CardState[]; options
       {cards.map((card, index) => (
         <fieldset key={index}>
           <legend>Card {index + 1}</legend>
-          <div className="gs-row">
-            <input aria-label={`Card ${index + 1} name`} placeholder="Name" value={card.name} onChange={(event) => update(index, { name: event.target.value })} />
-            <select aria-label={`Card ${index + 1} layout`} value={card.layout} onChange={(event) => update(index, { layout: event.target.value })}>
+          <Field label="Name">
+            <input placeholder="Name" value={card.name} onChange={(event) => update(index, { name: event.target.value })} />
+          </Field>
+          <Field label="Layout">
+            <select value={card.layout} onChange={(event) => update(index, { layout: event.target.value })}>
               {["", ...options.layouts].map((entry) => (
                 <option key={entry} value={entry}>
                   {entry === "" ? "default" : entry}
                 </option>
               ))}
             </select>
-            <button type="button" className="gs-button" onClick={() => remove(index)}>
-              Remove
-            </button>
-          </div>
+          </Field>
+          <Field label="Header">
+            <input type="checkbox" checked={card.header} onChange={(event) => update(index, { header: event.target.checked })} />
+          </Field>
           <BlocksEditor blocks={card.blocks} options={options} onChange={(blocks) => update(index, { blocks })} />
+          <button type="button" className="gs-button" onClick={() => remove(index)}>
+            Remove card
+          </button>
         </fieldset>
       ))}
       <button type="button" className="gs-button" disabled={cards.length >= MAX_CARDS} onClick={add}>
         Add card ({cards.length}/{MAX_CARDS})
       </button>
     </>
+  );
+}
+
+function RowsEditor({
+  rows,
+  cards,
+  identity,
+  links,
+  onChange,
+}: {
+  rows: RowState[];
+  cards: CardState[];
+  identity: boolean;
+  links: boolean;
+  onChange: (next: RowState[]) => void;
+}) {
+  const names = cards.map((card) => card.name.trim()).filter((name) => name !== "");
+  const everything = [ITEM_IDENTITY, ...names, ITEM_LINKS];
+  const placed = new Set(rows.flatMap((row) => row.items));
+  const missing = [...(identity ? [ITEM_IDENTITY] : []), ...names, ...(links ? [ITEM_LINKS] : [])].filter((item) => !placed.has(item));
+  const update = (index: number, patch: Partial<RowState>) => onChange(rows.map((row, at) => (at === index ? { ...row, ...patch } : row)));
+  const move = (index: number, by: number) => {
+    const target = index + by;
+    if (target < 0 || target >= rows.length) return;
+    const next = [...rows];
+    const [moved] = next.splice(index, 1);
+    if (moved !== undefined) next.splice(target, 0, moved);
+    onChange(next);
+  };
+  const choices = (row: RowState) =>
+    row.items.includes(ITEM_LINKS) ? [] : everything.filter((item) => !placed.has(item) && (item !== ITEM_LINKS || row.items.length === 0));
+  return (
+    <fieldset>
+      <legend>README layout</legend>
+      {rows.map((row, index) => {
+        const available = choices(row);
+        return (
+          <div className="gs-block" key={index}>
+            <div className="gs-block-head">
+              <strong>Row {index + 1}</strong>
+              <span>
+                <button type="button" className="gs-button" aria-label={`Move row ${index + 1} up`} disabled={index === 0} onClick={() => move(index, -1)}>
+                  Up
+                </button>
+                <button type="button" className="gs-button" aria-label={`Move row ${index + 1} down`} disabled={index === rows.length - 1} onClick={() => move(index, 1)}>
+                  Down
+                </button>
+                <button type="button" className="gs-button" aria-label={`Remove row ${index + 1}`} onClick={() => onChange(rows.filter((_, at) => at !== index))}>
+                  Remove
+                </button>
+              </span>
+            </div>
+            <Field label="Align">
+              <Select value={row.align} values={ALIGNS} onChange={(value) => update(index, { align: value })} />
+            </Field>
+            <div className="gs-chips">
+              {row.items.map((item) => (
+                <span className="gs-chip" key={item}>
+                  {item}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${item} from row ${index + 1}`}
+                    onClick={() => update(index, { items: row.items.filter((entry) => entry !== item) })}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <Field label="Add item">
+              <select
+                value=""
+                disabled={available.length === 0}
+                onChange={(event) => {
+                  if (event.target.value !== "") update(index, { items: [...row.items, event.target.value] });
+                }}
+              >
+                <option value="">{available.length === 0 ? "Nothing left to add" : "Choose an item"}</option>
+                {available.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        );
+      })}
+      <button type="button" className="gs-button" disabled={rows.length >= MAX_ROWS} onClick={() => onChange([...rows, { align: "center", items: [] }])}>
+        Add row ({rows.length}/{MAX_ROWS})
+      </button>
+      {missing.length > 0 ? <small>Not placed: {missing.join(", ")} (added below the rows)</small> : null}
+    </fieldset>
   );
 }
 
@@ -261,6 +381,9 @@ function BuilderForm({ form, options, onChange }: { form: FormState; options: Op
             <textarea rows={4} value={form.paletteColors} onChange={(event) => set("paletteColors", event.target.value)} spellCheck={false} />
           </Field>
         ) : null}
+        <Field label="Show multipliers">
+          <input type="checkbox" checked={form.multipliers} onChange={(event) => set("multipliers", event.target.checked)} />
+        </Field>
         <Field label="Layout">
           <Select value={form.layout} values={options.layouts} onChange={(value) => set("layout", value)} />
         </Field>
@@ -270,7 +393,23 @@ function BuilderForm({ form, options, onChange }: { form: FormState; options: Op
         </label>
       </fieldset>
 
-      <CardsEditor cards={form.cards} options={options} onChange={(cards) => set("cards", cards)} />
+      <CardsEditor
+        cards={form.cards}
+        rows={form.rows}
+        options={options}
+        canSplit={form.cards[0]?.blocks.some((block) => block.variants.length > 0) ?? false}
+        onChange={(cards, rows) => onChange({ ...form, cards, rows })}
+        onSplit={() => onChange({ ...form, ...splitCards(form, options) })}
+      />
+      {isSplit(form.cards) ? (
+        <RowsEditor
+          rows={form.rows}
+          cards={form.cards}
+          identity={hasIdentity(form)}
+          links={hasLinks(form)}
+          onChange={(rows) => set("rows", rows)}
+        />
+      ) : null}
 
       <fieldset>
         <legend>Profile</legend>
@@ -454,7 +593,9 @@ function BuilderApp({ api, options, initial }: Ready) {
       <div className="gs-pane gs-pane-preview">
         <DataRow source={data} onChange={setData} />
         <div className="gs-toolbar">
-          <span>Preview</span>
+          <span>
+            Preview <ReadmePreviewButton api={api} source={override ?? formSource} report={data.report} mode={mode} />
+          </span>
           <span role="group" aria-label="Preview mode">
             <button type="button" className="gs-button" aria-pressed={mode === "dark"} onClick={() => setMode("dark")}>
               Dark
@@ -469,7 +610,7 @@ function BuilderApp({ api, options, initial }: Ready) {
             {result.error}
           </pre>
         ) : null}
-        <Preview result={shown} mode={mode} order={override === null ? cardNames(form.cards) : []} />
+        <Preview result={shown} mode={mode} />
       </div>
 
       <div className="gs-pane gs-outputs">

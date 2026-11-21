@@ -9,7 +9,13 @@ export interface BlockState {
 export interface CardState {
   name: string;
   layout: string;
+  header: boolean;
   blocks: BlockState[];
+}
+
+export interface RowState {
+  align: string;
+  items: string[];
 }
 
 export interface FocusState {
@@ -33,7 +39,9 @@ export interface FormState {
   paletteColors: string;
   layout: string;
   motion: boolean;
+  multipliers: boolean;
   cards: CardState[];
+  rows: RowState[];
   name: string;
   tagline: string;
   location: string;
@@ -46,6 +54,10 @@ export interface FormState {
 export const CUSTOM = "custom";
 export const DEFAULT_CARD = "stats";
 export const MAX_CARDS = 12;
+export const MAX_ROWS = 12;
+export const ITEM_IDENTITY = "identity";
+export const ITEM_LINKS = "links";
+export const ALIGNS = ["left", "center", "right"] as const;
 
 type Dict = { [key: string]: Yaml };
 
@@ -82,7 +94,45 @@ export function cardNames(cards: CardState[]): string[] {
 
 export function newCard(name: string, options: Options): CardState {
   const blocks = options.blocks.map((block, at) => ({ name: block.name, variants: at === 0 ? block.variants.slice(0, 1) : [] }));
-  return { name, layout: "", blocks };
+  return { name, layout: "", header: true, blocks };
+}
+
+export function hasIdentity(form: FormState): boolean {
+  return form.tagline.trim() !== "" || form.focus.some((entry) => entry.name.trim() !== "" || entry.building.trim() !== "");
+}
+
+export function hasLinks(form: FormState): boolean {
+  return form.links.some((link) => link.value.trim() !== "");
+}
+
+export function splitCards(form: FormState, options: Options): { cards: CardState[]; rows: RowState[] } {
+  const first = form.cards[0];
+  const checked = (first?.blocks ?? []).filter((block) => block.variants.length > 0);
+  const cards: CardState[] = checked.map((block, at) => ({
+    name: block.name,
+    layout: "",
+    header: at === 0,
+    blocks: options.blocks.map((known) => (known.name === block.name ? block : { name: known.name, variants: [] })),
+  }));
+  const rows: RowState[] = cards.map((card) => ({ align: "center", items: [card.name] }));
+  if (hasIdentity(form)) rows.unshift({ align: "center", items: [ITEM_IDENTITY] });
+  if (hasLinks(form)) rows.push({ align: "center", items: [ITEM_LINKS] });
+  return { cards, rows };
+}
+
+export function reconcileRows(rows: RowState[], before: CardState[], after: CardState[]): RowState[] {
+  const known = new Set(after.map((card) => card.name));
+  const renamed = new Map<string, string>();
+  if (before.length === after.length) {
+    before.forEach((card, at) => {
+      const to = after[at]?.name;
+      if (to !== undefined && to !== card.name) renamed.set(card.name, to);
+    });
+  }
+  return rows.map((row) => ({
+    ...row,
+    items: row.items.map((item) => renamed.get(item) ?? item).filter((item) => item === ITEM_IDENTITY || item === ITEM_LINKS || known.has(item)),
+  }));
 }
 
 export function fromYaml(source: string, options: Options): FormState {
@@ -100,9 +150,10 @@ export function fromYaml(source: string, options: Options): FormState {
       ? declared.map((entry) => ({
           name: text(dict(entry).name),
           layout: text(dict(entry).layout),
+          header: dict(entry).header !== false,
           blocks: blockStates(dict(entry).blocks, options),
         }))
-      : [{ name: "", layout: "", blocks: blockStates(render.blocks, options) }];
+      : [{ name: "", layout: "", header: true, blocks: blockStates(render.blocks, options) }];
 
   return {
     preset: text(theme.preset) || (options.presets[0] ?? ""),
@@ -115,7 +166,12 @@ export function fromYaml(source: string, options: Options): FormState {
       .join("\n"),
     layout: text(render.layout) || "card",
     motion: render.motion !== false,
+    multipliers: dict(render.languages).multipliers !== false,
     cards,
+    rows: list(render.rows).map((entry) => ({
+      align: text(dict(entry).align) || "center",
+      items: list(dict(entry).items).map(text),
+    })),
     name: text(profile.name),
     tagline: text(profile.tagline),
     location: text(profile.location),
@@ -152,6 +208,24 @@ function paletteMap(value: string): Record<string, string> {
   return out;
 }
 
+function outputRows(form: FormState): { align: string; items: string[] }[] {
+  if (!isSplit(form.cards)) return [];
+  const names = new Set(form.cards.map((card) => card.name.trim()).filter((name) => name !== ""));
+  const placed = new Set<string>();
+  const out: { align: string; items: string[] }[] = [];
+  for (const row of form.rows) {
+    const items: string[] = [];
+    for (const raw of row.items) {
+      const item = raw.trim();
+      if (placed.has(item) || !(item === ITEM_IDENTITY || item === ITEM_LINKS || names.has(item))) continue;
+      placed.add(item);
+      items.push(item);
+    }
+    if (items.length > 0) out.push({ align: row.align, items });
+  }
+  return out;
+}
+
 export function toConfig(form: FormState): Record<string, unknown> {
   const profile: Record<string, unknown> = {};
   if (form.name.trim() !== "") profile.name = form.name.trim();
@@ -176,13 +250,16 @@ export function toConfig(form: FormState): Record<string, unknown> {
 
   const blocksOf = (blocks: BlockState[]) =>
     blocks.filter((block) => block.variants.length > 0).map((block) => ({ [block.name]: block.variants }));
+  const rows = outputRows(form);
   const content = isSplit(form.cards)
     ? {
         cards: form.cards.map((card) => ({
           name: card.name.trim(),
           ...(card.layout !== "" ? { layout: card.layout } : {}),
+          ...(card.header ? {} : { header: false }),
           blocks: blocksOf(card.blocks),
         })),
+        ...(rows.length > 0 ? { rows } : {}),
       }
     : { blocks: blocksOf(form.cards[0]?.blocks ?? []) };
 
@@ -190,7 +267,10 @@ export function toConfig(form: FormState): Record<string, unknown> {
     version: 1,
     render: {
       ...content,
-      languages: { colors: form.palette === CUSTOM ? paletteMap(form.paletteColors) : form.palette },
+      languages: {
+        colors: form.palette === CUSTOM ? paletteMap(form.paletteColors) : form.palette,
+        ...(form.multipliers ? {} : { multipliers: false }),
+      },
       theme: {
         preset: form.preset,
         accent: form.accent === CUSTOM ? { dark: form.accentDark, light: form.accentLight } : form.accent,

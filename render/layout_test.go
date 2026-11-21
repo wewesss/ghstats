@@ -54,7 +54,7 @@ func TestWideWithOneBlockFallsBackToCard(t *testing.T) {
 
 	c := config.Default()
 	c.Render.Cards = []config.Card{{Name: "langs", Layout: config.LayoutWide, Blocks: cfg.Blocks}}
-	if s := render.Snippet(c); !strings.Contains(s, `width="495"`) || strings.Contains(s, `width="100%"`) {
+	if s := render.Snippet(c); !strings.Contains(s, `width="495"`) {
 		t.Fatalf("snippet = %s", s)
 	}
 }
@@ -109,6 +109,9 @@ func TestSnippetRowsSideBySide(t *testing.T) {
 	if !strings.HasPrefix(s, want) {
 		t.Fatalf("first row differs\n%s", s)
 	}
+	if !strings.Contains(s, `src="ghstats/identity-dark.svg" width="98%"`) {
+		t.Fatalf("a lone identity in a row is 98%% wide:\n%s", s)
+	}
 	order := []string{
 		`<p align="right">`,
 		`<p align="center">` + "\n  " + `<picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/identity-dark.svg">`,
@@ -138,6 +141,66 @@ func TestSnippetRowWidthsFollowNaturalWidths(t *testing.T) {
 	s := render.Snippet(cfg)
 	if !strings.Contains(s, `src="ghstats/a-dark.svg" width="65%"`) || !strings.Contains(s, `src="ghstats/b-dark.svg" width="32%"`) {
 		t.Fatalf("snippet = %s", s)
+	}
+}
+
+func TestSnippetRowLoneCards(t *testing.T) {
+	cfg := config.Default()
+	cfg.Render.Cards = []config.Card{
+		{Name: "a", Blocks: []config.Block{{Name: "stats", Variants: []string{"totals"}}, {Name: "history", Variants: []string{"views"}}}, Layout: config.LayoutWide},
+		{Name: "b", Blocks: []config.Block{{Name: "stats", Variants: []string{"totals"}}}},
+	}
+	cfg.Render.Rows = []config.Row{{Items: []string{"a"}}, {Items: []string{"b"}}}
+	s := render.Snippet(cfg)
+	if !strings.Contains(s, `src="ghstats/a-dark.svg" width="98%"`) || !strings.Contains(s, `src="ghstats/b-dark.svg" width="495"`) {
+		t.Fatalf("snippet = %s", s)
+	}
+}
+
+var firstBlockYRe = regexp.MustCompile(`<g class="gsb\d+" transform="translate\(0 (\d+)\)"`)
+
+func firstBlockY(t *testing.T, svg string) int {
+	t.Helper()
+	m := firstBlockYRe.FindStringSubmatch(svg)
+	if m == nil {
+		t.Fatal("no block group")
+	}
+	y, _ := strconv.Atoi(m[1])
+	return y
+}
+
+func TestStretchedCardCentersItsBlocks(t *testing.T) {
+	for _, layout := range []string{config.LayoutCard, config.LayoutWide} {
+		short := []config.Block{{Name: "stats", Variants: []string{"totals"}}, {Name: "history", Variants: []string{"clones"}}}
+		tall := []config.Block{{Name: "languages", Variants: []string{"treemap"}}, {Name: "stats", Variants: []string{"totals"}}}
+		cfg := config.Default()
+		cfg.Render.Cards = []config.Card{
+			{Name: "short", Blocks: short, Layout: layout},
+			{Name: "tall", Blocks: tall, Layout: config.LayoutCard},
+		}
+		cfg.Render.Rows = []config.Row{{Items: []string{"short", "tall"}}}
+		stretched, err := render.Cards(sample.Report(), cfg, render.Dark)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg.Render.Rows = nil
+		plain, err := render.Cards(sample.Report(), cfg, render.Dark)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, hs := viewBox(t, stretched["short-dark.svg"])
+		_, hp := viewBox(t, plain["short-dark.svg"])
+		if hs <= hp {
+			t.Fatalf("%s: card must be stretched, %d vs %d", layout, hs, hp)
+		}
+		ys, yp := firstBlockY(t, stretched["short-dark.svg"]), firstBlockY(t, plain["short-dark.svg"])
+		if want := yp + (hs-hp)/2; ys != want {
+			t.Fatalf("%s: first block y = %d, want %d", layout, ys, want)
+		}
+		if !strings.Contains(stretched["short-dark.svg"], `y1="46" y2="46"`) {
+			t.Fatalf("%s: header line must stay at the top", layout)
+		}
+		assertWellFormed(t, stretched["short-dark.svg"])
 	}
 }
 

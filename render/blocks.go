@@ -36,6 +36,7 @@ type renderer struct {
 	header  bool
 
 	minHeight int
+	yshift    int
 }
 
 type variantFn func(rd *renderer, p string) string

@@ -101,6 +101,8 @@ func Snippet(cfg config.Config) string {
 			w := it.solo
 			if len(inRow) > 1 {
 				w = fmt.Sprintf("%d%%", 98*it.natural/sum)
+			} else if w == "100%" {
+				w = "98%"
 			}
 			pics[i] = oneLine(it.picture(base, w))
 		}

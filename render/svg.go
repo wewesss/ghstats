@@ -317,7 +317,7 @@ func shell(w float64, height int, ariaLabel string, th theme, cfg config.Render,
 
 func (rd *renderer) stack(indexes []int) (body, styles []string, y int) {
 	cfg, th := rd.cfg, rd.th
-	y = rd.top()
+	y = rd.top() + rd.yshift
 	for n, bi := range indexes {
 		blk := cfg.Blocks[bi]
 		vs := rd.activeVariants(blk)
@@ -446,26 +446,33 @@ func (rd *renderer) card() (string, int) {
 		styles = append(styles, motionCSS()...)
 	}
 
-	var height, contentHeight int
-	if !wide {
-		all := make([]int, len(cfg.Blocks))
-		for i := range all {
-			all[i] = i
+	content := func() (b, s []string, h int) {
+		if !wide {
+			all := make([]int, len(cfg.Blocks))
+			for i := range all {
+				all[i] = i
+			}
+			sb, ss, y := rd.stack(all)
+			return sb, ss, y + 8
 		}
-		b, s, y := rd.stack(all)
-		body, styles, contentHeight = append(body, b...), append(styles, s...), y+8
-	} else {
 		left, right := rd.columnBlocks()
 		lb, ls, ly := rd.stack(left)
 		rb, rs, ry := rd.stack(right)
-		contentHeight = max(ly, ry) + 8
-		body = append(body, lb...)
-		body = append(body, fmt.Sprintf(`<g transform="translate(%s 0)">%s</g>`, num(wideOffset), strings.Join(rb, "")))
-		body = append(body, fmt.Sprintf(`<line x1="%s" x2="%s" y1="%d" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), rd.top()+6, contentHeight-14, th.border))
-		styles = append(styles, ls...)
-		styles = append(styles, rs...)
+		h = max(ly, ry) + 8
+		b = append(b, lb...)
+		b = append(b, fmt.Sprintf(`<g transform="translate(%s 0)">%s</g>`, num(wideOffset), strings.Join(rb, "")))
+		b = append(b, fmt.Sprintf(`<line x1="%s" x2="%s" y1="%d" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), rd.top()+rd.yshift+6, h-14, th.border))
+		return b, append(ls, rs...), h
 	}
-	height = max(contentHeight, rd.minHeight)
+
+	cb, cs, contentHeight := content()
+	if extra := rd.minHeight - contentHeight; extra > 1 {
+		rd.yshift = extra / 2
+		cb, cs, _ = content()
+	}
+	body = append(body, cb...)
+	styles = append(styles, cs...)
+	height := max(contentHeight, rd.minHeight)
 
 	svg := shell(cw, height, "ghstats card for "+login+" ("+string(rd.mode)+")", th, cfg, styles, body)
 	return accentize(svg, th, cfg, rd.mode), contentHeight

@@ -17,6 +17,9 @@ import {
   partHasValue,
   removeCard,
   renameItem,
+  SHIFT,
+  SHIFT_REASON,
+  setWeighting,
   toggleIdentityPart,
   type BlockState,
   type CardState,
@@ -107,6 +110,7 @@ function BlockRow({
   block,
   index,
   options,
+  weighting,
   onBlocks,
   onMake,
 }: {
@@ -114,11 +118,13 @@ function BlockRow({
   block: BlockState;
   index: number;
   options: Options;
+  weighting: boolean;
   onBlocks: (blocks: BlockState[]) => void;
   onMake: () => void;
 }) {
   const known = options.blocks.find((entry) => entry.name === block.name)?.variants ?? [];
   const last = card.blocks.length === 1;
+  const shiftBlocked = block.name === "languages" && !weighting;
   const swap = (by: number) => {
     const next = [...card.blocks];
     const target = index + by;
@@ -150,11 +156,26 @@ function BlockRow({
       </div>
       <div className="gs-variants" role="group" aria-label={`${block.name} variants`}>
         {known.map((variant) => (
-          <button key={variant} type="button" className="gs-toggle" data-testid="variant" aria-pressed={block.variants.includes(variant)} onClick={() => toggle(variant)}>
+          <button
+            key={variant}
+            type="button"
+            className="gs-toggle"
+            data-testid="variant"
+            data-variant={variant}
+            aria-pressed={block.variants.includes(variant)}
+            disabled={shiftBlocked && variant === SHIFT}
+            title={shiftBlocked && variant === SHIFT ? SHIFT_REASON : undefined}
+            onClick={() => toggle(variant)}
+          >
             {variant}
           </button>
         ))}
       </div>
+      {shiftBlocked && known.includes(SHIFT) ? (
+        <small className="gs-hint" data-testid="shift-reason">
+          {SHIFT_REASON}
+        </small>
+      ) : null}
       <button type="button" className="gs-button gs-wide" data-testid="make-card" disabled={last} title={last ? "The card has no other block to keep" : undefined} onClick={onMake}>
         Make it a card
       </button>
@@ -198,6 +219,7 @@ function CardSettings({ form, options, rows, card, index, onSelect, onChange }: 
           block={block}
           index={at}
           options={options}
+          weighting={form.weighting}
           onBlocks={(blocks) => update({ blocks })}
           onMake={() => {
             const made = makeCard(form, rows, card.name, block.name);
@@ -506,8 +528,8 @@ export function SettingsPanel(props: Props) {
         <Field label="Default card layout">
           <Select value={form.layout} values={options.layouts} onChange={(value) => set("layout", value)} />
         </Field>
-        <Check checked={form.multipliers} onChange={(value) => set("multipliers", value)}>
-          Show multipliers
+        <Check checked={form.weighting} onChange={(value) => onChange(setWeighting(form, value))} testid="show-weighting">
+          Show weighting
         </Check>
         <Check checked={form.motion} onChange={(value) => set("motion", value)}>
           Motion

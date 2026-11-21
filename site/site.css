@@ -338,7 +338,12 @@ a.gs-button {
   cursor: pointer;
 }
 
-.gs-toggle:hover {
+.gs-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gs-toggle:hover:not(:disabled) {
   border-color: var(--docs-accent);
 }
 

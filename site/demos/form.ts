@@ -40,7 +40,7 @@ export interface FormState {
   paletteColors: string;
   layout: string;
   motion: boolean;
-  multipliers: boolean;
+  weighting: boolean;
   cards: CardState[];
   rows: RowState[];
   name: string;
@@ -94,6 +94,24 @@ function blockStates(value: Yaml | undefined): BlockState[] {
   });
 }
 
+export const SHIFT = "shift";
+export const SHIFT_REASON = "shift shows the weighting; turn on Show weighting to use it.";
+
+export function withoutShift(card: CardState): CardState {
+  return {
+    ...card,
+    blocks: card.blocks.map((block) => {
+      if (block.name !== "languages" || !block.variants.includes(SHIFT)) return block;
+      const variants = block.variants.filter((variant) => variant !== SHIFT);
+      return { ...block, variants: variants.length > 0 ? variants : ["bars"] };
+    }),
+  };
+}
+
+export function setWeighting(form: FormState, weighting: boolean): FormState {
+  return weighting ? { ...form, weighting } : { ...form, weighting, cards: form.cards.map(withoutShift) };
+}
+
 export function cardNameProblem(name: string, cards: CardState[], self: number): string {
   const value = name.trim();
   if (value === "") return "A card needs a name.";
@@ -121,7 +139,9 @@ export function effectiveLayout(form: FormState, card: CardState): string {
 
 export function newCard(form: FormState, options: Options): CardState {
   const shown = new Set(form.cards.flatMap((card) => card.blocks.flatMap((block) => block.variants.map((variant) => `${block.name}/${variant}`))));
-  const pairs = options.blocks.flatMap((block) => block.variants.map((variant) => ({ block: block.name, variant })));
+  const pairs = options.blocks
+    .flatMap((block) => block.variants.map((variant) => ({ block: block.name, variant })))
+    .filter((pair) => form.weighting || pair.variant !== SHIFT);
   const pick = pairs.find((pair) => !shown.has(`${pair.block}/${pair.variant}`)) ?? pairs[0];
   const block = pick?.block ?? DEFAULT_CARD;
   return {
@@ -244,8 +264,8 @@ export function fromYaml(source: string, options: Options): FormState {
       .join("\n"),
     layout: text(render.layout) || "card",
     motion: render.motion !== false,
-    multipliers: dict(render.languages).multipliers !== false,
-    cards,
+    weighting: dict(render.languages).weighting !== false,
+    cards: dict(render.languages).weighting === false ? cards.map(withoutShift) : cards,
     rows: list(render.rows).map((entry) => ({
       align: text(dict(entry).align) || "center",
       items: list(dict(entry).items).map(text),
@@ -363,7 +383,7 @@ export function toConfig(form: FormState): Record<string, unknown> {
       ...content,
       languages: {
         colors: form.palette === CUSTOM ? paletteMap(form.paletteColors) : form.palette,
-        ...(form.multipliers ? {} : { multipliers: false }),
+        ...(form.weighting ? {} : { weighting: false }),
       },
       theme: {
         preset: form.preset,

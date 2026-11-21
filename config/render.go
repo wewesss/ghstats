@@ -34,13 +34,26 @@ var (
 	overrideKeys = []string{"bg", "border", "fg", "muted", "faint"}
 )
 
-const maxCards = 12
+const (
+	maxCards = 12
+	maxRows  = 12
+
+	ItemIdentity = "identity"
+	ItemLinks    = "links"
+
+	AlignLeft   = "left"
+	AlignCenter = "center"
+	AlignRight  = "right"
+)
+
+var aligns = []string{AlignLeft, AlignCenter, AlignRight}
 
 var cardName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,39}$`)
 
 type Render struct {
 	Blocks     []Block         `yaml:"blocks,omitempty"`
 	Cards      []Card          `yaml:"cards,omitempty"`
+	Rows       []Row           `yaml:"rows,omitempty"`
 	PrivateBar bool            `yaml:"private_bar"`
 	Languages  RenderLanguages `yaml:"languages"`
 	Theme      Theme           `yaml:"theme"`
@@ -53,6 +66,14 @@ type Card struct {
 	Name   string  `yaml:"name"`
 	Blocks []Block `yaml:"blocks"`
 	Layout string  `yaml:"layout,omitempty"`
+	Header *bool   `yaml:"header,omitempty"`
+}
+
+func (c Card) HasHeader() bool { return c.Header == nil || *c.Header }
+
+type Row struct {
+	Align string   `yaml:"align,omitempty"`
+	Items []string `yaml:"items"`
 }
 
 type Block struct {
@@ -158,6 +179,7 @@ func (r Render) validate(fail func(format string, args ...any)) {
 	} else {
 		r.validateCards(fail)
 	}
+	r.validateRows(fail)
 
 	c := r.Languages.Colors
 	if c.Custom != nil {
@@ -221,6 +243,37 @@ func (r Render) validateCards(fail func(format string, args ...any)) {
 			fail("render.cards[%d].layout: must be %q or %q, got %q", i, LayoutCard, LayoutWide, c.Layout)
 		}
 		validateBlocks(fmt.Sprintf("render.cards[%d].blocks", i), c.Blocks, fail)
+	}
+}
+
+func (r Render) validateRows(fail func(format string, args ...any)) {
+	if len(r.Rows) > maxRows {
+		fail("render.rows: at most %d rows, got %d", maxRows, len(r.Rows))
+	}
+	known := map[string]bool{ItemIdentity: true, ItemLinks: true}
+	for _, c := range r.CardList() {
+		known[c.Name] = true
+	}
+	placed := map[string]bool{}
+	for i, row := range r.Rows {
+		if row.Align != "" && !slices.Contains(aligns, row.Align) {
+			fail("render.rows[%d].align: must be %s, got %q", i, strings.Join(aligns, ", "), row.Align)
+		}
+		if len(row.Items) == 0 {
+			fail("render.rows[%d].items: must list at least one item", i)
+		}
+		for j, item := range row.Items {
+			switch {
+			case !known[item]:
+				fail("render.rows[%d].items[%d]: unknown item %q (want a card name, %q or %q)", i, j, item, ItemIdentity, ItemLinks)
+			case placed[item]:
+				fail("render.rows[%d].items[%d]: %q is already placed in a row", i, j, item)
+			}
+			placed[item] = true
+			if item == ItemLinks && len(row.Items) > 1 {
+				fail("render.rows[%d].items[%d]: %q must be alone in its row", i, j, item)
+			}
+		}
 	}
 }
 

@@ -45,6 +45,7 @@ Commands:
   collect   fetch repositories, languages, releases and traffic into a snapshot
   compute   turn a snapshot and a history into report.json
   render    write stats.json, the SVG cards and README.snippet.md from a report
+  init      set up a profile repository with gh (repositories, workflow, config, README, secret)
   version   print the version
 
 Run "ghstats <command> -h" for the flags of a command.
@@ -70,6 +71,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		err = runCompute(rest, stderr)
 	case "render":
 		err = runRender(rest, stderr)
+	case "init":
+		err = runInit(rest, stdin, stdout, stderr)
 	case "version":
 		fmt.Fprintln(stdout, version)
 		return exitOK

@@ -64,13 +64,14 @@ How the cards look. See the [gallery](../cards/gallery.md) for every block and v
 | --- | --- |
 | `render.blocks` | List of `block: [variants]`, stacked in this order. `stats`: `totals`, `distribution`. `languages`: `bars`, `iso`, `cells`, `treemap`, `shift`, `terminal`. `history`: `views`, `clones`. |
 | `render.cards` | Optional list of cards, each with `name`, `blocks` and an optional `layout`. Splits the render into several images; `render.blocks` is then ignored. See [Several cards](#several-cards). |
+| `render.rows` | Optional list of README rows, each with an `align` and the `items` it holds. Controls how `README.snippet.md` lays out the cards. See [Layout in the README](#layout-in-the-readme). |
 | `render.private_bar` | `true` (default) or `false`. Replaces the names of private repositories with a black bar. |
 | `render.languages.colors` | `accent` (default), `github`, `mono`, `spectrum`, `duotone`, or a map of language to `"#rrggbb"`. |
 | `render.theme.preset` | `noir` (default), `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent`. |
 | `render.theme.accent` | `ice` (default), `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, or `{dark: "#rrggbb", light: "#rrggbb"}`. |
 | `render.theme.overrides` | Keys `bg`, `border`, `fg`, `muted`, `faint` as `"#rrggbb"`; `bg` also accepts `none`. |
 | `render.motion` | `true` (default) or `false`. `false` turns every animation off. Reduced motion is always honored. |
-| `render.layout` | `card` (495 px, default) or `wide` (1000 px, `languages` in a right column, the other blocks stacked on the left). |
+| `render.layout` | `card` (495 px, default) or `wide` (1000 px, two columns of 495 px). With `languages`, it sits in the right column and the other blocks on the left; without it, the blocks are spread to keep the two columns level. A `wide` card with a single block is drawn at 495 px. |
 | `render.base_path` | Prefix of every path written in `README.snippet.md`, ending with `/` (default `ghstats/`). |
 
 ### Blocks and variants
@@ -101,13 +102,15 @@ render:
       layout: wide
       blocks:
         - languages: [treemap]
+        - history: [clones]
 ```
 
 This writes `overview-dark.svg`, `overview-light.svg`, `langs-dark.svg` and `langs-light.svg`. `stats.json` and the link badges are unchanged, and the identity card keeps its name.
 
 - `name` is required, unique, lowercase letters, digits and `-` (1 to 40 characters, starting with a letter or a digit). `identity` and `links` are reserved.
 - `blocks` follows the same rules as `render.blocks`, and needs at least one block per card. A block may appear in several cards.
-- `layout` is `card` or `wide`. When it is missing, the card inherits `render.layout`.
+- `layout` is `card` or `wide`. When it is missing, the card inherits `render.layout`. A `wide` card with a single block is drawn as a `card`.
+- `header` is `true` (default) or `false`. `false` removes the `login / ghstats` line, the sync date and the rule under them, and the card is 40 px shorter.
 - At most 12 cards.
 - When `render.cards` is set, `render.blocks` is ignored.
 
@@ -144,6 +147,51 @@ render:
       blocks:
         - history: [views]
 ```
+
+### Layout in the README
+
+Without `render.rows`, `README.snippet.md` stacks one picture per item: the identity card, each card in order, then the links. With `render.rows`, each row becomes a `<p align>` and holds one or more items side by side:
+
+```yaml
+version: 1
+render:
+  cards:
+    - name: overview
+      blocks: [{stats: [totals]}, {history: [views]}]
+      layout: wide
+    - name: langs
+      header: false
+      blocks: [{languages: [treemap]}]
+    - name: views
+      header: false
+      blocks: [{history: [clones]}]
+  rows:
+    - align: center
+      items: [langs, views]
+    - align: right
+      items: [overview]
+```
+
+The snippet becomes:
+
+```html
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/langs-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/langs-light.svg"><img alt="GitHub stats: langs" src="ghstats/langs-dark.svg" width="49%"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/views-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/views-light.svg"><img alt="GitHub stats: views" src="ghstats/views-dark.svg" width="49%"></picture>
+</p>
+
+<p align="right">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/overview-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg"><img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="100%"></picture>
+</p>
+```
+
+GitHub keeps `align` on `<p>` and `width` on `<img>`, so the two cards of the first row share the line.
+
+- `align` is `left`, `center` or `right`; it defaults to `center`.
+- `items` lists card names, `identity` and `links`. An item can be placed once in all the rows, and `links` must be alone in its row.
+- With several items in a row, each `width` is a percentage of the natural widths of the row (495 for a `card`, 1000 for the identity card and a `wide` card), with 2 % left free. An item alone in its row keeps its usual width.
+- `identity` without an identity card and `links` without links are skipped, and a row left empty is not written.
+- Items that appear in no row are added after the rows, in the default order: identity, cards, links.
+- At most 12 rows.
 
 ### Theme
 

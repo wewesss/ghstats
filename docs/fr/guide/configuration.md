@@ -64,13 +64,14 @@ L'apparence des cartes. Voir la [galerie](../cards/gallery.md) pour chaque bloc 
 | --- | --- |
 | `render.blocks` | Liste de `block: [variantes]`, empilés dans cet ordre. `stats` : `totals`, `distribution`. `languages` : `bars`, `iso`, `cells`, `treemap`, `shift`, `terminal`. `history` : `views`, `clones`. |
 | `render.cards` | Liste facultative de cartes, chacune avec `name`, `blocks` et un `layout` facultatif. Découpe le rendu en plusieurs images ; `render.blocks` est alors ignoré. Voir [Plusieurs cartes](#plusieurs-cartes). |
+| `render.rows` | Liste facultative de lignes du README, chacune avec un `align` et les `items` qu'elle contient. Règle l'agencement des cartes dans `README.snippet.md`. Voir [Agencement dans le README](#agencement-dans-le-readme). |
 | `render.private_bar` | `true` (défaut) ou `false`. Remplace les noms des dépôts privés par une barre noire. |
 | `render.languages.colors` | `accent` (défaut), `github`, `mono`, `spectrum`, `duotone`, ou une table de langage vers `"#rrggbb"`. |
 | `render.theme.preset` | `noir` (défaut), `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent`. |
 | `render.theme.accent` | `ice` (défaut), `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, ou `{dark: "#rrggbb", light: "#rrggbb"}`. |
 | `render.theme.overrides` | Clés `bg`, `border`, `fg`, `muted`, `faint` en `"#rrggbb"` ; `bg` accepte aussi `none`. |
 | `render.motion` | `true` (défaut) ou `false`. `false` coupe toutes les animations. Le mouvement réduit est toujours respecté. |
-| `render.layout` | `card` (495 px, défaut) ou `wide` (1000 px, `languages` dans une colonne de droite, les autres blocs empilés à gauche). |
+| `render.layout` | `card` (495 px, défaut) ou `wide` (1000 px, deux colonnes de 495 px). Avec `languages`, il va dans la colonne de droite et les autres blocs à gauche ; sans lui, les blocs sont répartis pour équilibrer les deux colonnes. Une carte `wide` à un seul bloc est dessinée en 495 px. |
 | `render.base_path` | Préfixe de chaque chemin écrit dans `README.snippet.md`, terminé par `/` (défaut `ghstats/`). |
 
 ### Blocs et variantes
@@ -101,13 +102,15 @@ render:
       layout: wide
       blocks:
         - languages: [treemap]
+        - history: [clones]
 ```
 
 Ce fichier écrit `overview-dark.svg`, `overview-light.svg`, `langs-dark.svg` et `langs-light.svg`. `stats.json` et les badges de liens ne changent pas, et la carte identité garde son nom.
 
 - `name` est obligatoire, unique, en minuscules, chiffres et `-` (1 à 40 caractères, commençant par une lettre ou un chiffre). `identity` et `links` sont réservés.
 - `blocks` suit les mêmes règles que `render.blocks`, avec au moins un bloc par carte. Un bloc peut apparaître dans plusieurs cartes.
-- `layout` vaut `card` ou `wide`. Absent, la carte hérite de `render.layout`.
+- `layout` vaut `card` ou `wide`. Absent, la carte hérite de `render.layout`. Une carte `wide` à un seul bloc est dessinée comme une `card`.
+- `header` vaut `true` (défaut) ou `false`. `false` retire la ligne `login / ghstats`, la date de synchronisation et le trait en dessous, et la carte est plus courte de 40 px.
 - 12 cartes au plus.
 - Quand `render.cards` est défini, `render.blocks` est ignoré.
 
@@ -144,6 +147,51 @@ render:
       blocks:
         - history: [views]
 ```
+
+### Agencement dans le README
+
+Sans `render.rows`, `README.snippet.md` empile une image par élément : la carte identité, chaque carte dans l'ordre, puis les liens. Avec `render.rows`, chaque ligne devient un `<p align>` et contient un ou plusieurs éléments côte à côte :
+
+```yaml
+version: 1
+render:
+  cards:
+    - name: overview
+      blocks: [{stats: [totals]}, {history: [views]}]
+      layout: wide
+    - name: langs
+      header: false
+      blocks: [{languages: [treemap]}]
+    - name: views
+      header: false
+      blocks: [{history: [clones]}]
+  rows:
+    - align: center
+      items: [langs, views]
+    - align: right
+      items: [overview]
+```
+
+Le snippet devient :
+
+```html
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/langs-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/langs-light.svg"><img alt="GitHub stats: langs" src="ghstats/langs-dark.svg" width="49%"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/views-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/views-light.svg"><img alt="GitHub stats: views" src="ghstats/views-dark.svg" width="49%"></picture>
+</p>
+
+<p align="right">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/overview-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg"><img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="100%"></picture>
+</p>
+```
+
+GitHub garde `align` sur `<p>` et `width` sur `<img>` : les deux cartes de la première ligne se partagent la ligne.
+
+- `align` vaut `left`, `center` ou `right` ; `center` par défaut.
+- `items` liste des noms de cartes, `identity` et `links`. Un élément se place une seule fois dans l'ensemble des lignes, et `links` doit être seul dans sa ligne.
+- Quand une ligne a plusieurs éléments, chaque `width` est un pourcentage proportionnel aux largeurs naturelles de la ligne (495 pour une `card`, 1000 pour la carte identité et une carte `wide`), avec 2 % laissés libres. Un élément seul dans sa ligne garde sa largeur habituelle.
+- `identity` sans carte identité et `links` sans lien sont ignorés, et une ligne devenue vide n'est pas écrite.
+- Les éléments absents de toutes les lignes sont ajoutés après les lignes, dans l'ordre par défaut : identité, cartes, liens.
+- 12 lignes au plus.
 
 ### Thème
 

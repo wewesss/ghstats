@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-11-21
+
+### Added
+
+- `render.rows`: lay the cards out in `README.snippet.md`. Each row is a `<p align="left|center|right">` holding one or more items (card names, `identity`, `links`) side by side, with a `width` in percent proportional to their natural widths. Without `rows`, the snippet is unchanged.
+- `header: false` on a card removes the `login / ghstats` line, the sync date and the rule under them; the card is 40 px shorter.
+
+### Changed
+
+- A `wide` card spreads its blocks over two columns of 495 px: `languages` stays on the right when present, otherwise the blocks are balanced by height.
+- A `wide` card with a single block is now drawn at 495 px instead of 1000 px with an empty column, and the snippet writes `width="495"` for it.
+
 ## [1.4.0] - 2026-11-21
 
 ### Added

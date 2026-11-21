@@ -61,8 +61,17 @@ render:
   #       - history: [views]
   #   - name: langs
   #     layout: wide
+  #     header: false
   #     blocks:
   #       - languages: [treemap]
+  #       - history: [clones]
+  # A card with "header: false" drops its login / ghstats line and the rule under it.
+  # Optional: lay the cards out in README.snippet.md. Each row is a <p align>; its items
+  # (card names, "identity", "links") sit side by side. An item is placed once, "links"
+  # stays alone in its row, and 12 rows at most. Items left out follow the rows.
+  # rows:
+  #   - align: center       # left | center | right
+  #     items: [overview, langs]
   # Replace the names of private repositories with a black bar.
   private_bar: true
   languages:
@@ -77,7 +86,8 @@ render:
     overrides: {}
   # false turns every animation off.
   motion: true
-  # card: 495 px stats card. wide: 1000 px, languages in a right column.
+  # card: 495 px stats card. wide: 1000 px, two columns (languages on the right when present).
+  # A wide card with a single block is drawn at 495 px.
   layout: card
   # Prefix of every path written in README.snippet.md (must end with "/").
   base_path: ghstats/

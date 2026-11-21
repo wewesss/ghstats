@@ -1,4 +1,5 @@
 import { BASE_ATTRIBUTE, normalizeBase, withBase } from "@standarx/mdocs/base";
+import { t } from "./i18n";
 
 export type Mode = "dark" | "light";
 
@@ -56,7 +57,7 @@ function injectScript(src: string): Promise<void> {
     const script = document.createElement("script");
     script.src = src;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`could not load ${src}`));
+    script.onerror = () => reject(new Error(t("scriptFailed", { src })));
     document.head.append(script);
   });
 }
@@ -71,7 +72,7 @@ async function instantiate(go: Go, url: string): Promise<WebAssembly.Instance> {
     }
   }
   const response = await fetch(url);
-  if (!response.ok) throw new Error(`could not load ${url}: ${response.status}`);
+  if (!response.ok) throw new Error(t("fetchFailed", { url, status: response.status }));
   const buffered = await WebAssembly.instantiate(await response.arrayBuffer(), go.importObject);
   return buffered.instance;
 }
@@ -79,12 +80,12 @@ async function instantiate(go: Go, url: string): Promise<WebAssembly.Instance> {
 async function boot(): Promise<Ghstats> {
   const scope = globalThis as Scope;
   if (scope.Go === undefined) await injectScript(baseUrl("/wasm_exec.js"));
-  if (scope.Go === undefined) throw new Error("wasm_exec.js did not define Go");
+  if (scope.Go === undefined) throw new Error(t("goMissing"));
   const go = new scope.Go();
   const instance = await instantiate(go, baseUrl("/ghstats.wasm"));
   void go.run(instance);
   const raw = scope.ghstats;
-  if (raw === undefined) throw new Error("the renderer did not register itself");
+  if (raw === undefined) throw new Error(t("rendererMissing"));
   const options = JSON.parse(raw.options()) as Options;
   return {
     render: (yaml, mode, report) => (report === undefined ? raw.render(yaml, mode) : raw.render(yaml, mode, report)),

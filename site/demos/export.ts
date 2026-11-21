@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type { Ghstats, Mode, RenderResult } from "./ghstats";
 import { svgToPng } from "./png";
 import { zip } from "./zip";
@@ -31,12 +32,12 @@ export async function exportItems(source: Source, items: string[], formats: Form
       const key = `${item}-${mode}.svg`;
       if (formats.includes("svg")) {
         const svg = live[key];
-        if (svg === undefined) throw new Error(`no card named ${key}`);
+        if (svg === undefined) throw new Error(t("noCard", { name: key }));
         files.push({ path: key, blob: new Blob([svg], { type: "image/svg+xml" }) });
       }
       if (formats.includes("png")) {
         const svg = still[key];
-        if (svg === undefined) throw new Error(`no card named ${key}`);
+        if (svg === undefined) throw new Error(t("noCard", { name: key }));
         files.push({ path: key.replace(/\.svg$/, ".png"), blob: await svgToPng(svg, PNG_SCALE) });
       }
     }

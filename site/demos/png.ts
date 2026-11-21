@@ -1,4 +1,5 @@
 import { baseUrl } from "./ghstats";
+import { t } from "./i18n";
 
 interface Resvg {
   memory: WebAssembly.Memory;
@@ -21,7 +22,7 @@ async function instantiate(url: string): Promise<WebAssembly.Instance> {
     }
   }
   const response = await fetch(url);
-  if (!response.ok) throw new Error(`could not load ${url}: ${response.status}`);
+  if (!response.ok) throw new Error(t("fetchFailed", { url, status: response.status }));
   const buffered = await WebAssembly.instantiate(await response.arrayBuffer(), {});
   return buffered.instance;
 }
@@ -35,7 +36,7 @@ async function boot(): Promise<Resvg> {
   const render = exports.render as Resvg["render"] | undefined;
   const resultPtr = exports.result_ptr as Resvg["resultPtr"] | undefined;
   const resultLen = exports.result_len as Resvg["resultLen"] | undefined;
-  if (!memory || !alloc || !dealloc || !render || !resultPtr || !resultLen) throw new Error("resvg.wasm does not export the expected functions");
+  if (!memory || !alloc || !dealloc || !render || !resultPtr || !resultLen) throw new Error(t("resvgExports"));
   return { memory, alloc, dealloc, render, resultPtr, resultLen };
 }
 
@@ -50,13 +51,13 @@ function load(): Promise<Resvg> {
 export async function svgToPng(svg: string, scale = 2): Promise<Blob> {
   const engine = await load();
   const input = new TextEncoder().encode(svg);
-  if (input.length === 0) throw new Error("png: empty svg");
+  if (input.length === 0) throw new Error(t("pngEmpty"));
   const ptr = engine.alloc(input.length);
   try {
     new Uint8Array(engine.memory.buffer, ptr, input.length).set(input);
     const code = engine.render(ptr, input.length, scale);
     const out = new Uint8Array(engine.memory.buffer, engine.resultPtr(), engine.resultLen()).slice();
-    if (code !== 0) throw new Error(`png: ${new TextDecoder().decode(out)}`);
+    if (code !== 0) throw new Error(t("pngFailed", { message: new TextDecoder().decode(out) }));
     return new Blob([out], { type: "image/png" });
   } finally {
     engine.dealloc(ptr, input.length);

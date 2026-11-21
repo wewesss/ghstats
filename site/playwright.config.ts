@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = Number(process.env.PORT ?? 4317);
+const viewport = { width: 1440, height: 900 };
+const everyBrowser = process.env.GHSTATS_ALL_BROWSERS === "1";
 
 export default defineConfig({
   testDir: "e2e",
@@ -15,7 +17,15 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${port}/ghstats/en/builder/`,
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"], viewport } },
+    ...(everyBrowser
+      ? [
+          { name: "firefox", use: { ...devices["Desktop Firefox"], viewport } },
+          { name: "webkit", use: { ...devices["Desktop Safari"], viewport } },
+        ]
+      : []),
+  ],
   webServer: {
     command: "bun run scripts/serve-dist.ts",
     url: `http://127.0.0.1:${port}/ghstats/en/builder/`,

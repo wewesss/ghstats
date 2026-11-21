@@ -10,10 +10,16 @@ import (
 func Cards(r report.Report, cfg config.Config, mode Mode) (map[string]string, error) {
 	files := map[string]string{}
 	var sb strings.Builder
-	if err := SVG(&sb, r, cfg.Render, mode); err != nil {
-		return nil, err
+	for _, c := range cfg.Render.CardList() {
+		sb.Reset()
+		rc := cfg.Render
+		rc.Blocks = c.Blocks
+		rc.Layout = c.Layout
+		if err := SVG(&sb, r, rc, mode); err != nil {
+			return nil, err
+		}
+		files[c.Name+"-"+string(mode)+".svg"] = sb.String()
 	}
-	files["stats-"+string(mode)+".svg"] = sb.String()
 	if cfg.Profile.HasIdentity() {
 		sb.Reset()
 		if err := IdentitySVG(&sb, r, cfg, mode); err != nil {

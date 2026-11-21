@@ -27,11 +27,17 @@ func Snippet(cfg config.Config) string {
 	if cfg.Profile.HasIdentity() {
 		parts = append(parts, picture(base, "identity", "profile", "100%"))
 	}
-	statsWidth := "495"
-	if cfg.Render.Layout == config.LayoutWide {
-		statsWidth = "100%"
+	for _, c := range cfg.Render.CardList() {
+		width := "495"
+		if c.Layout == config.LayoutWide {
+			width = "100%"
+		}
+		alt := "GitHub stats"
+		if c.Name != "stats" {
+			alt += ": " + c.Name
+		}
+		parts = append(parts, picture(base, c.Name, alt, width))
 	}
-	parts = append(parts, picture(base, "stats", "GitHub stats", statsWidth))
 	if links := cfg.Profile.ResolvedLinks(); len(links) > 0 {
 		var b strings.Builder
 		b.WriteString("<p align=\"center\">\n")

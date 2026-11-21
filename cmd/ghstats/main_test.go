@@ -489,6 +489,48 @@ func TestRenderWithoutProfileWritesNoProfileFiles(t *testing.T) {
 	}
 }
 
+func TestRenderWritesOneFilePerCard(t *testing.T) {
+	dir := t.TempDir()
+	raw, err := json.Marshal(report.Report{SchemaVersion: report.SchemaVersion, Login: "me", CollectedAt: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reportPath := filepath.Join(dir, "report.json")
+	if err := os.WriteFile(reportPath, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfgPath := filepath.Join(dir, "ghstats.yaml")
+	cfg := `version: 1
+render:
+  cards:
+    - name: overview
+      blocks:
+        - stats: [totals]
+        - history: [views]
+    - name: langs
+      layout: wide
+      blocks:
+        - languages: [treemap]
+`
+	if err := os.WriteFile(cfgPath, []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outDir := filepath.Join(dir, "cards")
+	if code, _, stderr := exec("render", "--report", reportPath, "--config", cfgPath, "--out-dir", outDir); code != 0 {
+		t.Fatalf("render = %d, %q", code, stderr)
+	}
+	for _, name := range []string{"overview-dark.svg", "overview-light.svg", "langs-dark.svg", "langs-light.svg", "stats.json", "README.snippet.md"} {
+		if _, err := os.Stat(filepath.Join(outDir, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, name := range []string{"stats-dark.svg", "stats-light.svg"} {
+		if _, err := os.Stat(filepath.Join(outDir, name)); err == nil {
+			t.Fatalf("%s must not exist when cards are set", name)
+		}
+	}
+}
+
 func TestCollectKeepIgnoresFilesItDidNotWrite(t *testing.T) {
 	setup(t)
 	dir := t.TempDir()

@@ -356,7 +356,7 @@ func TestInitTokenOfAnotherLogin(t *testing.T) {
 	g.seedRepo("other/other", "PUBLIC", "hello\n")
 	g.seedRepo("other/ghstats-data", "PRIVATE", "")
 	code, stdout, stderr := initWith(t, g, "", "--yes", "--no-run")
-	if code != 1 || !strings.Contains(stderr, "token") {
+	if code != 1 || !strings.Contains(stderr, `the token belongs to "me", not "other"`) {
 		t.Fatalf("code = %d, stderr = %q", code, stderr)
 	}
 	if strings.Contains(stdout+stderr, initToken) {

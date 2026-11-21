@@ -24,19 +24,53 @@ func viewBox(t *testing.T, svg string) (w, h int) {
 	return w, h
 }
 
+func splitColumns(t *testing.T, svg string) (left, right string) {
+	t.Helper()
+	const open = `<g transform="translate(505 0)">`
+	const closing = `</g><line x1="500"`
+	i := strings.Index(svg, open)
+	if i < 0 {
+		t.Fatal("no right column group")
+	}
+	rest := svg[i+len(open):]
+	j := strings.Index(rest, closing)
+	if j < 0 {
+		t.Fatal("right column group is not followed by the divider")
+	}
+	return svg[:i], rest[:j]
+}
+
 func TestWideWithoutLanguagesFillsBothColumns(t *testing.T) {
-	cfg := sample.WideRender()
-	cfg.Blocks = []config.Block{{Name: "stats", Variants: []string{"totals"}}, {Name: "history", Variants: []string{"views"}}}
-	svg := renderSVG(t, sample.Report(), cfg, render.Dark)
-	assertWellFormed(t, svg)
-	if w, _ := viewBox(t, svg); w != 1000 {
-		t.Fatalf("viewBox width = %d", w)
-	}
-	if !strings.Contains(svg, `translate(505 0)`) || !strings.Contains(svg, `x1="500"`) {
-		t.Fatal("both columns must be occupied and separated")
-	}
-	if !strings.Contains(svg, "STARS") || !strings.Contains(svg, "VIEWS") {
-		t.Fatal("both blocks must be drawn")
+	for _, tt := range []struct {
+		name        string
+		blocks      []config.Block
+		left, right string
+	}{
+		{"no languages", []config.Block{{Name: "stats", Variants: []string{"totals"}}, {Name: "history", Variants: []string{"views"}}}, "STARS", "VIEWS"},
+		{"with languages", []config.Block{{Name: "stats", Variants: []string{"totals"}}, {Name: "languages", Variants: []string{"bars"}}}, "STARS", "Go"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := sample.WideRender()
+			cfg.Blocks = tt.blocks
+			svg := renderSVG(t, sample.Report(), cfg, render.Dark)
+			assertWellFormed(t, svg)
+			if w, _ := viewBox(t, svg); w != 1000 {
+				t.Fatalf("viewBox width = %d", w)
+			}
+			left, right := splitColumns(t, svg)
+			if strings.Count(left, `<g class="gsb`) != 1 || strings.Count(right, `<g class="gsb`) != 1 {
+				t.Fatalf("each column must hold one block, got left %d right %d", strings.Count(left, `<g class="gsb`), strings.Count(right, `<g class="gsb`))
+			}
+			if !strings.Contains(left, tt.left) || strings.Contains(right, tt.left) {
+				t.Fatalf("%s must be drawn in the left column only", tt.left)
+			}
+			if !strings.Contains(right, tt.right) || strings.Contains(left, tt.right) {
+				t.Fatalf("%s must be drawn in the right column only", tt.right)
+			}
+			if !strings.Contains(svg, `x1="500"`) {
+				t.Fatal("the columns must be separated")
+			}
+		})
 	}
 }
 

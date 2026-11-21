@@ -53,7 +53,7 @@ func (f *apiFake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}})
 		return
 	}
-	if r.URL.Path == "/repos/me/ghstats-data" {
+	if strings.HasPrefix(r.URL.Path, "/repos/") && strings.HasSuffix(r.URL.Path, "/ghstats-data") {
 		fmt.Fprint(w, `{"name":"ghstats-data","private":true}`)
 		return
 	}
@@ -355,23 +355,31 @@ render:
 	}
 }
 
-func TestComputeWarnsAndAcceptsMissingHistory(t *testing.T) {
+func TestComputeAcceptsMissingHistory(t *testing.T) {
 	setup(t)
 	dir := t.TempDir()
-	code, stdout, stderr := exec("collect", "--no-traffic", "--out", dir, "--history", filepath.Join(dir, "h.json"))
+	code, stdout, stderr := exec("collect", "--out", dir, "--history", filepath.Join(dir, "h.json"))
 	if code != 0 {
 		t.Fatalf("collect = %d, %q", code, stderr)
 	}
 	reportPath := filepath.Join(dir, "report.json")
 	code, _, stderr = exec("compute", "--snapshot", strings.TrimSpace(stdout), "--history", filepath.Join(dir, "none.json"), "--out", reportPath)
-	if code != 0 {
-		t.Fatalf("compute = %d, %q", code, stderr)
+	if code != 0 || stderr != "" {
+		t.Fatalf("compute = %d, stderr = %q, want exit 0 and no warning", code, stderr)
 	}
-	if !strings.Contains(stderr, "warning:") {
-		t.Fatalf("stderr = %q, want a warning", stderr)
+	raw, err := os.ReadFile(reportPath)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if code, _, _ := exec("render", "--report", reportPath, "--out-dir", filepath.Join(dir, "cards")); code != 0 {
-		t.Fatalf("render = %d", code)
+	var r report.Report
+	if err := json.Unmarshal(raw, &r); err != nil {
+		t.Fatal(err)
+	}
+	if r.Login != "me" || r.Totals.Repos != 2 || len(r.Warnings) != 0 {
+		t.Fatalf("report = %+v", r)
+	}
+	if code, _, stderr := exec("render", "--report", reportPath, "--out-dir", filepath.Join(dir, "cards")); code != 0 {
+		t.Fatalf("render = %d, %q", code, stderr)
 	}
 }
 

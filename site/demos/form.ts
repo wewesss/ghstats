@@ -6,6 +6,12 @@ export interface BlockState {
   variants: string[];
 }
 
+export interface CardState {
+  name: string;
+  layout: string;
+  blocks: BlockState[];
+}
+
 export interface FocusState {
   name: string;
   building: string;
@@ -27,7 +33,7 @@ export interface FormState {
   paletteColors: string;
   layout: string;
   motion: boolean;
-  blocks: BlockState[];
+  cards: CardState[];
   name: string;
   tagline: string;
   location: string;
@@ -38,6 +44,8 @@ export interface FormState {
 }
 
 export const CUSTOM = "custom";
+export const DEFAULT_CARD = "stats";
+export const MAX_CARDS = 12;
 
 type Dict = { [key: string]: Yaml };
 
@@ -53,6 +61,30 @@ function text(value: Yaml | undefined): string {
   return typeof value === "string" ? value : typeof value === "number" ? String(value) : "";
 }
 
+function blockStates(value: Yaml | undefined, options: Options): BlockState[] {
+  const blocks: BlockState[] = list(value).map((item) => {
+    const [name = "", variants] = Object.entries(dict(item))[0] ?? [];
+    return { name, variants: list(variants).map(text) };
+  });
+  for (const known of options.blocks) {
+    if (!blocks.some((block) => block.name === known.name)) blocks.push({ name: known.name, variants: [] });
+  }
+  return blocks;
+}
+
+export function isSplit(cards: CardState[]): boolean {
+  return cards.length > 1 || (cards[0]?.name ?? "") !== "";
+}
+
+export function cardNames(cards: CardState[]): string[] {
+  return isSplit(cards) ? cards.map((card) => card.name) : [DEFAULT_CARD];
+}
+
+export function newCard(name: string, options: Options): CardState {
+  const blocks = options.blocks.map((block, at) => ({ name: block.name, variants: at === 0 ? block.variants.slice(0, 1) : [] }));
+  return { name, layout: "", blocks };
+}
+
 export function fromYaml(source: string, options: Options): FormState {
   const root = dict(parseYaml(source));
   const render = dict(root.render);
@@ -62,13 +94,15 @@ export function fromYaml(source: string, options: Options): FormState {
   const accentMap = dict(accent);
   const palette = dict(render.languages).colors;
 
-  const blocks: BlockState[] = list(render.blocks).map((item) => {
-    const [name = "", variants] = Object.entries(dict(item))[0] ?? [];
-    return { name, variants: list(variants).map(text) };
-  });
-  for (const known of options.blocks) {
-    if (!blocks.some((block) => block.name === known.name)) blocks.push({ name: known.name, variants: [] });
-  }
+  const declared = list(render.cards);
+  const cards: CardState[] =
+    declared.length > 0
+      ? declared.map((entry) => ({
+          name: text(dict(entry).name),
+          layout: text(dict(entry).layout),
+          blocks: blockStates(dict(entry).blocks, options),
+        }))
+      : [{ name: "", layout: "", blocks: blockStates(render.blocks, options) }];
 
   return {
     preset: text(theme.preset) || (options.presets[0] ?? ""),
@@ -81,7 +115,7 @@ export function fromYaml(source: string, options: Options): FormState {
       .join("\n"),
     layout: text(render.layout) || "card",
     motion: render.motion !== false,
-    blocks,
+    cards,
     name: text(profile.name),
     tagline: text(profile.tagline),
     location: text(profile.location),
@@ -140,10 +174,22 @@ export function toConfig(form: FormState): Record<string, unknown> {
   if (links.length > 0) profile.links = links;
   if (form.linkStyle !== "") profile.link_style = form.linkStyle;
 
+  const blocksOf = (blocks: BlockState[]) =>
+    blocks.filter((block) => block.variants.length > 0).map((block) => ({ [block.name]: block.variants }));
+  const content = isSplit(form.cards)
+    ? {
+        cards: form.cards.map((card) => ({
+          name: card.name.trim(),
+          ...(card.layout !== "" ? { layout: card.layout } : {}),
+          blocks: blocksOf(card.blocks),
+        })),
+      }
+    : { blocks: blocksOf(form.cards[0]?.blocks ?? []) };
+
   const config: Record<string, unknown> = {
     version: 1,
     render: {
-      blocks: form.blocks.filter((block) => block.variants.length > 0).map((block) => ({ [block.name]: block.variants })),
+      ...content,
       languages: { colors: form.palette === CUSTOM ? paletteMap(form.paletteColors) : form.palette },
       theme: {
         preset: form.preset,

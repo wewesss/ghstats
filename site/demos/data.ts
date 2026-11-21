@@ -28,7 +28,7 @@ export async function loadFromGithub(login: string, path: string): Promise<DataS
     throw new Error(`Could not reach ${url}.`);
   }
   if (response.status === 404) {
-    throw new Error(`No stats.json at ${url} : run the ghstats workflow once, or open the file below.`);
+    throw new Error(`No stats.json at ${url}: run the ghstats workflow once, or open the file below.`);
   }
   if (!response.ok) throw new Error(`Could not load ${url}: ${response.status}`);
   return { label: `${login} (GitHub)`, report: await response.text() };

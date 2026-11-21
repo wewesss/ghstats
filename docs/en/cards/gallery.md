@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-Every image below is generated from a fixed sample report, with `motion: false` and the `cycle` accent, in dark and light. The two modes follow the viewer's color scheme. Under each image, the `render.blocks` entry that produces it; the other keys are in [Configuration](../guide/configuration.md). Listing several variants of a block makes them rotate in place.
+Every image below is generated from a fixed sample report, with `motion: false`, in dark and light. With motion off, the `cycle` accent shows as `ice` and a block that lists several variants shows only the first one, so each image below shows one variant. The two modes follow the viewer's color scheme. Under each image, the `render.blocks` entry that produces it; the other keys are in [Configuration](../guide/configuration.md). With motion on, listing several variants of a block makes them rotate in place.
 
 ## Live gallery
 
@@ -174,7 +174,7 @@ render:
 
 ## Wide layout
 
-`render.layout: wide` makes a 1000 px card with `languages` in a right column and the other blocks stacked on the left. This one lists every variant of every block, so they rotate in place.
+`render.layout: wide` makes a 1000 px card with `languages` in a right column and the other blocks stacked on the left. This one lists every variant of every block: with motion on they rotate in place, and this image, drawn with motion off, shows the first variant of each block.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../../../showcase/wide-dark.svg">

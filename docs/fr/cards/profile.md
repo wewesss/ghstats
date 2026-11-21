@@ -20,10 +20,13 @@ profile:
       building: [full-stack apps, desktop software]
     - name: GAMES
       building: [gameplay systems, game engines]
+  identity:                        # facultatif
+    layout: wide                   # wide (1000 px) ou card (495 px, une colonne)
+    show: [header, name, tagline, location, note, building, focus, footer]
   link_style: full                 # full, icon ou text
   links:                           # gardés dans cet ordre ; une valeur vide est ignorée
     - youtube: "@octocat"          # un identifiant ou une URL https:// complète
-    - website: https://example.com
+    - website: {url: "https://example.com", style: icon}   # style : ce lien seulement
     - discord: {url: "https://discord.com/invite/xyz", label: discord}
     - github_sponsors: octocat
     - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}
@@ -42,7 +45,19 @@ Les clés sont décrites dans [Configuration](../guide/configuration.md#profile)
   <img alt="carte identité" src="../../../showcase/identity-dark.svg" width="100%">
 </picture>
 
-La carte identité est écrite sous les noms `identity-dark.svg` et `identity-light.svg` lorsque `profile` contient au moins `focus` ou `tagline`. Les mots de `building` alternent toutes les 3 secondes et la ligne de focus correspondante s'allume ; avec `motion: false` ou le mouvement réduit, le premier mot et la première ligne sont affichés.
+La carte identité est écrite sous les noms `identity-dark.svg` et `identity-light.svg` lorsque `profile` contient au moins `focus` ou `tagline`, quand `profile.identity.show` est donné, ou quand `identity` est placé dans `render.rows`. Les mots de `building` alternent toutes les 3 secondes et la ligne de focus correspondante s'allume ; avec `motion: false` ou le mouvement réduit, le premier mot et la première ligne sont affichés.
+
+`profile.identity.show` choisit les parties dessinées (`header`, `name`, `tagline`, `location`, `note`, `building`, `focus`, `footer`) ; la hauteur suit les parties restantes, et sans `focus` la colonne de droite et son trait disparaissent. `profile.identity.layout: card` dessine la carte en 495 px de large sur une colonne, avec la liste du focus sous le texte : elle peut ainsi se placer à côté d'une carte de statistiques dans une ligne. Une carte avec seulement un nom et un lieu est valide :
+
+```yaml
+profile:
+  name: octocat
+  location: caen, fr
+  identity:
+    show: [name, location]
+```
+
+Les parties et la disposition sont décrites dans [Configuration](../guide/configuration.md#carte-identité).
 
 ## Disposition large
 
@@ -52,7 +67,7 @@ La carte identité est écrite sous les noms `identity-dark.svg` et `identity-li
   <img alt="disposition large" src="../../../showcase/wide-dark.svg" width="100%">
 </picture>
 
-`render.layout: wide` donne à la carte de statistiques une largeur de 1000 px, avec `languages` dans une colonne de droite et les autres blocs empilés à gauche. La carte identité a la même largeur. La disposition `card` par défaut fait 495 px.
+`render.layout: wide` donne à la carte de statistiques une largeur de 1000 px, avec `languages` dans une colonne de droite et les autres blocs empilés à gauche. La carte identité ne suit pas `render.layout` : sa largeur vient de `profile.identity.layout`, `wide` (1000 px, le défaut) ou `card` (495 px). La disposition `card` par défaut de `render.layout` fait 495 px.
 
 ## Badges de liens
 
@@ -168,7 +183,9 @@ Les 21 boutons, en style `full`, avec des valeurs fictives.
 
 `links/<kind>-dark.svg` et `links/<kind>-light.svg` sont écrits pour chaque lien non vide. ghstats ne supprime pas les fichiers d'un lien que vous retirez de la configuration.
 
-Types de liens : `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom` (voir [Bouton personnalisé](#bouton-personnalisé)). Une valeur est un identifiant (le `@` initial est facultatif) ou une URL `https://` complète ; `mastodon`, `steam` et `website` exigent une URL complète. La forme `{url, label}` remplace le libellé.
+Types de liens : `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom` (voir [Bouton personnalisé](#bouton-personnalisé)). Une valeur est un identifiant (le `@` initial est facultatif) ou une URL `https://` complète ; `mastodon`, `steam` et `website` exigent une URL complète. La forme `{url, label, style}` remplace le libellé et le style.
+
+Dans `render.rows`, `links/<kind>` place un badge et `links` place les badges qu'aucune ligne ne place un par un ; voir [Placer les badges de liens](../guide/configuration.md#placer-les-badges-de-liens).
 
 Un lien n'est cliquable que si son badge est une image séparée enveloppée dans son propre `<a>`, ce qui explique pourquoi chaque lien a son propre fichier SVG et ne fait pas partie de la carte identité.
 
@@ -216,6 +233,8 @@ Erreurs de validation : la forme scalaire `custom: https://...` est refusée (le
 profile:
   link_style: icon
 ```
+
+Un lien en forme map peut porter son propre `style`, qui remplace `link_style` pour ce lien : `website: {url: "https://example.com", style: icon}`.
 
 `full` :
 

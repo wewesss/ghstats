@@ -2,6 +2,8 @@ package history_test
 
 import (
 	"bytes"
+	"errors"
+	"io/fs"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -147,7 +149,7 @@ func TestReadRejectsWrongSchema(t *testing.T) {
 }
 
 func TestReadFileMissing(t *testing.T) {
-	if _, err := history.ReadFile(filepath.Join(t.TempDir(), "none.json")); err == nil {
-		t.Fatal("expected an error")
+	if _, err := history.ReadFile(filepath.Join(t.TempDir(), "none.json")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("err = %v, want fs.ErrNotExist", err)
 	}
 }

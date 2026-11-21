@@ -11,5 +11,5 @@
     "isolatedModules": true,
     "types": ["bun"]
   },
-  "include": ["demos", "scripts", "mdocs.config.ts"]
+  "include": ["demos", "scripts", "e2e", "mdocs.config.ts", "playwright.config.ts"]
 }

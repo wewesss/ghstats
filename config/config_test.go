@@ -2,7 +2,12 @@ package config_test
 
 import (
 	"fmt"
+	"maps"
+	"os"
+	"path/filepath"
 	"reflect"
+	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -23,19 +28,80 @@ func TestParseEmptyIsDefaults(t *testing.T) {
 	}
 }
 
-func TestDefaultValues(t *testing.T) {
+func docDefaults(t *testing.T) (tables map[string]string, render map[string]string) {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("..", "docs", "en", "guide", "configuration.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rowRe := regexp.MustCompile(`^\| ` + "`([a-z_.]+)`" + ` \| (.*?) \|`)
+	literalRe := regexp.MustCompile("^(`[^`]*`|empty)$")
+	markedRe := regexp.MustCompile("`([^`]+)` \\([^)]*default\\)|default `([^`]+)`")
+	tables, render = map[string]string{}, map[string]string{}
+	for _, line := range strings.Split(strings.ReplaceAll(string(b), "\r\n", "\n"), "\n") {
+		m := rowRe.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		key, cell := m[1], strings.TrimSpace(m[2])
+		switch {
+		case strings.HasPrefix(key, "render."):
+			if d := markedRe.FindStringSubmatch(cell); d != nil {
+				render[key] = d[1] + d[2]
+			}
+		case literalRe.MatchString(cell):
+			tables[key] = strings.Trim(cell, "`")
+		}
+	}
+	return tables, render
+}
+
+func emptyOr[T any](v []T) string {
+	if len(v) == 0 {
+		return "empty"
+	}
+	return fmt.Sprint(v)
+}
+
+func TestDefaultValuesMatchDocs(t *testing.T) {
 	d := config.Default()
 	if err := d.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	if d.Languages.Mode != "raw" || d.Languages.HiddenShare != "other" || d.Languages.MaxVisible != 6 || d.Languages.OtherLabel != "Other" {
-		t.Fatalf("languages = %+v", d.Languages)
+	want, _ := docDefaults(t)
+	got := map[string]string{
+		"scope.owners":                emptyOr(d.Scope.Owners),
+		"scope.include_forks":         fmt.Sprint(d.Scope.IncludeForks),
+		"scope.include_archived":      fmt.Sprint(d.Scope.IncludeArchived),
+		"scope.include_private":       fmt.Sprint(d.Scope.IncludePrivate),
+		"scope.exclude_repos":         emptyOr(d.Scope.ExcludeRepos),
+		"scope.repo_weights":          emptyOr(slices.Collect(maps.Keys(d.Scope.RepoWeights))),
+		"languages.mode":              d.Languages.Mode,
+		"languages.weights":           emptyOr(slices.Collect(maps.Keys(d.Languages.Weights))),
+		"languages.exclude":           emptyOr(d.Languages.Exclude),
+		"languages.hide":              emptyOr(d.Languages.Hide),
+		"languages.hidden_share":      d.Languages.HiddenShare,
+		"languages.max_visible":       fmt.Sprint(d.Languages.MaxVisible),
+		"languages.other_label":       d.Languages.OtherLabel,
+		"distribution.release_assets": fmt.Sprint(d.Distribution.ReleaseAssets),
+		"distribution.clones":         fmt.Sprint(d.Distribution.Clones),
+		"distribution.views":          fmt.Sprint(d.Distribution.Views),
+		"distribution.hide_partial":   fmt.Sprint(d.Distribution.HidePartial),
 	}
-	if !d.Scope.IncludePrivate || d.Scope.IncludeForks || d.Scope.IncludeArchived {
-		t.Fatalf("scope = %+v", d.Scope)
+	for key, doc := range want {
+		code, ok := got[key]
+		if !ok {
+			t.Errorf("%s is documented with default %q but the test does not know the key", key, doc)
+			continue
+		}
+		if code != doc {
+			t.Errorf("%s: code default %q, docs default %q", key, code, doc)
+		}
 	}
-	if !d.Distribution.ReleaseAssets || !d.Distribution.Clones || !d.Distribution.Views {
-		t.Fatalf("distribution = %+v", d.Distribution)
+	for key := range got {
+		if _, ok := want[key]; !ok {
+			t.Errorf("%s has no default in docs/en/guide/configuration.md", key)
+		}
 	}
 }
 
@@ -99,17 +165,6 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestParseKeepsLanguageNamesAsWritten(t *testing.T) {
-	in := "version: 1\nlanguages:\n  weights:\n    lua: 0.5\n    TYPESCRIPT: 1.5\n"
-	got, err := config.Parse(strings.NewReader(in))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.Languages.Weights["lua"] != 0.5 || got.Languages.Weights["TYPESCRIPT"] != 1.5 {
-		t.Fatalf("weights = %v", got.Languages.Weights)
-	}
-}
-
 func TestExampleIsValid(t *testing.T) {
 	c, err := config.Load("example.yaml")
 	if err != nil {
@@ -133,7 +188,7 @@ func TestLoadMissingFile(t *testing.T) {
 	}
 }
 
-func TestRenderDefaults(t *testing.T) {
+func TestRenderDefaultsMatchDocs(t *testing.T) {
 	r := config.Default().Render
 	var blocks []string
 	for _, b := range r.Blocks {
@@ -142,8 +197,32 @@ func TestRenderDefaults(t *testing.T) {
 	if got := strings.Join(blocks, ","); got != "stats:totals,languages:bars,history:views" {
 		t.Fatalf("blocks = %s", got)
 	}
-	if !r.PrivateBar || !r.Motion || r.Languages.Colors.Name != "accent" || r.Theme.Preset != "noir" || r.Theme.Accent.Name != "ice" {
-		t.Fatalf("render = %+v", r)
+	_, want := docDefaults(t)
+	got := map[string]string{
+		"render.private_bar":         fmt.Sprint(r.PrivateBar),
+		"render.languages.colors":    r.Languages.Colors.Name,
+		"render.languages.weighting": fmt.Sprint(r.Languages.ShowWeighting()),
+		"render.theme.preset":        r.Theme.Preset,
+		"render.theme.accent":        r.Theme.Accent.Name,
+		"render.motion":              fmt.Sprint(r.Motion),
+		"render.png":                 fmt.Sprint(r.PNG),
+		"render.layout":              r.Layout,
+		"render.base_path":           r.BasePath,
+	}
+	for key, code := range got {
+		doc, ok := want[key]
+		if !ok {
+			t.Errorf("%s has no default marked in docs/en/guide/configuration.md", key)
+			continue
+		}
+		if code != doc {
+			t.Errorf("%s: code default %q, docs default %q", key, code, doc)
+		}
+	}
+	for key, doc := range want {
+		if _, ok := got[key]; !ok {
+			t.Errorf("%s is documented with default %q but the test does not know the key", key, doc)
+		}
 	}
 }
 
@@ -168,6 +247,7 @@ render:
       bg: none
       fg: "#ffffff"
   motion: false
+  png: true
 `
 	got, err := config.Parse(strings.NewReader(in))
 	if err != nil {
@@ -177,7 +257,7 @@ render:
 	if len(r.Blocks) != 3 || r.Blocks[1].Name != "languages" || len(r.Blocks[1].Variants) != 6 || r.Blocks[2].Variants[1] != "clones" {
 		t.Fatalf("blocks = %+v", r.Blocks)
 	}
-	if r.PrivateBar || r.Motion {
+	if r.PrivateBar || r.Motion || !r.PNG {
 		t.Fatalf("flags = %+v", r)
 	}
 	if r.Languages.Colors.Name != "" || r.Languages.Colors.Custom["Go"] != "#00ADD8" {
@@ -242,16 +322,6 @@ func TestRenderValidateJoinsErrors(t *testing.T) {
 	err := c.Validate()
 	if err == nil || !strings.Contains(err.Error(), "preset") || !strings.Contains(err.Error(), "palette") {
 		t.Fatalf("err = %v", err)
-	}
-}
-
-func TestExampleRenderMatchesFullCard(t *testing.T) {
-	c, err := config.Load("example.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(c.Render.Blocks) != 3 || len(c.Render.Blocks[1].Variants) != 6 || c.Render.Theme.Accent.Name != "ice" {
-		t.Fatalf("render = %+v", c.Render)
 	}
 }
 

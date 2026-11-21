@@ -18,6 +18,7 @@ Le dépôt est une Action composite pour les runners Linux et macOS. Elle instal
 | `output-dir` | `ghstats` | Dossier qui reçoit les cartes et `README.snippet.md`. |
 | `traffic` | `true` | Mettre `false` pour sauter les appels à l'API de trafic. |
 | `keep-snapshots` | `30` | Nombre de snapshots conservés dans `data-dir/snapshots` ; `0` les garde tous. |
+| `png` | `false` | Mettre `true` pour écrire aussi un `-dark.png` et un `-light.png` à côté de chaque SVG (2x, sans animation : un bloc qui liste plusieurs variantes n'en montre que la première, et l'accent `cycle` s'affiche en `ice`). Équivaut à `render.png: true`. |
 
 ## Outputs
 
@@ -49,8 +50,9 @@ L'input `version` décide quelle release du binaire est installée :
 | `<output-dir>/stats.json` | `render` | Le rapport, sans aucun nom de dépôt privé. |
 | `<output-dir>/stats-dark.svg`, `stats-light.svg` | `render` | La carte de statistiques par défaut. |
 | `<output-dir>/<name>-dark.svg`, `<name>-light.svg` | `render` | Une paire par entrée de `render.cards`. |
-| `<output-dir>/identity-dark.svg`, `identity-light.svg` | `render` | La carte identité, quand `profile` contient `focus` ou `tagline`. |
+| `<output-dir>/identity-dark.svg`, `identity-light.svg` | `render` | La carte identité, quand `profile` contient `focus` ou `tagline`, quand `profile.identity.show` est donné, ou quand `identity` est placé dans `render.rows`. |
 | `<output-dir>/links/<kind>-dark.svg`, `<kind>-light.svg` | `render` | Un badge par lien de profil non vide. |
+| `<output-dir>/<name>-dark.png`, `<name>-light.png` | `render` | Un PNG à côté de chaque SVG ci-dessus (cartes, carte identité, badges de `links/`), seulement quand l'input `png` ou `render.png` est activé. |
 | `<output-dir>/README.snippet.md` | `render` | Le code à coller dans le README de votre profil. |
 
 Le rapport lui-même est écrit dans le dossier temporaire du runner et renvoyé par l'output `report`. Gardez `<data-dir>` dans un dépôt privé et commitez `<output-dir>` dans le dépôt public. Voir [Confidentialité](./privacy.md).

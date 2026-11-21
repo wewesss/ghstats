@@ -23,9 +23,20 @@ const (
 
 	KindCustom = "custom"
 
+	PartHeader   = "header"
+	PartName     = "name"
+	PartTagline  = "tagline"
+	PartLocation = "location"
+	PartNote     = "note"
+	PartBuilding = "building"
+	PartFocus    = "focus"
+	PartFooter   = "footer"
+
 	maxFocus    = 6
 	maxBuilding = 4
 )
+
+var identityParts = []string{PartHeader, PartName, PartTagline, PartLocation, PartNote, PartBuilding, PartFocus, PartFooter}
 
 type Profile struct {
 	Name     string  `yaml:"name,omitempty"`
@@ -35,7 +46,19 @@ type Profile struct {
 	Focus    []Focus `yaml:"focus,omitempty"`
 	Links    []Link  `yaml:"links,omitempty"`
 
-	LinkStyle string `yaml:"link_style,omitempty"`
+	LinkStyle string          `yaml:"link_style,omitempty"`
+	Identity  IdentityOptions `yaml:"identity,omitempty"`
+}
+
+type IdentityOptions struct {
+	Show   []string `yaml:"show,omitempty"`
+	Layout string   `yaml:"layout,omitempty"`
+}
+
+func IdentityParts() []string { return slices.Clone(identityParts) }
+
+func (o IdentityOptions) Shows(part string) bool {
+	return len(o.Show) == 0 || slices.Contains(o.Show, part)
 }
 
 type Focus struct {
@@ -48,6 +71,7 @@ type Link struct {
 	Value string
 	Label string
 	Icon  string
+	Style string
 }
 
 type ResolvedLink struct {
@@ -136,15 +160,17 @@ func (l *Link) UnmarshalYAML(n *yaml.Node) error {
 				out.Value, haveURL = v.Value, true
 			case "label":
 				out.Label = v.Value
+			case "style":
+				out.Style = v.Value
 			case "icon":
 				if kind != KindCustom {
 					return fmt.Errorf("line %d: link %q: the icon key is only valid for the %q kind", val.Content[i].Line, kind, KindCustom)
 				}
 				out.Icon = v.Value
 			default:
-				want := "url and label"
+				want := "url, label and style"
 				if kind == KindCustom {
-					want = "url, label and icon"
+					want = "url, label, icon and style"
 				}
 				return fmt.Errorf("line %d: link %q: unknown key %q (want %s)", val.Content[i].Line, kind, k, want)
 			}
@@ -159,7 +185,7 @@ func (l *Link) UnmarshalYAML(n *yaml.Node) error {
 }
 
 func (l Link) MarshalYAML() (any, error) {
-	if l.Label == "" && l.Icon == "" && l.Kind != KindCustom {
+	if l.Label == "" && l.Icon == "" && l.Style == "" && l.Kind != KindCustom {
 		return map[string]string{l.Kind: l.Value}, nil
 	}
 	m := map[string]string{"url": l.Value}
@@ -168,6 +194,9 @@ func (l Link) MarshalYAML() (any, error) {
 	}
 	if l.Icon != "" {
 		m["icon"] = l.Icon
+	}
+	if l.Style != "" {
+		m["style"] = l.Style
 	}
 	return map[string]map[string]string{l.Kind: m}, nil
 }
@@ -188,7 +217,11 @@ func (p Profile) ResolvedLinks() []ResolvedLink {
 		if err != nil {
 			continue
 		}
-		out = append(out, ResolvedLink{Kind: l.Kind, URL: u, Label: label, Icon: l.Icon, Style: p.LinkStyle})
+		style := p.LinkStyle
+		if l.Style != "" {
+			style = l.Style
+		}
+		out = append(out, ResolvedLink{Kind: l.Kind, URL: u, Label: label, Icon: l.Icon, Style: style})
 	}
 	return out
 }
@@ -299,6 +332,19 @@ func (p Profile) validate(fail func(format string, args ...any)) {
 	if p.LinkStyle != "" && !slices.Contains(LinkStyles(), p.LinkStyle) {
 		fail("profile.link_style: must be one of %s, got %q", strings.Join(LinkStyles(), ", "), p.LinkStyle)
 	}
+	seenPart := map[string]bool{}
+	for i, part := range p.Identity.Show {
+		switch {
+		case !slices.Contains(identityParts, part):
+			fail("profile.identity.show[%d]: unknown part %q (want %s)", i, part, strings.Join(identityParts, ", "))
+		case seenPart[part]:
+			fail("profile.identity.show[%d]: part %q is listed more than once", i, part)
+		}
+		seenPart[part] = true
+	}
+	if p.Identity.Layout != "" && !validLayout(p.Identity.Layout) {
+		fail("profile.identity.layout: must be %q or %q, got %q", LayoutWide, LayoutCard, p.Identity.Layout)
+	}
 	if p.Focus != nil && (len(p.Focus) < 1 || len(p.Focus) > maxFocus) {
 		fail("profile.focus: must have 1 to %d entries, got %d", maxFocus, len(p.Focus))
 	}
@@ -325,6 +371,9 @@ func (p Profile) validate(fail func(format string, args ...any)) {
 			fail("profile.links[%d]: kind %q is listed more than once", i, l.Kind)
 		}
 		seen[l.Kind] = true
+		if l.Style != "" && !slices.Contains(LinkStyles(), l.Style) {
+			fail("profile.links[%d].style: must be one of %s, got %q", i, strings.Join(LinkStyles(), ", "), l.Style)
+		}
 		if l.Empty() {
 			continue
 		}

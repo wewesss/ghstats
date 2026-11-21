@@ -24,6 +24,8 @@ await run(
   { GOOS: "js", GOARCH: "wasm" },
 );
 
+copyFileSync(join(root, "png", "resvg.wasm"), join(out, "resvg.wasm"));
+
 const goroot = await run(["go", "env", "GOROOT"], root);
 const exec = [join(goroot, "lib", "wasm", "wasm_exec.js"), join(goroot, "misc", "wasm", "wasm_exec.js")].find(existsSync);
 if (exec === undefined) throw new Error(`wasm_exec.js not found under ${goroot}`);

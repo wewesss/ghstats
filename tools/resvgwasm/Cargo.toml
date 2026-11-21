@@ -1,0 +1,18 @@
+[package]
+name = "resvgwasm"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+resvg = { version = "0.50.0", default-features = false, features = ["text"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -13,7 +13,8 @@ scope:
   exclude_repos:
     - octocat/dotfiles
     - octocat/*-old
-  # Multiplier applied to every language of a repository (adjusted mode only).
+  # Multiplier applied to every language of a repository. It always feeds languages.adjusted
+  # in stats.json; only what the cards display depends on languages.mode: adjusted.
   repo_weights:
     octocat/generated-bindings: 0.25
 
@@ -42,6 +43,8 @@ distribution:
   release_assets: true
   clones: true
   views: true
+  # Show n/a on the cards instead of a traffic total that misses some repositories.
+  hide_partial: false
 
 render:
   # Blocks are stacked in this order. One variant is fixed, several rotate in place.
@@ -61,13 +64,27 @@ render:
   #       - history: [views]
   #   - name: langs
   #     layout: wide
+  #     header: false
   #     blocks:
   #       - languages: [treemap]
+  #       - history: [clones]
+  # A card with "header: false" drops its login / ghstats line and the rule under it.
+  # Optional: lay the cards out in README.snippet.md. Each row is a <p align>; its items
+  # (card names, "identity", "links", "links/<kind>" for one badge) sit side by side.
+  # An item is placed once, a row with link items holds only link items, and 12 rows
+  # at most. Items left out follow the rows.
+  # rows:
+  #   - align: center       # left | center | right
+  #     items: [overview, langs]
   # Replace the names of private repositories with a black bar.
   private_bar: true
   languages:
     # accent | github | mono | spectrum | duotone | a map such as {TypeScript: "#3178c6"}
     colors: accent
+    # false hides every trace of language weighting: the ×<n> labels, the adjusted/raw tag,
+    # the RAW/ADJ strip of bars and the --raw or --adjusted flag of terminal (shares are unchanged).
+    # The shift variant shows the weighting, so it cannot be listed when this is false.
+    weighting: true
   theme:
     # noir | carbon | graphite | midnight | slate | dune | transparent
     preset: noir
@@ -77,13 +94,16 @@ render:
     overrides: {}
   # false turns every animation off.
   motion: true
-  # card: 495 px stats card. wide: 1000 px, languages in a right column.
+  # true also writes <name>-dark.png and <name>-light.png next to each SVG (2x, motion off).
+  png: false
+  # card: 495 px stats card. wide: 1000 px, two columns (languages on the right when present).
+  # A wide card with a single block is drawn at 495 px.
   layout: card
   # Prefix of every path written in README.snippet.md (must end with "/").
   base_path: ghstats/
 
 # Optional profile cards: identity-dark.svg and identity-light.svg (when focus or
-# tagline is set), one links/<kind>-<mode>.svg badge per non-empty link, and
+# tagline or identity.show is set, or identity is placed in a row), one links/<kind>-<mode>.svg badge per non-empty link, and
 # README.snippet.md. Badges of links removed from this file are not cleaned up.
 # profile:
 #   name: octocat                    # default: the report login
@@ -95,10 +115,13 @@ render:
 #       building: [full-stack apps, desktop software]
 #     - name: GAMES
 #       building: [gameplay systems, game engines]
+#   identity:                        # optional
+#     layout: wide                   # wide (1000 px) or card (495 px, one column)
+#     show: [header, name, tagline, location, note, building, focus, footer]
 #   link_style: full                 # full (icon + label), icon (icon only) or text (label only)
 #   links:                           # kept in this order; an empty value is skipped
 #     - youtube: "@octocat"          # a handle or a full https:// URL
-#     - website: https://example.com # website, mastodon and steam need a full URL
+#     - website: {url: "https://example.com", style: icon}   # style: this link only; website, mastodon and steam need a full URL
 #     - discord: {url: "https://discord.com/invite/xyz", label: discord}
 #     - github_sponsors: octocat
 #     - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}

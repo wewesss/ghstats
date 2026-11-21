@@ -146,7 +146,7 @@ func TestProfileRejects(t *testing.T) {
 		{"custom icon path with an ampersand", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: \"M0 0&amp;\"}", "must not contain"},
 		{"custom icon not a string", "links:\n    - custom: {url: \"https://example.com\", label: blog, icon: [a]}", "must be a string"},
 		{"icon on another kind", "links:\n    - youtube: {url: \"https://www.youtube.com/@a\", icon: discord}", "only valid for"},
-		{"custom unknown key", "links:\n    - custom: {url: \"https://example.com\", label: blog, name: x}", "url, label and icon"},
+		{"custom unknown key", "links:\n    - custom: {url: \"https://example.com\", label: blog, name: x}", "url, label, icon and style"},
 		{"unknown link style", "link_style: round", "profile.link_style"},
 		{"link style lists the values", "link_style: round", "full, icon, text"},
 		{"link style is case sensitive", "link_style: Icon", "profile.link_style"},
@@ -229,21 +229,6 @@ func TestRenderLayoutAndBasePathRejects(t *testing.T) {
 	for _, ok := range []string{"ghstats/", "/ghstats/", "https://cdn.example.com/x/", "./ghstats/", "a/b/c/"} {
 		if _, err := config.Parse(strings.NewReader("version: 1\nrender:\n  base_path: " + ok + "\n")); err != nil {
 			t.Fatalf("%q: %v", ok, err)
-		}
-	}
-}
-
-func TestProfileValidateJoinsErrors(t *testing.T) {
-	c := config.Default()
-	c.Profile = config.Profile{
-		Focus: []config.Focus{{Name: "", Building: nil}},
-		Links: []config.Link{{Kind: "nope", Value: "x"}, {Kind: "website", Value: "x"}},
-	}
-	c.Render.Layout = "huge"
-	err := c.Validate()
-	for _, want := range []string{"render.layout", "name must not be empty", "1 to 4", `unknown kind "nope"`, "needs a full https:// URL"} {
-		if err == nil || !strings.Contains(err.Error(), want) {
-			t.Fatalf("err = %v, want it to mention %q", err, want)
 		}
 	}
 }

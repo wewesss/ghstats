@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -55,6 +56,7 @@ type Distribution struct {
 	ReleaseAssets bool `yaml:"release_assets"`
 	Clones        bool `yaml:"clones"`
 	Views         bool `yaml:"views"`
+	HidePartial   bool `yaml:"hide_partial"`
 }
 
 func Default() Config {
@@ -96,6 +98,18 @@ func Load(path string) (Config, error) {
 	}
 	defer f.Close()
 	return Parse(f)
+}
+
+func (c Config) HasIdentity() bool {
+	if c.Profile.HasIdentity() || len(c.Profile.Identity.Show) > 0 {
+		return true
+	}
+	for _, row := range c.Render.Rows {
+		if slices.Contains(row.Items, ItemIdentity) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c Config) Validate() error {

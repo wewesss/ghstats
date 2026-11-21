@@ -291,11 +291,13 @@ func trafficMetrics(channel string, repos []snapshot.Repo, h history.History, no
 	}
 
 	reliability, note := report.ReliabilityObserved, ""
+	recentNote := "summed across repositories; unique visitors are not summed"
 	if missing {
 		reliability, note = report.ReliabilityPartial, "some repositories have no traffic data"
+		recentNote += "; some repositories have no traffic data"
 	}
 	return []report.Metric{
-		{Channel: channel, Count: &recent, Window: report.WindowLast14Days, Reliability: report.ReliabilityObserved, Note: "summed across repositories; unique visitors are not summed"},
+		{Channel: channel, Count: &recent, Window: report.WindowLast14Days, Reliability: reliability, Note: recentNote},
 		{Channel: channel, Count: &all, Window: report.WindowSincePrefix + first.UTC().Format(dayLayout), Reliability: reliability, Note: note},
 	}
 }

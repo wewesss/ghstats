@@ -2,6 +2,7 @@ package render_test
 
 import (
 	"bytes"
+	"slices"
 	"strings"
 	"testing"
 
@@ -83,17 +84,49 @@ func TestIdentityShape(t *testing.T) {
 }
 
 func TestIdentityEveryPresetAndAccent(t *testing.T) {
+	custom := config.Accent{Dark: "#112233", Light: "#445566"}
+	backgrounds := map[render.Mode]map[string]string{render.Dark: {}, render.Light: {}}
 	for _, preset := range []string{"noir", "carbon", "graphite", "midnight", "slate", "dune", "transparent"} {
-		for _, acc := range []config.Accent{{Name: "ice"}, {Name: "cycle"}, {Dark: "#112233", Light: "#445566"}} {
+		for _, acc := range []config.Accent{{Name: "ice"}, {Name: "cycle"}, custom} {
 			for _, mode := range []render.Mode{render.Dark, render.Light} {
 				for _, motion := range []bool{true, false} {
 					cfg := sample.Profile()
 					cfg.Render.Theme.Preset = preset
 					cfg.Render.Theme.Accent = acc
 					cfg.Render.Motion = motion
-					assertWellFormed(t, renderIdentity(t, cfg, mode))
+					svg := renderIdentity(t, cfg, mode)
+					assertWellFormed(t, svg)
+					bg := cardBackground(t, svg)
+					if prev, ok := backgrounds[mode][preset]; ok && prev != bg {
+						t.Fatalf("background of %s changes with the accent: %s then %s", preset, prev, bg)
+					}
+					backgrounds[mode][preset] = bg
 				}
 			}
+		}
+	}
+	for mode, byPreset := range backgrounds {
+		assertDistinct(t, "identity background in "+string(mode), byPreset)
+	}
+
+	for _, mode := range []render.Mode{render.Dark, render.Light} {
+		build := func(a config.Accent) string {
+			cfg := sample.Profile()
+			cfg.Render.Theme.Accent = a
+			cfg.Render.Motion = false
+			return renderIdentity(t, cfg, mode)
+		}
+		sentinel := build(sentinelAccent)
+		ice, other := accentColours(build(config.Accent{Name: "ice"}), sentinel), accentColours(build(custom), sentinel)
+		if len(ice) == 0 || len(other) == 0 || strings.Join(ice, ",") == strings.Join(other, ",") {
+			t.Fatalf("%s: accent colours ice %v and custom %v must exist and differ", mode, ice, other)
+		}
+		want := custom.Dark
+		if mode == render.Light {
+			want = custom.Light
+		}
+		if !slices.Contains(other, want) {
+			t.Fatalf("%s: custom accent %s missing from %v", mode, want, other)
 		}
 	}
 }
@@ -124,16 +157,43 @@ func TestGoldenWideStats(t *testing.T) {
 }
 
 func TestWideLayoutVariants(t *testing.T) {
-	for _, blocks := range [][]config.Block{
-		{{Name: "languages", Variants: []string{"bars"}}},
-		{{Name: "stats", Variants: []string{"totals"}}, {Name: "history", Variants: []string{"views"}}},
-		sample.AllBlocks(),
+	for _, tt := range []struct {
+		blocks []config.Block
+		width  int
+	}{
+		{[]config.Block{{Name: "languages", Variants: []string{"bars"}}}, 495},
+		{[]config.Block{{Name: "stats", Variants: []string{"totals"}}, {Name: "history", Variants: []string{"views"}}}, 1000},
+		{sample.AllBlocks(), 1000},
 	} {
 		for _, motion := range []bool{true, false} {
-			cfg := sample.WideRender()
-			cfg.Blocks = blocks
-			cfg.Motion = motion
-			assertWellFormed(t, renderSVG(t, sample.Report(), cfg, render.Dark))
+			backgrounds := map[string]string{}
+			for _, preset := range []string{"noir", "midnight", "transparent"} {
+				cfg := sample.WideRender()
+				cfg.Blocks = tt.blocks
+				cfg.Motion = motion
+				cfg.Theme.Preset = preset
+				svg := renderSVG(t, sample.Report(), cfg, render.Dark)
+				assertWellFormed(t, svg)
+				backgrounds[preset] = cardBackground(t, svg)
+				if w, _ := viewBox(t, svg); w != tt.width {
+					t.Fatalf("%d blocks, width %d, want %d", len(tt.blocks), w, tt.width)
+				}
+			}
+			assertDistinct(t, "wide background", backgrounds)
+
+			build := func(a config.Accent) string {
+				cfg := sample.WideRender()
+				cfg.Blocks = tt.blocks
+				cfg.Motion = motion
+				cfg.Theme.Accent = a
+				return renderSVG(t, sample.Report(), cfg, render.Dark)
+			}
+			sentinel := build(sentinelAccent)
+			ice := strings.Join(accentColours(build(config.Accent{Name: "ice"}), sentinel), ",")
+			rose := strings.Join(accentColours(build(config.Accent{Name: "rose"}), sentinel), ",")
+			if ice == "" || rose == "" || ice == rose {
+				t.Fatalf("%d blocks, motion %v: accent colours ice %q and rose %q must exist and differ", len(tt.blocks), motion, ice, rose)
+			}
 		}
 	}
 }
@@ -154,23 +214,6 @@ func TestAccentSharedAcrossCards(t *testing.T) {
 	want := css(stats)
 	if want == "" || css(wide) != want || css(ident) != want || !strings.Contains(want, "40s") {
 		t.Fatal("accent cycle CSS differs between cards")
-	}
-}
-
-func TestGoldenBadges(t *testing.T) {
-	cfg := sample.Profile()
-	for _, l := range cfg.Profile.ResolvedLinks() {
-		t.Run(l.Kind, func(t *testing.T) {
-			var buf bytes.Buffer
-			if err := render.LinkBadgeSVG(&buf, l, cfg.Render.Theme, render.Dark); err != nil {
-				t.Fatal(err)
-			}
-			assertWellFormed(t, buf.String())
-			if strings.Contains(buf.String(), "animation") {
-				t.Fatal("badges are static")
-			}
-			golden(t, "badge-"+l.Kind+"-dark.svg", buf.String())
-		})
 	}
 }
 

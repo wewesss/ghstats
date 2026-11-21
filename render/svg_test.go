@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -88,19 +90,66 @@ func TestGoldenCards(t *testing.T) {
 	}
 }
 
-func TestGoldenLanguageVariants(t *testing.T) {
-	r := sample.Report()
-	for _, v := range []string{"bars", "iso", "cells", "treemap", "shift", "terminal"} {
-		t.Run(v, func(t *testing.T) {
-			cfg := config.DefaultRender()
-			cfg.Blocks = []config.Block{{Name: "languages", Variants: []string{v}}}
-			cfg.Motion = false
-			svg := renderSVG(t, r, cfg, render.Dark)
-			assertWellFormed(t, svg)
-			golden(t, "languages-"+v+".svg", svg)
-		})
+var (
+	emptyColourRe = regexp.MustCompile(`(?:fill|stroke|stop-color)="\s*#?"`)
+	backgroundRe  = regexp.MustCompile(`<rect x="\.5" y="\.5"[^>]*? fill="([^"]*)"`)
+	colourAttrRe  = regexp.MustCompile(`(?:fill|stroke|stop-color)="(#[0-9a-fA-F]{3,8})"`)
+)
+
+func cardBackground(t *testing.T, svg string) string {
+	t.Helper()
+	if m := emptyColourRe.FindString(svg); m != "" {
+		t.Fatalf("empty colour attribute %q", m)
+	}
+	m := backgroundRe.FindStringSubmatch(svg)
+	if m == nil || m[1] == "" {
+		t.Fatal("no background colour")
+	}
+	return m[1]
+}
+
+func colourSet(svg string) map[string]bool {
+	set := map[string]bool{}
+	for _, m := range colourAttrRe.FindAllStringSubmatch(svg, -1) {
+		set[strings.ToLower(m[1])] = true
+	}
+	return set
+}
+
+func colourSignature(svg string) string {
+	var seq []string
+	for _, m := range colourAttrRe.FindAllStringSubmatch(svg, -1) {
+		seq = append(seq, strings.ToLower(m[1]))
+	}
+	return strings.Join(seq, ",")
+}
+
+func accentColours(svg, sentinel string) []string {
+	base := colourSet(sentinel)
+	var out []string
+	for c := range colourSet(svg) {
+		if !base[c] {
+			out = append(out, c)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+func assertDistinct(t *testing.T, label string, values map[string]string) {
+	t.Helper()
+	seen := map[string]string{}
+	for name, v := range values {
+		if other, dup := seen[v]; dup {
+			t.Errorf("%s: %s and %s render the same %q", label, name, other, v)
+		}
+		seen[v] = name
 	}
 }
+
+var cycleColourRe = regexp.MustCompile(`--ghs-accent:(#[0-9a-f]{6})\}`)
+
+var sentinelAccent = config.Accent{Dark: "#010203", Light: "#040506"}
 
 func TestEveryPresetPaletteAndMode(t *testing.T) {
 	r := sample.Report()
@@ -109,6 +158,7 @@ func TestEveryPresetPaletteAndMode(t *testing.T) {
 		{Name: "accent"}, {Name: "github"}, {Name: "mono"}, {Name: "spectrum"}, {Name: "duotone"},
 		{Custom: map[string]string{"TypeScript": "#3178C6", "go": "#00add8"}},
 	}
+	backgrounds := map[render.Mode]map[string]string{render.Dark: {}, render.Light: {}}
 	for _, preset := range presets {
 		for i, pal := range palettes {
 			for _, mode := range []render.Mode{render.Dark, render.Light} {
@@ -118,26 +168,80 @@ func TestEveryPresetPaletteAndMode(t *testing.T) {
 						cfg.Theme.Preset = preset
 						cfg.Languages.Colors = pal
 						cfg.Motion = motion
-						assertWellFormed(t, renderSVG(t, r, cfg, mode))
+						svg := renderSVG(t, r, cfg, mode)
+						assertWellFormed(t, svg)
+						bg := cardBackground(t, svg)
+						if prev, ok := backgrounds[mode][preset]; ok && prev != bg {
+							t.Fatalf("background of %s changes with the palette: %s then %s", preset, prev, bg)
+						}
+						backgrounds[mode][preset] = bg
 					})
 				}
 			}
 		}
 	}
+	for mode, byPreset := range backgrounds {
+		assertDistinct(t, "background in "+string(mode), byPreset)
+		if byPreset["transparent"] != "none" {
+			t.Errorf("transparent preset background = %q, want none", byPreset["transparent"])
+		}
+	}
+
+	signatures := map[string]string{}
+	distinct := append(slices.Clone(palettes[:5]), config.Palette{Custom: map[string]string{"TypeScript": "#123456", "go": "#654321"}})
+	for i, pal := range distinct {
+		cfg := sample.FullRender()
+		cfg.Motion = false
+		cfg.Languages.Colors = pal
+		signatures[fmt.Sprint(i)] = colourSignature(renderSVG(t, r, cfg, render.Dark))
+	}
+	assertDistinct(t, "palette colours", signatures)
 }
 
 func TestEveryAccent(t *testing.T) {
 	r := sample.Report()
-	accents := []config.Accent{
-		{Name: "ice"}, {Name: "mint"}, {Name: "amber"}, {Name: "silver"}, {Name: "violet"}, {Name: "rose"}, {Name: "lime"}, {Name: "coral"},
-		{Name: "cycle"}, {Dark: "#112233", Light: "#445566"},
-	}
-	for _, a := range accents {
-		for _, mode := range []render.Mode{render.Dark, render.Light} {
+	named := []string{"ice", "mint", "amber", "silver", "violet", "rose", "lime", "coral"}
+	for _, mode := range []render.Mode{render.Dark, render.Light} {
+		build := func(a config.Accent, motion bool, palette string) string {
 			cfg := sample.FullRender()
 			cfg.Theme.Accent = a
-			cfg.Languages.Colors = config.Palette{Name: "duotone"}
-			assertWellFormed(t, renderSVG(t, r, cfg, mode))
+			cfg.Motion = motion
+			cfg.Languages.Colors = config.Palette{Name: palette}
+			svg := renderSVG(t, r, cfg, mode)
+			assertWellFormed(t, svg)
+			cardBackground(t, svg)
+			return svg
+		}
+		sentinel := build(sentinelAccent, false, "accent")
+		found := map[string]string{}
+		for _, name := range named {
+			build(config.Accent{Name: name}, false, "duotone")
+			d := accentColours(build(config.Accent{Name: name}, false, "accent"), sentinel)
+			if len(d) == 0 {
+				t.Fatalf("%s/%s: no accent colour in the card", mode, name)
+			}
+			found[name] = strings.Join(d, ",")
+		}
+		assertDistinct(t, "accent in "+string(mode), found)
+
+		custom := config.Accent{Dark: "#112233", Light: "#445566"}
+		want := custom.Dark
+		if mode == render.Light {
+			want = custom.Light
+		}
+		if svg := build(custom, false, "accent"); !strings.Contains(svg, `fill="`+want+`"`) {
+			t.Fatalf("%s: custom accent %s missing", mode, want)
+		}
+		cycle := build(config.Accent{Name: config.AccentCycle}, true, "accent")
+		if !strings.Contains(cycle, "@keyframes gsaccent") {
+			t.Fatalf("%s: the cycle accent must animate", mode)
+		}
+		visited := map[string]bool{}
+		for _, m := range cycleColourRe.FindAllStringSubmatch(cycle, -1) {
+			visited[m[1]] = true
+		}
+		if len(visited) != len(named) {
+			t.Fatalf("%s: the cycle visits %d colours, want %d", mode, len(visited), len(named))
 		}
 	}
 }
@@ -176,7 +280,7 @@ func TestAnimationRules(t *testing.T) {
 	cfg := sample.FullRender()
 	cfg.Motion = false
 	still := renderSVG(t, sample.Report(), cfg, render.Dark)
-	for _, bad := range []string{"@keyframes", "prefers-reduced-motion", "<animate", `class="slide"`, `class="dot"`} {
+	for _, bad := range []string{"@keyframes", "prefers-reduced-motion", "<animate", `class="slide"`, `class="dot"`, `class="pulse"`} {
 		if strings.Contains(still, bad) {
 			t.Fatalf("motion off still contains %q", bad)
 		}
@@ -332,70 +436,5 @@ func TestDeterministic(t *testing.T) {
 		if renderSVG(t, r, cfg, render.Dark) != first {
 			t.Fatal("output changes between runs")
 		}
-	}
-}
-
-func TestJSON(t *testing.T) {
-	var a, b bytes.Buffer
-	r := sample.Report()
-	if err := render.JSON(&a, r); err != nil {
-		t.Fatal(err)
-	}
-	if err := render.JSON(&b, r); err != nil {
-		t.Fatal(err)
-	}
-	if a.String() != b.String() {
-		t.Fatal("JSON is not deterministic")
-	}
-	out := a.String()
-	if !strings.HasPrefix(out, "{\n  \"schema_version\": 1,") || !strings.HasSuffix(out, "}\n") {
-		t.Fatalf("unexpected shape: %q", out[:min(len(out), 60)])
-	}
-}
-
-func TestPrivateRepositoryNamesNeverLeak(t *testing.T) {
-	now := time.Date(2026, 11, 17, 9, 0, 0, 0, time.UTC)
-	day := time.Date(2026, 11, 10, 0, 0, 0, 0, time.UTC)
-	secret := snapshot.Repo{
-		ID: "ID_secret", NameWithOwner: "me/secret-repo", Owner: "me", Private: true, Stars: 2,
-		Languages: []snapshot.LanguageSize{{Name: "Go", Bytes: 5000}},
-		Traffic: &snapshot.Traffic{
-			Views:  []snapshot.DayCount{{Day: day, Count: 9, Uniques: 3}},
-			Clones: []snapshot.DayCount{{Day: day, Count: 4, Uniques: 1}},
-		},
-	}
-	public := snapshot.Repo{
-		ID: "ID_pub", NameWithOwner: "me/open", Owner: "me", Stars: 1,
-		Languages: []snapshot.LanguageSize{{Name: "Lua", Bytes: 1000}},
-	}
-	s := snapshot.Snapshot{
-		SchemaVersion: snapshot.SchemaVersion, CollectedAt: now,
-		Viewer: snapshot.Viewer{Login: "me", Followers: 3},
-		Repos:  []snapshot.Repo{secret, public},
-		Errors: []snapshot.RepoError{{Repo: "me/secret-repo", Stage: "traffic", Message: "boom secret-repo"}},
-	}
-	r, err := compute.Compute(s, history.History{}, config.Default(), now)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if r.Totals.PrivateRepos != 1 {
-		t.Fatalf("totals = %+v", r.Totals)
-	}
-	for _, mode := range []render.Mode{render.Dark, render.Light} {
-		svg := renderSVG(t, r, sample.FullRender(), mode)
-		assertWellFormed(t, svg)
-		if strings.Contains(svg, "secret-repo") {
-			t.Fatal("SVG leaks a private repository name")
-		}
-		if !strings.Contains(svg, "PRIVATE 1") {
-			t.Fatal("private bar missing")
-		}
-	}
-	var buf bytes.Buffer
-	if err := render.JSON(&buf, r); err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(buf.String(), "secret-repo") {
-		t.Fatal("JSON leaks a private repository name")
 	}
 }

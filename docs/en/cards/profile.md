@@ -20,10 +20,13 @@ profile:
       building: [full-stack apps, desktop software]
     - name: GAMES
       building: [gameplay systems, game engines]
+  identity:                        # optional
+    layout: wide                   # wide (1000 px) or card (495 px, one column)
+    show: [header, name, tagline, location, note, building, focus, footer]
   link_style: full                 # full, icon or text
   links:                           # kept in this order; an empty value is skipped
     - youtube: "@octocat"          # a handle or a full https:// URL
-    - website: https://example.com
+    - website: {url: "https://example.com", style: icon}   # style: this link only
     - discord: {url: "https://discord.com/invite/xyz", label: discord}
     - github_sponsors: octocat
     - custom: {url: "https://example.com/blog", label: my blog, icon: youtube}
@@ -42,7 +45,19 @@ The keys are described in [Configuration](../guide/configuration.md#profile).
   <img alt="identity card" src="../../../showcase/identity-dark.svg" width="100%">
 </picture>
 
-The identity card is written as `identity-dark.svg` and `identity-light.svg` when `profile` has at least `focus` or `tagline`. The `building` words rotate every 3 seconds and the matching focus row lights up; with `motion: false` or reduced motion the first word and first row are shown.
+The identity card is written as `identity-dark.svg` and `identity-light.svg` when `profile` has at least `focus` or `tagline`, when `profile.identity.show` is set, or when `identity` is placed in `render.rows`. The `building` words rotate every 3 seconds and the matching focus row lights up; with `motion: false` or reduced motion the first word and first row are shown.
+
+`profile.identity.show` chooses the parts that are drawn (`header`, `name`, `tagline`, `location`, `note`, `building`, `focus`, `footer`); the height follows the parts that remain, and without `focus` the right column and its rule disappear. `profile.identity.layout: card` draws the card 495 px wide in one column, with the focus list under the text, so it can sit next to a stats card in a row. A card with only a name and a location is valid:
+
+```yaml
+profile:
+  name: octocat
+  location: caen, fr
+  identity:
+    show: [name, location]
+```
+
+The parts and the layout are described in [Configuration](../guide/configuration.md#identity-card).
 
 ## Wide layout
 
@@ -52,7 +67,7 @@ The identity card is written as `identity-dark.svg` and `identity-light.svg` whe
   <img alt="wide layout" src="../../../showcase/wide-dark.svg" width="100%">
 </picture>
 
-`render.layout: wide` makes the stats card 1000 px wide, with `languages` in a right column and the other blocks stacked on the left. The identity card has the same width. The default `card` layout is 495 px.
+`render.layout: wide` makes the stats card 1000 px wide, with `languages` in a right column and the other blocks stacked on the left. The identity card does not follow `render.layout`: its width comes from `profile.identity.layout`, `wide` (1000 px, the default) or `card` (495 px). The default `card` layout of `render.layout` is 495 px.
 
 ## Link badges
 
@@ -168,7 +183,9 @@ The 21 buttons in the `full` style, with placeholder values.
 
 `links/<kind>-dark.svg` and `links/<kind>-light.svg` are written for each non-empty link. ghstats does not delete the files of a link you remove from the configuration.
 
-Link kinds: `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom` (see [Custom button](#custom-button)). A value is a handle (a leading `@` is optional) or a full `https://` URL; `mastodon`, `steam` and `website` need a full URL. The map form `{url, label}` overrides the label.
+Link kinds: `youtube`, `twitch`, `kick`, `discord`, `tiktok`, `instagram`, `x`, `bluesky`, `threads`, `mastodon`, `reddit`, `linkedin`, `steam`, `itchio`, `website`, `github_sponsors`, `open_collective`, `buy_me_a_coffee`, `ko_fi`, `patreon`, `custom` (see [Custom button](#custom-button)). A value is a handle (a leading `@` is optional) or a full `https://` URL; `mastodon`, `steam` and `website` need a full URL. The map form `{url, label, style}` overrides the label and the style.
+
+In `render.rows`, `links/<kind>` places one badge and `links` places the badges that no row places one by one; see [Placing link badges](../guide/configuration.md#placing-link-badges).
 
 A link is clickable only when its badge is a separate image wrapped in its own `<a>`, which is why each link is its own SVG file and not part of the identity card.
 
@@ -216,6 +233,8 @@ Validation errors: the scalar form `custom: https://...` is rejected (the messag
 profile:
   link_style: icon
 ```
+
+A link in the map form can carry its own `style`, which replaces `link_style` for that link: `website: {url: "https://example.com", style: icon}`.
 
 `full`:
 

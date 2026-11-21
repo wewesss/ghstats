@@ -21,6 +21,7 @@ import (
 	"github.com/wewesss/ghstats/compute"
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/history"
+	"github.com/wewesss/ghstats/png"
 	"github.com/wewesss/ghstats/render"
 	"github.com/wewesss/ghstats/report"
 	"github.com/wewesss/ghstats/snapshot"
@@ -37,6 +38,7 @@ const (
 	exitUsage   = 2
 
 	snapshotNameLayout = "2006-01-02T150405Z"
+	pngScale           = 2
 )
 
 const usageText = `Usage: ghstats <command> [flags]
@@ -290,6 +292,7 @@ func runRender(args []string, stderr io.Writer) error {
 	reportPath := fs.String("report", "", "report file")
 	cfgPath := fs.String("config", "", "configuration file (defaults when omitted)")
 	outDir := fs.String("out-dir", "", "directory receiving stats.json and the SVG cards")
+	withPNG := fs.Bool("png", false, "also write a PNG next to every SVG (2x, no animation)")
 	if err := parseFlags(fs, args, "report", "out-dir"); err != nil {
 		return err
 	}
@@ -326,12 +329,42 @@ func runRender(args []string, stderr io.Writer) error {
 		}
 	}
 	files["README.snippet.md"] = []byte(render.Snippet(cfg))
+	if *withPNG || cfg.Render.PNG {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+		images, err := renderPNGs(ctx, r, cfg)
+		if err != nil {
+			return err
+		}
+		for name, data := range images {
+			files[name] = data
+		}
+	}
 	for name, data := range files {
 		if err := writeFile(filepath.Join(*outDir, filepath.FromSlash(name)), data); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func renderPNGs(ctx context.Context, r report.Report, cfg config.Config) (map[string][]byte, error) {
+	cfg.Render.Motion = false
+	images := map[string][]byte{}
+	for _, mode := range []render.Mode{render.Dark, render.Light} {
+		cards, err := render.Cards(r, cfg, mode)
+		if err != nil {
+			return nil, err
+		}
+		for name, svg := range cards {
+			data, err := png.Render(ctx, []byte(svg), pngScale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", name, err)
+			}
+			images[strings.TrimSuffix(name, ".svg")+".png"] = data
+		}
+	}
+	return images, nil
 }
 
 func loadConfig(path string) (config.Config, error) {

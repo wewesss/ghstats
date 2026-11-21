@@ -7,6 +7,7 @@ import (
 
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/render"
+	"github.com/wewesss/ghstats/report"
 	"github.com/wewesss/ghstats/sample"
 )
 
@@ -37,8 +38,8 @@ func TestCardsSplitsBlocksIntoFiles(t *testing.T) {
 	if strings.Contains(langs, "STARS") || strings.Contains(langs, "VIEWS") {
 		t.Fatal("langs must hold only the languages block")
 	}
-	if !strings.Contains(overview, `viewBox="0 0 495 `) || !strings.Contains(langs, `viewBox="0 0 1000 `) {
-		t.Fatal("layout must be inherited for overview and wide for langs")
+	if !strings.Contains(overview, `viewBox="0 0 495 `) || !strings.Contains(langs, `viewBox="0 0 495 `) {
+		t.Fatal("overview inherits card and a wide card with one block falls back to 495")
 	}
 }
 
@@ -56,7 +57,7 @@ func TestSnippetListsEveryCard(t *testing.T) {
 	cfg := config.Default()
 	cfg.Render.Cards = []config.Card{
 		{Name: "overview", Blocks: []config.Block{{Name: "stats", Variants: []string{"totals"}}}},
-		{Name: "langs", Layout: config.LayoutWide, Blocks: []config.Block{{Name: "languages", Variants: []string{"treemap"}}}},
+		{Name: "langs", Layout: config.LayoutWide, Blocks: []config.Block{{Name: "languages", Variants: []string{"treemap"}}, {Name: "history", Variants: []string{"views"}}}},
 	}
 	s := render.Snippet(cfg)
 	order := []string{
@@ -76,9 +77,32 @@ func TestSnippetListsEveryCard(t *testing.T) {
 	}
 }
 
-func TestSnippetDefaultCardKeepsItsAlt(t *testing.T) {
-	s := render.Snippet(config.Default())
-	if !strings.Contains(s, `<img alt="GitHub stats" src="ghstats/stats-dark.svg" width="495">`) {
-		t.Fatalf("snippet = %s", s)
+func TestCardsHidePartialShowsNAOnPartialMetrics(t *testing.T) {
+	rep := sample.Report()
+	for i, m := range rep.Distribution {
+		if m.Channel == report.ChannelViews && m.Window == report.WindowLast14Days {
+			rep.Distribution[i].Reliability = report.ReliabilityPartial
+		}
+	}
+	cfg := config.Default()
+	cfg.Render.Cards = []config.Card{{Name: "traffic", Blocks: []config.Block{{Name: "stats", Variants: []string{"distribution"}}}}}
+	files, err := render.Cards(rep, cfg, render.Dark)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(files["traffic-dark.svg"], ">1,905<") {
+		t.Fatal("a partial count must be shown by default")
+	}
+	cfg.Distribution.HidePartial = true
+	files, err = render.Cards(rep, cfg, render.Dark)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svg := files["traffic-dark.svg"]
+	if strings.Contains(svg, ">1,905<") || !strings.Contains(svg, ">n/a<") {
+		t.Fatal("a partial count must be n/a with hide_partial")
+	}
+	if !strings.Contains(svg, ">5,000<") {
+		t.Fatal("an observed count must stay visible")
 	}
 }

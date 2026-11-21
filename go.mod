@@ -6,6 +6,7 @@ toolchain go1.27.4
 
 require (
 	github.com/google/go-github/v93 v93.0.0
+	github.com/tetratelabs/wazero v1.12.0
 	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/term v0.48.0
 )

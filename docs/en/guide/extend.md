@@ -174,7 +174,7 @@ The API:
 
 | Call | Returns |
 | --- | --- |
-| `ghstats.render(yaml, mode, report?)` | `{cards, snippet, yaml, error}`. `yaml` is the configuration (YAML or JSON text), `mode` is `"dark"` or `"light"`, and `report` is the text of a `stats.json`; without it, the renderer draws sample data. `cards` maps file names to SVG text, `snippet` is the README snippet, `yaml` is the normalized configuration, and `error` is empty on success. A `stats.json` whose `schema_version` is not `1` gives an error. |
+| `ghstats.render(yaml, mode, report?, still?)` | `{cards, snippet, yaml, error}`. `yaml` is the configuration (YAML or JSON text), `mode` is `"dark"` or `"light"`, and `report` is the text of a `stats.json`; without it, the renderer draws sample data. `cards` maps file names to SVG text, `snippet` is the README snippet, `yaml` is the normalized configuration, and `error` is empty on success. A `stats.json` whose `schema_version` is not `1` gives an error. `still` is an optional fourth argument: when it is truthy, the cards are drawn with `render.motion` off, whatever the configuration says (pass `undefined` or an empty string as `report` to keep the sample data). |
 | `ghstats.defaults()` | The starter configuration, as YAML text. |
 | `ghstats.options()` | A JSON string listing what the configuration accepts: blocks and variants, presets, accents, palettes, layouts, link kinds and styles, and limits. |
 

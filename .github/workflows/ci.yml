@@ -17,6 +17,7 @@ jobs:
         with:
           go-version-file: go.mod
           check-latest: true
+      - run: test -z "$(gofmt -l .)"
       - run: go vet ./...
       - run: go test -race ./...
       - run: GOOS=js GOARCH=wasm go vet ./cmd/wasm
@@ -85,3 +86,5 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run build
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e

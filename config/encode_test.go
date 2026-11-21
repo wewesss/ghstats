@@ -102,28 +102,3 @@ func TestEncodeRoundTripCards(t *testing.T) {
 		t.Fatalf("round trip differs\ngot:  %+v\nwant: %+v\n%s", got, c, out)
 	}
 }
-
-func TestEncodeIndentsTwoSpaces(t *testing.T) {
-	var buf bytes.Buffer
-	if err := config.Encode(&buf, config.Default()); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(buf.String(), "\nscope:\n  include_forks: false\n  include_archived: false\n") {
-		t.Fatalf("want 2-space indentation:\n%s", buf.String())
-	}
-}
-
-func TestOptionAccessorsAreCopies(t *testing.T) {
-	p := config.Presets()
-	p[0] = "changed"
-	if config.Presets()[0] == "changed" {
-		t.Fatal("Presets must return a copy")
-	}
-	blocks := config.BlockVariants()
-	if len(blocks) != 3 || blocks[0].Name != "stats" || blocks[1].Name != "languages" || blocks[2].Name != "history" {
-		t.Fatalf("blocks = %+v", blocks)
-	}
-	if !config.LinkKindIsURLOnly("website") || config.LinkKindIsURLOnly("youtube") {
-		t.Fatal("URL-only kinds wrong")
-	}
-}

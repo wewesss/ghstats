@@ -17,17 +17,19 @@ Cette page est traduite pour faciliter la lecture, mais **la version anglaise fa
 3. **Lancez les mêmes vérifications que la CI** avant de pousser :
 
    ```sh
-   gofmt -l .                                   # ne doit rien afficher
+   test -z "$(gofmt -l .)"                      # échoue si un fichier n'est pas formaté ; gofmt -l . les liste
    go vet ./...
    go test -race ./...
    GOOS=js GOARCH=wasm go vet ./cmd/wasm
    GOOS=js GOARCH=wasm go build -o /dev/null ./cmd/wasm
    go run ./tools/showcase
    git add -N showcase/ && git diff --exit-code showcase/
+   go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
    go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+   bash -n scripts/install.sh
    ```
 
-   La CI lance les mêmes portes sur chaque PR ; si l'une échoue, la PR n'est pas fusionnée. La vérification du showcase échoue quand les fichiers de `showcase/` ne sont pas la sortie de `go run ./tools/showcase` : relancez le générateur et commitez le résultat dès que vous modifiez le moteur de rendu ou les données d'exemple.
+   La CI lance les mêmes portes sur chaque PR, plus les deux tests de résolution de tag de `scripts/install.sh` (les étapes `Resolve the release tag` et `Ignore pre-release tags` du job `action` de [`ci.yml`](./.github/workflows/ci.yml)) ; si l'une échoue, la PR n'est pas fusionnée. La vérification du showcase échoue quand les fichiers de `showcase/` ne sont pas la sortie de `go run ./tools/showcase` : relancez le générateur et commitez le résultat dès que vous modifiez le moteur de rendu ou les données d'exemple.
 
 ## Le site de documentation
 
@@ -38,10 +40,16 @@ cd site
 bun install --frozen-lockfile
 bun run typecheck
 bun run build   # compile le WebAssembly, puis écrit site/dist
+bunx playwright install --with-deps chromium
+bun run test:e2e
 bun run dev     # rechargement des pages, sans le moteur de rendu : voir site/README.md
 ```
 
-La CI lance le même `typecheck` et le même `build`. Le site est déployé sur GitHub Pages par `.github/workflows/pages.yml` à chaque tag `v*.*.*`, ou à la main.
+La CI lance les mêmes `typecheck`, `build`, installation de Playwright et `test:e2e`. Le site est déployé sur GitHub Pages par `.github/workflows/pages.yml` à chaque tag qui correspond à `v[0-9]+.[0-9]+.[0-9]+` (les tags de préversion sont exclus), ou à la main.
+
+## Le moteur PNG
+
+Les cartes PNG sont dessinées par resvg compilé en WebAssembly, versionné sous `png/resvg.wasm`. Quand vous modifiez `tools/resvgwasm`, reconstruisez-le avec `tools/resvgwasm/build.sh` (il demande Rust et la cible `wasm32-unknown-unknown`) et commitez le `png/resvg.wasm` régénéré.
 
 ## Fichiers golden
 
@@ -84,7 +92,7 @@ Suivez [Conventional Commits](https://www.conventionalcommits.org/fr/v1.0.0/), e
 
 ## Ce que je refuserai
 
-- Ajouter des dépendances. Le module a deux dépendances directes et je voudrais que ça reste ainsi.
+- Ajouter des dépendances. Le module a quatre dépendances directes (voir [`go.mod`](./go.mod)) et je voudrais que ce nombre reste petit.
 - Une sortie qui contient le nom d'un dépôt privé. Les fichiers rendus doivent rester sans danger pour un dépôt public.
 - Les changements incompatibles sans note de migration.
 

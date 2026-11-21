@@ -9,17 +9,17 @@ sidebar:
 
 Raw snapshots contain private repository names. Keep them, and the history file, in a private repository only. This is why the workflow in [Getting started](./getting-started.md) checks out a separate private `<user>/ghstats-data` repository into `data-dir` and commits `snapshots/` and `history.json` there.
 
-The rendered `stats.json` and SVG files never contain a private repository name, so the output directory is safe to commit to a public profile repository.
+The rendered `stats.json`, SVG and PNG files never contain a private repository name, so the output directory is safe to commit to a public profile repository.
 
 | Path | Private repository names | Where to keep it |
 | --- | --- | --- |
 | `<data-dir>/snapshots/` | yes | private repository |
 | `<data-dir>/history.json` | yes | private repository |
-| `<output-dir>/` (`stats.json`, SVG files, `README.snippet.md`) | no | public profile repository |
+| `<output-dir>/` (`stats.json`, SVG and PNG files, `README.snippet.md`) | no | public profile repository |
 
 ## Private repositories in the numbers
 
-Private repositories are counted in the aggregates when `scope.include_private` is `true` (the default); set it to `false` to leave them out. Their names are never output. When `render.private_bar` is `true`, a private repository is shown as a black bar instead of a name.
+Private repositories are counted in the aggregates when `scope.include_private` is `true` (the default); set it to `false` to leave them out. Their names are never output. When `render.private_bar` is `true` and at least one private repository is counted, the `totals` variant of the stats card adds a `PRIVATE <n>` line, four solid bars and `names hidden`. No name is in the report, so the bars replace nothing.
 
 ## Organization traffic
 

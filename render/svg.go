@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/report"
@@ -137,20 +136,35 @@ func label(y float64, s string, th theme, right string) string {
 	return out
 }
 
+type cardOpts struct {
+	header      bool
+	minHeight   int
+	hidePartial bool
+}
+
 func SVG(w io.Writer, r report.Report, cfg config.Render, mode Mode) error {
+	_, err := svg(w, r, cfg, mode, cardOpts{header: true})
+	return err
+}
+
+func svg(w io.Writer, r report.Report, cfg config.Render, mode Mode, o cardOpts) (int, error) {
 	if mode != Dark && mode != Light {
-		return fmt.Errorf("render: unknown mode %q", mode)
+		return 0, fmt.Errorf("render: unknown mode %q", mode)
 	}
 	c := config.Default()
 	c.Render = cfg
 	if err := c.Validate(); err != nil {
-		return err
+		return 0, err
 	}
 	rd := newRenderer(r, cfg, mode)
-	if _, err := io.WriteString(w, rd.card()+"\n"); err != nil {
-		return fmt.Errorf("render: write svg: %w", err)
+	rd.header = o.header
+	rd.minHeight = o.minHeight
+	rd.hidePartial = o.hidePartial
+	out, height := rd.card()
+	if _, err := io.WriteString(w, out+"\n"); err != nil {
+		return 0, fmt.Errorf("render: write svg: %w", err)
 	}
-	return nil
+	return height, nil
 }
 
 func blockCSS(p string, cycle, n int) string {
@@ -279,6 +293,14 @@ func (rd *renderer) activeVariants(blk config.Block) []string {
 	return out
 }
 
+func headerDot(cx float64, cy int, motion bool) string {
+	dot := fmt.Sprintf(`<circle cx="%s" cy="%d" r="3" fill="%s"/>`, num(cx), cy, acc)
+	if !motion {
+		return dot
+	}
+	return dot + fmt.Sprintf(`<circle class="pulse" cx="%s" cy="%d" r="3" fill="%s"/>`, num(cx), cy, acc)
+}
+
 func motionCSS() []string {
 	return []string{
 		fmt.Sprintf(".%s .blink{animation:%sblink 1.1s steps(1,end) infinite}@keyframes %sblink{50%%{opacity:0}}", prefix, prefix, prefix),
@@ -304,7 +326,7 @@ func shell(w float64, height int, ariaLabel string, th theme, cfg config.Render,
 
 func (rd *renderer) stack(indexes []int) (body, styles []string, y int) {
 	cfg, th := rd.cfg, rd.th
-	y = 56
+	y = rd.top() + rd.yshift
 	for n, bi := range indexes {
 		blk := cfg.Blocks[bi]
 		vs := rd.activeVariants(blk)
@@ -364,40 +386,17 @@ func (rd *renderer) stack(indexes []int) (body, styles []string, y int) {
 	return body, styles, y
 }
 
-func (rd *renderer) card() string {
-	th, cfg := rd.th, rd.cfg
-	login := rd.rep.Login
-	wide := cfg.Layout == config.LayoutWide
-	cw := width
-	if wide {
-		cw = wideWidth
+func (rd *renderer) top() int {
+	if rd.header {
+		return 56
 	}
-	var body, styles []string
+	return 16
+}
 
-	body = append(body, txt(24, 31, esc(login), topt{fill: th.fg, size: 14, weight: 600}))
-	body = append(body, txt(float64(23+9*utf8.RuneCountInString(login)), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
-	body = append(body, fmt.Sprintf(`<circle cx="%s" cy="27" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="27" r="3" fill="%s"/>`,
-		num(cw-132), acc, num(cw-132), acc))
-	synced := "never"
-	if !rd.rep.CollectedAt.IsZero() {
-		synced = rd.rep.CollectedAt.UTC().Format("2 Jan")
-	}
-	body = append(body, txt(cw-24, 31, "synced · "+esc(synced), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
-	body = append(body, fmt.Sprintf(`<line x1="24" x2="%s" y1="46" y2="46" stroke="%s"/>`, num(cw-24), th.border))
-	if cfg.Motion {
-		styles = append(styles, motionCSS()...)
-	}
-
-	var height int
-	if !wide {
-		all := make([]int, len(cfg.Blocks))
-		for i := range all {
-			all[i] = i
-		}
-		b, s, y := rd.stack(all)
-		body, styles, height = append(body, b...), append(styles, s...), y+8
-	} else {
-		var left, right []int
+func (rd *renderer) columnBlocks() (left, right []int) {
+	cfg := rd.cfg
+	hasLangs := slices.ContainsFunc(cfg.Blocks, func(b config.Block) bool { return b.Name == "languages" })
+	if hasLangs {
 		for i, blk := range cfg.Blocks {
 			if blk.Name == "languages" {
 				right = append(right, i)
@@ -405,20 +404,84 @@ func (rd *renderer) card() string {
 				left = append(left, i)
 			}
 		}
-		lb, ls, ly := rd.stack(left)
-		rb, rs, ry := rd.stack(right)
-		height = max(ly, ry) + 8
-		body = append(body, lb...)
-		if len(right) > 0 {
-			body = append(body, fmt.Sprintf(`<g transform="translate(%s 0)">%s</g>`, num(wideOffset), strings.Join(rb, "")))
+		return left, right
+	}
+	var ly, ry int
+	for i, blk := range cfg.Blocks {
+		h := 0
+		for _, v := range rd.activeVariants(blk) {
+			h = max(h, rd.blockHeight(blk.Name, v))
 		}
-		if len(left) > 0 && len(right) > 0 {
-			body = append(body, fmt.Sprintf(`<line x1="%s" x2="%s" y1="62" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), height-14, th.border))
+		if ry < ly {
+			if len(right) > 0 {
+				ry += 8
+			}
+			ry += h + 6
+			right = append(right, i)
+		} else {
+			if len(left) > 0 {
+				ly += 8
+			}
+			ly += h + 6
+			left = append(left, i)
 		}
-		styles = append(styles, ls...)
-		styles = append(styles, rs...)
+	}
+	return left, right
+}
+
+func (rd *renderer) card() (string, int) {
+	th, cfg := rd.th, rd.cfg
+	login := rd.rep.Login
+	wide := effectiveLayout(config.Card{Layout: cfg.Layout, Blocks: cfg.Blocks}) == config.LayoutWide
+	cw := width
+	if wide {
+		cw = wideWidth
+	}
+	var body, styles []string
+
+	if rd.header {
+		body = append(body, txt(24, 31, esc(login), topt{fill: th.fg, size: 14, weight: 600}))
+		body = append(body, txt(statsSlashX(login), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
+		body = append(body, headerDot(cw-132, 27, cfg.Motion))
+		synced := "never"
+		if !rd.rep.CollectedAt.IsZero() {
+			synced = rd.rep.CollectedAt.UTC().Format("2 Jan")
+		}
+		body = append(body, txt(cw-24, 31, "synced · "+esc(synced), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
+		body = append(body, fmt.Sprintf(`<line x1="24" x2="%s" y1="46" y2="46" stroke="%s"/>`, num(cw-24), th.border))
+	}
+	if cfg.Motion {
+		styles = append(styles, motionCSS()...)
 	}
 
+	content := func() (b, s []string, h int) {
+		if !wide {
+			all := make([]int, len(cfg.Blocks))
+			for i := range all {
+				all[i] = i
+			}
+			sb, ss, y := rd.stack(all)
+			return sb, ss, y + 8
+		}
+		left, right := rd.columnBlocks()
+		lb, ls, ly := rd.stack(left)
+		rb, rs, ry := rd.stack(right)
+		h = max(ly, ry) + 8
+		b = append(b, lb...)
+		b = append(b, fmt.Sprintf(`<g transform="translate(%s 0)">%s</g>`, num(wideOffset), strings.Join(rb, "")))
+		b = append(b, fmt.Sprintf(`<line x1="%s" x2="%s" y1="%d" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), rd.top()+rd.yshift+6, h-14, th.border))
+		return b, append(ls, rs...), h
+	}
+
+	cb, cs, contentHeight := content()
+	if extra := rd.minHeight - contentHeight; extra > 1 {
+		rd.yshift = extra / 2
+		cb, cs, _ = content()
+	}
+	body = append(body, cb...)
+	styles = append(styles, cs...)
+	height := max(contentHeight, rd.minHeight)
+
 	svg := shell(cw, height, "ghstats card for "+login+" ("+string(rd.mode)+")", th, cfg, styles, body)
-	return accentize(svg, th, cfg, rd.mode)
+	return accentize(svg, th, cfg, rd.mode), contentHeight
 }

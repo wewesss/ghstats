@@ -27,3 +27,5 @@ go.work.sum
 # goreleaser output
 dist/
 dist-wasm/
+
+tools/resvgwasm/target/

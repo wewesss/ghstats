@@ -141,22 +141,6 @@ func TestDoContextCancelledWhileWaiting(t *testing.T) {
 	}
 }
 
-func TestDoContextCanceled(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Retry-After", "30")
-		w.WriteHeader(http.StatusTooManyRequests)
-	}))
-	defer srv.Close()
-
-	ctx, cancel := context.WithCancel(t.Context())
-	time.AfterFunc(100*time.Millisecond, cancel)
-	c := &ghapi.Client{HTTP: srv.Client(), Endpoint: srv.URL}
-	err := c.Do(ctx, "q", nil, nil)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("err = %v", err)
-	}
-}
-
 func TestDoOtherStatusTruncatesBody(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

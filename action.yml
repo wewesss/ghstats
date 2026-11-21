@@ -33,6 +33,10 @@ inputs:
     description: Number of snapshots kept in data-dir/snapshots; 0 keeps them all.
     required: false
     default: "30"
+  png:
+    description: Set to "true" to also write a -dark.png and a -light.png next to every SVG.
+    required: false
+    default: "false"
 
 outputs:
   snapshot:
@@ -95,10 +99,14 @@ runs:
         CONFIG: ${{ inputs.config }}
         OUTPUT_DIR: ${{ inputs.output-dir }}
         REPORT: ${{ steps.compute.outputs.report }}
+        PNG: ${{ inputs.png }}
       run: |
         set -euo pipefail
         args=(--report "$REPORT" --out-dir "$OUTPUT_DIR")
         if [ -f "$CONFIG" ]; then
           args+=(--config "$CONFIG")
+        fi
+        if [ "$PNG" = "true" ]; then
+          args+=(--png)
         fi
         ghstats render "${args[@]}"

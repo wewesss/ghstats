@@ -37,7 +37,7 @@ const (
 	readmePath          = "README.md"
 	secretName          = "GHSTATS_TOKEN"
 	initHTTPTimeout     = 30 * time.Second
-	profileConfigSample = `# ghstats configuration. Every key is optional; the defaults apply when a key is missing.
+	profileConfigSample = `# ghstats configuration. Every key except version is optional; the defaults apply when a key is missing.
 # Try themes, blocks and cards live, then paste the result here: https://wewesss.github.io/ghstats/en/builder/
 # All keys: https://wewesss.github.io/ghstats/en/guide/configuration/
 version: 1

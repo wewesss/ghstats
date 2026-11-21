@@ -15,17 +15,19 @@ Thanks for considering a contribution. A few guidelines keep the project healthy
 3. **Run the same checks as CI** before you push:
 
    ```sh
-   gofmt -l .                                   # must print nothing
+   test -z "$(gofmt -l .)"                      # fails when a file needs gofmt; gofmt -l . lists them
    go vet ./...
    go test -race ./...
    GOOS=js GOARCH=wasm go vet ./cmd/wasm
    GOOS=js GOARCH=wasm go build -o /dev/null ./cmd/wasm
    go run ./tools/showcase
    git add -N showcase/ && git diff --exit-code showcase/
+   go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
    go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+   bash -n scripts/install.sh
    ```
 
-   CI runs the same gates on every PR; if one fails, the PR won't merge. The showcase check fails when the files under `showcase/` are not the output of `go run ./tools/showcase`: run the generator and commit the result whenever you change the renderer or the sample data.
+   CI runs the same gates on every PR, plus the two tag-resolution tests of `scripts/install.sh` (the `Resolve the release tag` and `Ignore pre-release tags` steps of the `action` job in [`ci.yml`](./.github/workflows/ci.yml)); if one fails, the PR won't merge. The showcase check fails when the files under `showcase/` are not the output of `go run ./tools/showcase`: run the generator and commit the result whenever you change the renderer or the sample data.
 
 ## The documentation site
 
@@ -36,10 +38,16 @@ cd site
 bun install --frozen-lockfile
 bun run typecheck
 bun run build   # compiles the WebAssembly, then writes site/dist
+bunx playwright install --with-deps chromium
+bun run test:e2e
 bun run dev     # live reload on the pages, without the renderer: see site/README.md
 ```
 
-CI runs the same `typecheck` and `build`. The site is deployed to GitHub Pages by `.github/workflows/pages.yml` on every `v*.*.*` tag, or by hand.
+CI runs the same `typecheck`, `build`, Playwright install and `test:e2e`. The site is deployed to GitHub Pages by `.github/workflows/pages.yml` on every tag matching `v[0-9]+.[0-9]+.[0-9]+` (pre-release tags are excluded), or by hand.
+
+## The PNG renderer
+
+PNG cards are drawn by resvg compiled to WebAssembly, committed as `png/resvg.wasm`. When you change `tools/resvgwasm`, rebuild it with `tools/resvgwasm/build.sh` (it needs Rust and the `wasm32-unknown-unknown` target) and commit the regenerated `png/resvg.wasm`.
 
 ## Golden files
 
@@ -82,7 +90,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), i
 
 ## What I'll push back on
 
-- Adding dependencies. The module has two direct dependencies and I'd like to keep it that way.
+- Adding dependencies. The module has four direct dependencies (see [`go.mod`](./go.mod)) and I'd like to keep that number small.
 - Output that contains a private repository name. The rendered files must stay safe for a public repository.
 - Breaking changes without a migration note.
 

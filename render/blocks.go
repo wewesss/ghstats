@@ -71,6 +71,9 @@ func (rd *renderer) blockHeight(name, variant string) int {
 		}
 		return 92
 	case "languages":
+		if variant == "bars" && !rd.cfg.Languages.ShowWeighting() && len(rd.rows) > 0 {
+			return 48 + (len(rd.rows)-1)*22 + 10
+		}
 		return 250
 	}
 	return 104
@@ -78,7 +81,7 @@ func (rd *renderer) blockHeight(name, variant string) int {
 
 func newRenderer(r report.Report, cfg config.Render, mode Mode) *renderer {
 	rd := &renderer{th: newTheme(cfg.Theme, mode), mode: mode, cfg: cfg, rep: r}
-	rd.rows = buildRows(r.Languages, cfg.Languages.ShowMultipliers())
+	rd.rows = buildRows(r.Languages, cfg.Languages.ShowWeighting())
 	for _, row := range rd.rows {
 		rd.maxV = max(rd.maxV, row.v)
 	}
@@ -101,7 +104,7 @@ func otherName(l report.Languages, tail []string) string {
 	return config.Default().Languages.OtherLabel
 }
 
-func buildRows(l report.Languages, multipliers bool) []langRow {
+func buildRows(l report.Languages, weighting bool) []langRow {
 	type entry struct {
 		name  string
 		share float64
@@ -151,7 +154,7 @@ func buildRows(l report.Languages, multipliers bool) []langRow {
 		if v, ok := rawBy[e.name]; ok {
 			rows[i].raw = v
 		}
-		if w, ok := l.Multipliers[e.name]; ok && multipliers {
+		if w, ok := l.Multipliers[e.name]; ok && weighting {
 			rows[i].mult = fmt.Sprintf("×%g", w)
 		}
 	}
@@ -237,13 +240,20 @@ func customColor(m map[string]string, name string) (string, bool) {
 	return "", false
 }
 
+func (rd *renderer) modeTag() string {
+	if !rd.cfg.Languages.ShowWeighting() {
+		return ""
+	}
+	return esc(rd.rep.Languages.Mode)
+}
+
 func (rd *renderer) emptyLanguages(title string) string {
-	return label(22, title, rd.th, esc(rd.rep.Languages.Mode)) +
+	return label(22, title, rd.th, rd.modeTag()) +
 		txt(width/2, 130, "no language data yet", topt{fill: rd.th.muted, size: 11, mono: true, anchor: "middle"})
 }
 
 func (rd *renderer) langLabel(title string) string {
-	return label(22, title, rd.th, esc(rd.rep.Languages.Mode))
+	return label(22, title, rd.th, rd.modeTag())
 }
 
 func (rd *renderer) metric(channel, window string) string {
@@ -334,6 +344,9 @@ func (rd *renderer) bars(p string) string {
 			s.WriteString(txt(112+w+8, y-1, r.mult, topt{fill: acc, size: 10, mono: true, cls: "fade", delay: d + .6}))
 		}
 		s.WriteString(txt(width-24, y, pct(r.v), topt{fill: th.muted, size: 11, mono: true, anchor: "end", cls: "fade", delay: d}))
+	}
+	if !rd.cfg.Languages.ShowWeighting() {
+		return s.String()
 	}
 	fmt.Fprintf(&s, `<line x1="24" x2="%s" y1="198" y2="198" stroke="%s" stroke-dasharray="2 4"/>`, num(width-24), th.border)
 	raw := make([]float64, len(rd.rows))
@@ -528,7 +541,11 @@ func (rd *renderer) terminal(p string) string {
 	}
 	cols := rd.langColors()
 	var s strings.Builder
-	s.WriteString(txt(24, 22, fmt.Sprintf(`<tspan fill="%s">$</tspan> ghstats languages --%s`, acc, esc(rd.rep.Languages.Mode)),
+	command := "ghstats languages"
+	if rd.cfg.Languages.ShowWeighting() {
+		command += " --" + esc(rd.rep.Languages.Mode)
+	}
+	s.WriteString(txt(24, 22, fmt.Sprintf(`<tspan fill="%s">$</tspan> %s`, acc, command),
 		topt{fill: th.fg, size: 12, mono: true, cls: "on", delay: .1}))
 	for i, r := range rd.rows {
 		y := float64(52 + i*24)

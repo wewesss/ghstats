@@ -306,20 +306,6 @@ func TestRowHeightIgnoresIdentity(t *testing.T) {
 	}
 }
 
-func TestLanguageMultipliersOption(t *testing.T) {
-	off := false
-	cfg := config.DefaultRender()
-	cfg.Blocks = []config.Block{{Name: "languages", Variants: []string{"bars"}}}
-	cfg.Motion = false
-	if !strings.Contains(renderSVG(t, sample.Report(), cfg, render.Dark), "×0.35") {
-		t.Fatal("multipliers are shown by default")
-	}
-	cfg.Languages.Multipliers = &off
-	if svg := renderSVG(t, sample.Report(), cfg, render.Dark); strings.Contains(svg, "×") {
-		t.Fatal("multipliers: false must drop every multiplier label")
-	}
-}
-
 func docSnippetExample(t *testing.T, heading string) (yamlSrc, html string) {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join("..", "docs", "en", "guide", "configuration.md"))

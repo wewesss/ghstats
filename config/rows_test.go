@@ -121,25 +121,57 @@ func TestEncodeRoundTripRowsAndHeader(t *testing.T) {
 	}
 }
 
-func TestLanguageMultipliersDefaultAndRoundTrip(t *testing.T) {
-	if !config.DefaultRender().Languages.ShowMultipliers() {
-		t.Fatal("multipliers are shown by default")
+func TestLanguageWeightingDefaultAndRoundTrip(t *testing.T) {
+	if !config.DefaultRender().Languages.ShowWeighting() {
+		t.Fatal("weighting is shown by default")
 	}
 	off := false
 	c := config.Default()
-	c.Render.Languages.Multipliers = &off
+	c.Render.Languages.Weighting = &off
 	var buf bytes.Buffer
 	if err := config.Encode(&buf, c); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(buf.String(), "multipliers: false") {
-		t.Fatalf("output lacks multipliers:\n%s", buf.String())
+	if !strings.Contains(buf.String(), "weighting: false") {
+		t.Fatalf("output lacks weighting:\n%s", buf.String())
 	}
 	got, err := config.Parse(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Render.Languages.ShowMultipliers() || !reflect.DeepEqual(got, c) {
+	if got.Render.Languages.ShowWeighting() || !reflect.DeepEqual(got, c) {
 		t.Fatalf("round trip differs: %+v", got.Render.Languages)
+	}
+}
+
+func TestWeightingFalseRejectsShift(t *testing.T) {
+	const want = "render.languages.weighting: false hides the weighting that the shift variant shows; remove shift or set weighting: true"
+	tests := []struct {
+		name, in string
+		ok       bool
+	}{
+		{"blocks", "version: 1\nrender:\n  blocks:\n    - languages: [bars, shift]\n  languages:\n    weighting: false\n", false},
+		{"card", "version: 1\nrender:\n  cards:\n    - name: a\n      blocks: [{stats: [totals]}]\n    - name: b\n      blocks: [{languages: [shift]}]\n  languages:\n    weighting: false\n", false},
+		{"no shift", "version: 1\nrender:\n  blocks:\n    - languages: [bars, terminal]\n  languages:\n    weighting: false\n", true},
+		{"weighting true", "version: 1\nrender:\n  blocks:\n    - languages: [bars, shift]\n  languages:\n    weighting: true\n", true},
+		{"default", "version: 1\nrender:\n  blocks:\n    - languages: [bars, shift]\n", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := config.Parse(strings.NewReader(tt.in))
+			if err != nil {
+				if tt.ok || !strings.Contains(err.Error(), want) {
+					t.Fatalf("err = %v", err)
+				}
+				return
+			}
+			err = c.Validate()
+			switch {
+			case tt.ok && err != nil:
+				t.Fatalf("unexpected error: %v", err)
+			case !tt.ok && (err == nil || !strings.Contains(err.Error(), want)):
+				t.Fatalf("err = %v, want %q", err, want)
+			}
+		})
 	}
 }

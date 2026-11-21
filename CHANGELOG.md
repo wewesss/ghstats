@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `render.rows`: lay the cards out in `README.snippet.md`. Each row is a `<p align="left|center|right">` holding one or more items (card names, `identity`, `links`) side by side, with a `width` in percent proportional to their natural widths. Without `rows`, the snippet is unchanged.
 - `header: false` on a card removes the `login / ghstats` line, the sync date and the rule under them; the card is 40 px shorter.
-- `render.languages.multipliers: false` hides the `×<n>` label next to a weighted language; the shares are unchanged.
+- `render.languages.weighting: false` hides every trace of language weighting: the `×<n>` label, the `adjusted` / `raw` tag of the language blocks, the RAW / ADJ strip under `bars` (the card is shorter) and the `--adjusted` flag of `terminal`. The shares are unchanged. Listing the `shift` variant with `weighting: false` is a validation error.
 
 ### Changed
 

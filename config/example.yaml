@@ -78,8 +78,10 @@ render:
   languages:
     # accent | github | mono | spectrum | duotone | a map such as {TypeScript: "#3178c6"}
     colors: accent
-    # false hides the ×<n> label next to a language with a weight (shares are unchanged).
-    multipliers: true
+    # false hides every trace of language weighting: the ×<n> labels, the adjusted/raw tag,
+    # the RAW/ADJ strip of bars and the --adjusted flag of terminal (shares are unchanged).
+    # The shift variant shows the weighting, so it cannot be listed when this is false.
+    weighting: true
   theme:
     # noir | carbon | graphite | midnight | slate | dune | transparent
     preset: noir

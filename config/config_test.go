@@ -198,14 +198,14 @@ func TestRenderDefaultsMatchDocs(t *testing.T) {
 	}
 	_, want := docDefaults(t)
 	got := map[string]string{
-		"render.private_bar":           fmt.Sprint(r.PrivateBar),
-		"render.languages.colors":      r.Languages.Colors.Name,
-		"render.languages.multipliers": fmt.Sprint(r.Languages.ShowMultipliers()),
-		"render.theme.preset":          r.Theme.Preset,
-		"render.theme.accent":          r.Theme.Accent.Name,
-		"render.motion":                fmt.Sprint(r.Motion),
-		"render.layout":                r.Layout,
-		"render.base_path":             r.BasePath,
+		"render.private_bar":         fmt.Sprint(r.PrivateBar),
+		"render.languages.colors":    r.Languages.Colors.Name,
+		"render.languages.weighting": fmt.Sprint(r.Languages.ShowWeighting()),
+		"render.theme.preset":        r.Theme.Preset,
+		"render.theme.accent":        r.Theme.Accent.Name,
+		"render.motion":              fmt.Sprint(r.Motion),
+		"render.layout":              r.Layout,
+		"render.base_path":           r.BasePath,
 	}
 	for key, code := range got {
 		doc, ok := want[key]

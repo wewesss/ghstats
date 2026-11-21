@@ -67,7 +67,7 @@ L'apparence des cartes. Voir la [galerie](../cards/gallery.md) pour chaque bloc 
 | `render.rows` | Liste facultative de lignes du README, chacune avec un `align` et les `items` qu'elle contient. Règle l'agencement des cartes dans `README.snippet.md`. Voir [Agencement dans le README](#agencement-dans-le-readme). |
 | `render.private_bar` | `true` (défaut) ou `false`. Remplace les noms des dépôts privés par une barre noire. |
 | `render.languages.colors` | `accent` (défaut), `github`, `mono`, `spectrum`, `duotone`, ou une table de langage vers `"#rrggbb"`. |
-| `render.languages.multipliers` | `true` (défaut) ou `false`. `false` retire l'étiquette `×<n>` à côté d'un langage qui a un poids. Les parts ne changent pas. |
+| `render.languages.weighting` | `true` (défaut) ou `false`. `false` masque toute trace de la pondération des langages : l'étiquette `×<n>` à côté d'un langage qui a un poids, l'étiquette `adjusted` / `raw` en haut à droite des blocs de langages, la bande RAW / ADJ sous la variante `bars` (la carte est plus courte) et l'option `--adjusted` de la commande `terminal`. Les parts ne changent pas. Avec `false`, lister la variante `shift` est une erreur, car elle montre la pondération. |
 | `render.theme.preset` | `noir` (défaut), `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent`. |
 | `render.theme.accent` | `ice` (défaut), `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, ou `{dark: "#rrggbb", light: "#rrggbb"}`. |
 | `render.theme.overrides` | Clés `bg`, `border`, `fg`, `muted`, `faint` en `"#rrggbb"` ; `bg` accepte aussi `none`. |

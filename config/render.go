@@ -82,11 +82,11 @@ type Block struct {
 }
 
 type RenderLanguages struct {
-	Colors      Palette `yaml:"colors"`
-	Multipliers *bool   `yaml:"multipliers,omitempty"`
+	Colors    Palette `yaml:"colors"`
+	Weighting *bool   `yaml:"weighting,omitempty"`
 }
 
-func (l RenderLanguages) ShowMultipliers() bool { return l.Multipliers == nil || *l.Multipliers }
+func (l RenderLanguages) ShowWeighting() bool { return l.Weighting == nil || *l.Weighting }
 
 type Palette struct {
 	Name   string
@@ -183,6 +183,7 @@ func (r Render) validate(fail func(format string, args ...any)) {
 		r.validateCards(fail)
 	}
 	r.validateRows(fail)
+	r.validateWeighting(fail)
 
 	c := r.Languages.Colors
 	if c.Custom != nil {
@@ -221,6 +222,20 @@ func (r Render) validate(fail func(format string, args ...any)) {
 		case key == "bg" && v == OverrideNone:
 		case !validHex(v):
 			fail("render.theme.overrides[%q]: must be \"#rrggbb\"%s, got %q", key, bgNone(key), v)
+		}
+	}
+}
+
+func (r Render) validateWeighting(fail func(format string, args ...any)) {
+	if r.Languages.ShowWeighting() {
+		return
+	}
+	for _, c := range r.CardList() {
+		for _, b := range c.Blocks {
+			if b.Name == "languages" && slices.Contains(b.Variants, "shift") {
+				fail("render.languages.weighting: false hides the weighting that the shift variant shows; remove shift or set weighting: true")
+				return
+			}
 		}
 	}
 }

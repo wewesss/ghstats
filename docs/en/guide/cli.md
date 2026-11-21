@@ -63,7 +63,7 @@ Writes the files of a report.
 | `--out-dir` | yes | Directory receiving the files. |
 | `--config` | no | Configuration file; the defaults apply when omitted. |
 
-`render` writes `stats.json`, `stats-dark.svg` and `stats-light.svg` into `--out-dir`, plus the identity card and the link badges when the configuration has a `profile` section (see [Profile cards](../cards/profile.md)), and `README.snippet.md`.
+`render` writes `stats.json`, `stats-dark.svg` and `stats-light.svg` into `--out-dir`, plus the identity card and the link badges when the configuration has a `profile` section (see [Profile cards](../cards/profile.md)), and `README.snippet.md`. With `render.cards`, the stats files are `<name>-dark.svg` and `<name>-light.svg` instead, one pair per card (see [Several cards](./configuration.md#several-cards)).
 
 ## version
 

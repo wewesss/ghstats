@@ -57,3 +57,7 @@ GitHub désactive les workflows planifiés d'un dépôt public après 60 jours s
 ### Pourquoi le README de mon profil montre-t-il une ancienne carte après l'exécution du workflow ?
 
 GitHub passe par un proxy et met en cache les images affichées dans un README, donc une nouvelle carte peut mettre quelques minutes à apparaître, et un navigateur peut garder l'ancienne. Rechargez la page sans le cache. Si l'ancienne carte reste, vérifiez que le workflow a bien commité les nouveaux fichiers du dossier de sortie.
+
+### Puis-je faire mon propre front ou serveur ?
+
+Oui. `stats.json` est public et lisible depuis n'importe quelle page web, les paquets Go et le moteur WASM sont documentés, et un petit exemple de serveur est fourni. Voir [Faire son propre front](./docs/fr/guide/extend.md).

@@ -4,6 +4,17 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-21
+
+### Added
+
+- The Go entry points of `collect`, `compute`, `render`, `config`, `history`, `snapshot` and `report` are listed as stable for the whole v1 series, with runnable examples in each package.
+- `ghstats.render(yaml, mode, report?)` in the WASM renderer draws the cards from a real `stats.json`; without the third argument it keeps the sample data.
+- The builder loads real data: a GitHub login and path fetch `stats.json` from `raw.githubusercontent.com`, or a local `stats.json` is opened in the browser and never leaves it. The gallery keeps the sample data.
+- Releases attach `ghstats.wasm` and `wasm_exec.js`, both covered by `checksums.txt`.
+- `examples/server`: a small `net/http` server that serves a `stats.json` and its cards without calling GitHub.
+- The guide "Build your own front" documents the fields of `stats.json`, the CLI pipeline, the Go packages, the WASM renderer and the server example, and the FAQ points to it.
+
 ## [1.3.0] - 2026-11-21
 
 ### Added

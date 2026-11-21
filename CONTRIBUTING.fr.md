@@ -80,7 +80,7 @@ Suivez [Conventional Commits](https://www.conventionalcommits.org/fr/v1.0.0/), e
 - **Types** utilisés dans ce dépôt : `feat`, `fix`, `docs`, `ci`, `chore`, `refactor`, `test`.
 - **Résumé** : impératif présent, en minuscules, sans point final, 72 caractères au plus. `feat: add the custom link kind`, pas `added` ni `Added.`.
 - **Pas d'emoji** et aucun trailer d'IA ou de co-auteur dans un message de commit.
-- **Changements incompatibles** : ajoutez `!` après le type et un pied `BREAKING CHANGE:` qui explique la migration. La configuration `version: 1` et `schema_version: 1` restent stables pour toute la série v1.
+- **Changements incompatibles** : ajoutez `!` après le type et un pied `BREAKING CHANGE:` qui explique la migration. La configuration `version: 1` et `schema_version: 1` restent stables pour toute la série v1, comme les points d'entrée Go listés dans le guide pour faire son propre front : changer la signature de l'un d'eux est un changement incompatible, donc réservé à la v2.
 
 ## Ce que je refuserai
 

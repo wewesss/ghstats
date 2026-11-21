@@ -12,6 +12,7 @@ import (
 
 	"github.com/wewesss/ghstats/config"
 	"github.com/wewesss/ghstats/render"
+	"github.com/wewesss/ghstats/report"
 	"github.com/wewesss/ghstats/sample"
 )
 
@@ -35,8 +36,8 @@ func failure(msg string) any {
 }
 
 func renderFunc(_ js.Value, args []js.Value) any {
-	if len(args) != 2 {
-		return failure("render: want (yaml, mode)")
+	if len(args) < 2 || len(args) > 3 {
+		return failure("render: want (yaml, mode[, report])")
 	}
 	mode := render.Mode(args[1].String())
 	if mode != render.Dark && mode != render.Light {
@@ -46,7 +47,13 @@ func renderFunc(_ js.Value, args []js.Value) any {
 	if err != nil {
 		return failure(err.Error())
 	}
-	cards, err := render.Cards(sample.Report(), cfg, mode)
+	rep := sample.Report()
+	if len(args) == 3 {
+		if rep, err = reportFrom(args[2], rep); err != nil {
+			return failure(err.Error())
+		}
+	}
+	cards, err := render.Cards(rep, cfg, mode)
 	if err != nil {
 		return failure(err.Error())
 	}
@@ -64,6 +71,24 @@ func renderFunc(_ js.Value, args []js.Value) any {
 		"yaml":    normalized.String(),
 		"error":   "",
 	}
+}
+
+func reportFrom(arg js.Value, fallback report.Report) (report.Report, error) {
+	if arg.IsUndefined() || arg.IsNull() {
+		return fallback, nil
+	}
+	text := arg.String()
+	if text == "" {
+		return fallback, nil
+	}
+	var r report.Report
+	if err := json.NewDecoder(strings.NewReader(text)).Decode(&r); err != nil {
+		return report.Report{}, fmt.Errorf("report: %w", err)
+	}
+	if r.SchemaVersion != report.SchemaVersion {
+		return report.Report{}, fmt.Errorf("unsupported report schema_version %d (want %d)", r.SchemaVersion, report.SchemaVersion)
+	}
+	return r, nil
 }
 
 func defaultsFunc(js.Value, []js.Value) any {

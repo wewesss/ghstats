@@ -13,6 +13,7 @@ import {
   type FormState,
   type LinkState,
 } from "./form";
+import { DEFAULT_PATH, SAMPLE, loadFromFile, loadFromGithub, type DataSource } from "./data";
 import { loadGhstats, svgUrl, type Ghstats, type Mode, type Options, type RenderResult } from "./ghstats";
 import { WORKFLOW } from "./workflow";
 
@@ -346,14 +347,83 @@ function BuilderForm({ form, options, onChange }: { form: FormState; options: Op
   );
 }
 
+function DataRow({ source, onChange }: { source: DataSource; onChange: (next: DataSource) => void }) {
+  const [login, setLogin] = useState("");
+  const [path, setPath] = useState(DEFAULT_PATH);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState("");
+
+  const run = (load: () => Promise<DataSource>) => {
+    setBusy(true);
+    setProblem("");
+    load()
+      .then(onChange)
+      .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)))
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <fieldset className="gs-data">
+      <legend>Data</legend>
+      <div className="gs-row">
+        <Field label="GitHub login">
+          <input value={login} onChange={(event) => setLogin(event.target.value.trim())} spellCheck={false} autoCapitalize="off" />
+        </Field>
+        <Field label="Path">
+          <input value={path} onChange={(event) => setPath(event.target.value.trim())} spellCheck={false} />
+        </Field>
+        <span>
+          <button type="button" className="gs-button" disabled={busy || login === ""} onClick={() => run(() => loadFromGithub(login, path))}>
+            Load
+          </button>
+          <button
+            type="button"
+            className="gs-button"
+            onClick={() => {
+              setProblem("");
+              onChange(SAMPLE);
+            }}
+          >
+            Sample data
+          </button>
+        </span>
+      </div>
+      <Field label="or open a stats.json">
+        <input
+          type="file"
+          accept=".json,application/json"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file !== undefined) run(() => loadFromFile(file));
+          }}
+        />
+      </Field>
+      <small>The file is read in this browser and never leaves it.</small>
+      {problem !== "" ? (
+        <pre className="gs-error" role="alert">
+          {problem}
+        </pre>
+      ) : null}
+      <small>
+        Showing: <strong>{source.label}</strong>
+      </small>
+    </fieldset>
+  );
+}
+
 function BuilderApp({ api, options, initial }: Ready) {
   const [form, setForm] = useState(initial);
   const [override, setOverride] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("dark");
+  const [data, setData] = useState<DataSource>(SAMPLE);
 
   const formSource = useMemo(() => JSON.stringify(toConfig(form)), [form]);
-  const formResult = useMemo(() => api.render(formSource, mode), [api, formSource, mode]);
-  const result = useMemo(() => (override === null ? formResult : api.render(override, mode)), [api, override, formResult, mode]);
+  const formResult = useMemo(() => api.render(formSource, mode, data.report), [api, formSource, mode, data]);
+  const result = useMemo(
+    () => (override === null ? formResult : api.render(override, mode, data.report)),
+    [api, override, formResult, mode, data],
+  );
 
   const lastGood = useRef<RenderResult>(result);
   if (result.error === "") lastGood.current = result;
@@ -382,6 +452,7 @@ function BuilderApp({ api, options, initial }: Ready) {
       </div>
 
       <div className="gs-pane gs-pane-preview">
+        <DataRow source={data} onChange={setData} />
         <div className="gs-toolbar">
           <span>Preview</span>
           <span role="group" aria-label="Preview mode">

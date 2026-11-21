@@ -57,3 +57,7 @@ GitHub disables scheduled workflows in a public repository after 60 days without
 ### Why does my profile README show an old card after the workflow ran?
 
 GitHub proxies and caches the images it shows in a README, so a new card can take a few minutes to appear, and a browser may keep the old one. Reload the page without the cache. If it still shows the old card, check that the workflow committed the new files in the output directory.
+
+### Can I build my own front or server?
+
+Yes. `stats.json` is public and readable from any web page, the Go packages and the WASM renderer are documented, and a small server example is included. See [Build your own front](./docs/en/guide/extend.md).

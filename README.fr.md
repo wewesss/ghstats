@@ -22,7 +22,7 @@
 
 [English](./README.md) · Français
 
-[Prise en main](./docs/fr/guide/getting-started.md) · [Configuration](./docs/fr/guide/configuration.md) · [Action GitHub](./docs/fr/guide/action.md) · [Cartes](./docs/fr/cards/gallery.md) · [Builder](https://wewesss.github.io/ghstats/) · [Confidentialité](./docs/fr/guide/privacy.md) · [Changelog](./CHANGELOG.md) · [FAQ](./FAQ.fr.md) · [Contribuer](./CONTRIBUTING.fr.md) · [Sécurité](./SECURITY.md)
+[Prise en main](./docs/fr/guide/getting-started.md) · [Configuration](./docs/fr/guide/configuration.md) · [Action GitHub](./docs/fr/guide/action.md) · [Faire son propre front](./docs/fr/guide/extend.md) · [Cartes](./docs/fr/cards/gallery.md) · [Builder](https://wewesss.github.io/ghstats/) · [Confidentialité](./docs/fr/guide/privacy.md) · [Changelog](./CHANGELOG.md) · [FAQ](./FAQ.fr.md) · [Contribuer](./CONTRIBUTING.fr.md) · [Sécurité](./SECURITY.md)
 
 ---
 
@@ -159,7 +159,7 @@ Toutes les variantes, avec la configuration qui les produit, sont dans la [galer
 
 ## Stabilité
 
-À partir de la v1.0.0, la configuration `version: 1` et le `schema_version: 1` de `stats.json` sont stables pour toute la série v1 : un champ ajouté ne casse rien, et un changement incompatible sort en v2. Épinglez l'Action avec `wewesss/ghstats@v1`, qui suit la dernière version v1.x.y et installe le binaire correspondant.
+À partir de la v1.0.0, la configuration `version: 1` et le `schema_version: 1` de `stats.json` et les points d'entrée Go listés dans le [guide pour faire son propre front](./docs/fr/guide/extend.md) sont stables pour toute la série v1 : un champ ajouté ne casse rien, et un changement incompatible sort en v2. Épinglez l'Action avec `wewesss/ghstats@v1`, qui suit la dernière version v1.x.y et installe le binaire correspondant.
 
 L'ancienne version (`github-stats-api-go`, GPL-3.0) est conservée au tag [`legacy-v1.0.0`](https://github.com/wewesss/ghstats/tree/legacy-v1.0.0).
 

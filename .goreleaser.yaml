@@ -2,6 +2,17 @@ version: 2
 
 project_name: ghstats
 
+before:
+  hooks:
+    - >-
+      sh -c 'set -e;
+      mkdir -p dist-wasm;
+      GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o dist-wasm/ghstats.wasm ./cmd/wasm;
+      root="$(go env GOROOT)";
+      exec_js="$root/lib/wasm/wasm_exec.js";
+      [ -f "$exec_js" ] || exec_js="$root/misc/wasm/wasm_exec.js";
+      cp -f "$exec_js" dist-wasm/wasm_exec.js'
+
 builds:
   - id: ghstats
     main: ./cmd/ghstats
@@ -28,10 +39,14 @@ archives:
 
 release:
   prerelease: auto
+  extra_files:
+    - glob: ./dist-wasm/*
 
 checksum:
   name_template: checksums.txt
   algorithm: sha256
+  extra_files:
+    - glob: ./dist-wasm/*
 
 changelog:
   sort: asc

@@ -82,8 +82,11 @@ type Block struct {
 }
 
 type RenderLanguages struct {
-	Colors Palette `yaml:"colors"`
+	Colors      Palette `yaml:"colors"`
+	Multipliers *bool   `yaml:"multipliers,omitempty"`
 }
+
+func (l RenderLanguages) ShowMultipliers() bool { return l.Multipliers == nil || *l.Multipliers }
 
 type Palette struct {
 	Name   string

@@ -158,3 +158,74 @@ func TestSnippetWithoutRowsIsUnchanged(t *testing.T) {
 		t.Fatal("nil rows must not change the snippet")
 	}
 }
+
+func TestRowCardsShareTheTallestHeight(t *testing.T) {
+	short := []config.Block{{Name: "stats", Variants: []string{"totals"}}}
+	tall := []config.Block{{Name: "languages", Variants: []string{"bars"}}}
+	cfg := config.Default()
+	cfg.Render.Cards = []config.Card{
+		{Name: "short", Blocks: short},
+		{Name: "tall", Blocks: tall},
+		{Name: "alone", Blocks: short},
+	}
+	cfg.Render.Rows = []config.Row{{Items: []string{"short", "tall"}}, {Items: []string{"alone"}}}
+
+	files, err := render.Cards(sample.Report(), cfg, render.Dark)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, hs := viewBox(t, files["short-dark.svg"])
+	_, ht := viewBox(t, files["tall-dark.svg"])
+	_, ha := viewBox(t, files["alone-dark.svg"])
+	if hs != ht {
+		t.Fatalf("heights %d and %d must match", hs, ht)
+	}
+	cfg.Render.Rows = nil
+	plain, err := render.Cards(sample.Report(), cfg, render.Dark)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, ps := viewBox(t, plain["short-dark.svg"])
+	_, pt := viewBox(t, plain["tall-dark.svg"])
+	if ps >= pt || ht != pt || ha != ps {
+		t.Fatalf("short %d tall %d alone %d; without rows short %d tall %d", hs, ht, ha, ps, pt)
+	}
+	if files["tall-dark.svg"] != plain["tall-dark.svg"] {
+		t.Fatal("the tallest card must not change")
+	}
+	assertWellFormed(t, files["short-dark.svg"])
+	if !strings.Contains(files["short-dark.svg"], "STARS") {
+		t.Fatal("content must stay in the stretched card")
+	}
+}
+
+func TestRowHeightIgnoresIdentity(t *testing.T) {
+	cfg := sample.Profile()
+	cfg.Render.Cards = []config.Card{{Name: "a", Blocks: []config.Block{{Name: "stats", Variants: []string{"totals"}}}}}
+	base, err := render.Cards(sample.Report(), cfg, render.Dark)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Render.Rows = []config.Row{{Items: []string{"identity", "a"}}}
+	got, err := render.Cards(sample.Report(), cfg, render.Dark)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["a-dark.svg"] != base["a-dark.svg"] || got["identity-dark.svg"] != base["identity-dark.svg"] {
+		t.Fatal("identity must not take part in the height of a row")
+	}
+}
+
+func TestLanguageMultipliersOption(t *testing.T) {
+	off := false
+	cfg := config.DefaultRender()
+	cfg.Blocks = []config.Block{{Name: "languages", Variants: []string{"bars"}}}
+	cfg.Motion = false
+	if !strings.Contains(renderSVG(t, sample.Report(), cfg, render.Dark), "×0.35") {
+		t.Fatal("multipliers are shown by default")
+	}
+	cfg.Languages.Multipliers = &off
+	if svg := renderSVG(t, sample.Report(), cfg, render.Dark); strings.Contains(svg, "×") {
+		t.Fatal("multipliers: false must drop every multiplier label")
+	}
+}

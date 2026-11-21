@@ -120,3 +120,26 @@ func TestEncodeRoundTripRowsAndHeader(t *testing.T) {
 		t.Fatalf("round trip differs\ngot:  %+v\nwant: %+v\n%s", got, c, out)
 	}
 }
+
+func TestLanguageMultipliersDefaultAndRoundTrip(t *testing.T) {
+	if !config.DefaultRender().Languages.ShowMultipliers() {
+		t.Fatal("multipliers are shown by default")
+	}
+	off := false
+	c := config.Default()
+	c.Render.Languages.Multipliers = &off
+	var buf bytes.Buffer
+	if err := config.Encode(&buf, c); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "multipliers: false") {
+		t.Fatalf("output lacks multipliers:\n%s", buf.String())
+	}
+	got, err := config.Parse(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Render.Languages.ShowMultipliers() || !reflect.DeepEqual(got, c) {
+		t.Fatalf("round trip differs: %+v", got.Render.Languages)
+	}
+}

@@ -17,15 +17,49 @@ func effectiveLayout(c config.Card) string {
 func Cards(r report.Report, cfg config.Config, mode Mode) (map[string]string, error) {
 	files := map[string]string{}
 	var sb strings.Builder
-	for _, c := range cfg.Render.CardList() {
+	cards := cfg.Render.CardList()
+	draw := func(c config.Card, minHeight int) (int, error) {
 		sb.Reset()
 		rc := cfg.Render
 		rc.Blocks = c.Blocks
 		rc.Layout = effectiveLayout(c)
-		if err := svg(&sb, r, rc, mode, c.HasHeader()); err != nil {
-			return nil, err
+		h, err := svg(&sb, r, rc, mode, cardOpts{header: c.HasHeader(), minHeight: minHeight})
+		if err != nil {
+			return 0, err
 		}
 		files[c.Name+"-"+string(mode)+".svg"] = sb.String()
+		return h, nil
+	}
+	heights := map[string]int{}
+	for _, c := range cards {
+		h, err := draw(c, 0)
+		if err != nil {
+			return nil, err
+		}
+		heights[c.Name] = h
+	}
+	for _, row := range cfg.Render.Rows {
+		var inRow []config.Card
+		tallest := 0
+		for _, name := range row.Items {
+			for _, c := range cards {
+				if c.Name == name {
+					inRow = append(inRow, c)
+					tallest = max(tallest, heights[name])
+				}
+			}
+		}
+		if len(inRow) < 2 {
+			continue
+		}
+		for _, c := range inRow {
+			if heights[c.Name] == tallest {
+				continue
+			}
+			if _, err := draw(c, tallest); err != nil {
+				return nil, err
+			}
+		}
 	}
 	if cfg.Profile.HasIdentity() {
 		sb.Reset()

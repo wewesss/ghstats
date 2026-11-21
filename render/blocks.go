@@ -34,6 +34,8 @@ type renderer struct {
 	maxV    float64
 	private bool
 	header  bool
+
+	minHeight int
 }
 
 type variantFn func(rd *renderer, p string) string
@@ -75,7 +77,7 @@ func (rd *renderer) blockHeight(name, variant string) int {
 
 func newRenderer(r report.Report, cfg config.Render, mode Mode) *renderer {
 	rd := &renderer{th: newTheme(cfg.Theme, mode), mode: mode, cfg: cfg, rep: r}
-	rd.rows = buildRows(r.Languages)
+	rd.rows = buildRows(r.Languages, cfg.Languages.ShowMultipliers())
 	for _, row := range rd.rows {
 		rd.maxV = max(rd.maxV, row.v)
 	}
@@ -98,7 +100,7 @@ func otherName(l report.Languages, tail []string) string {
 	return config.Default().Languages.OtherLabel
 }
 
-func buildRows(l report.Languages) []langRow {
+func buildRows(l report.Languages, multipliers bool) []langRow {
 	type entry struct {
 		name  string
 		share float64
@@ -148,7 +150,7 @@ func buildRows(l report.Languages) []langRow {
 		if v, ok := rawBy[e.name]; ok {
 			rows[i].raw = v
 		}
-		if w, ok := l.Multipliers[e.name]; ok {
+		if w, ok := l.Multipliers[e.name]; ok && multipliers {
 			rows[i].mult = fmt.Sprintf("×%g", w)
 		}
 	}

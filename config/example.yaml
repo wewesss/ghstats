@@ -77,6 +77,8 @@ render:
   languages:
     # accent | github | mono | spectrum | duotone | a map such as {TypeScript: "#3178c6"}
     colors: accent
+    # false hides the ×<n> label next to a language with a weight (shares are unchanged).
+    multipliers: true
   theme:
     # noir | carbon | graphite | midnight | slate | dune | transparent
     preset: noir

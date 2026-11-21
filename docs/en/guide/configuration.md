@@ -67,6 +67,7 @@ How the cards look. See the [gallery](../cards/gallery.md) for every block and v
 | `render.rows` | Optional list of README rows, each with an `align` and the `items` it holds. Controls how `README.snippet.md` lays out the cards. See [Layout in the README](#layout-in-the-readme). |
 | `render.private_bar` | `true` (default) or `false`. Replaces the names of private repositories with a black bar. |
 | `render.languages.colors` | `accent` (default), `github`, `mono`, `spectrum`, `duotone`, or a map of language to `"#rrggbb"`. |
+| `render.languages.multipliers` | `true` (default) or `false`. `false` removes the `×<n>` label next to a language that has a weight. The shares are unchanged. |
 | `render.theme.preset` | `noir` (default), `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent`. |
 | `render.theme.accent` | `ice` (default), `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, or `{dark: "#rrggbb", light: "#rrggbb"}`. |
 | `render.theme.overrides` | Keys `bg`, `border`, `fg`, `muted`, `faint` as `"#rrggbb"`; `bg` also accepts `none`. |
@@ -189,6 +190,7 @@ GitHub keeps `align` on `<p>` and `width` on `<img>`, so the two cards of the fi
 - `align` is `left`, `center` or `right`; it defaults to `center`.
 - `items` lists card names, `identity` and `links`. An item can be placed once in all the rows, and `links` must be alone in its row.
 - With several items in a row, each `width` is a percentage of the natural widths of the row (495 for a `card`, 1000 for the identity card and a `wide` card), with 2 % left free. An item alone in its row keeps its usual width.
+- Cards in the same row are drawn at the height of the tallest one: the frame and background are extended and the content stays at the top. The identity card keeps its height.
 - `identity` without an identity card and `links` without links are skipped, and a row left empty is not written.
 - Items that appear in no row are added after the rows, in the default order: identity, cards, links.
 - At most 12 rows.

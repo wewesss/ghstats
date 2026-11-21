@@ -67,6 +67,7 @@ L'apparence des cartes. Voir la [galerie](../cards/gallery.md) pour chaque bloc 
 | `render.rows` | Liste facultative de lignes du README, chacune avec un `align` et les `items` qu'elle contient. Règle l'agencement des cartes dans `README.snippet.md`. Voir [Agencement dans le README](#agencement-dans-le-readme). |
 | `render.private_bar` | `true` (défaut) ou `false`. Remplace les noms des dépôts privés par une barre noire. |
 | `render.languages.colors` | `accent` (défaut), `github`, `mono`, `spectrum`, `duotone`, ou une table de langage vers `"#rrggbb"`. |
+| `render.languages.multipliers` | `true` (défaut) ou `false`. `false` retire l'étiquette `×<n>` à côté d'un langage qui a un poids. Les parts ne changent pas. |
 | `render.theme.preset` | `noir` (défaut), `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent`. |
 | `render.theme.accent` | `ice` (défaut), `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, ou `{dark: "#rrggbb", light: "#rrggbb"}`. |
 | `render.theme.overrides` | Clés `bg`, `border`, `fg`, `muted`, `faint` en `"#rrggbb"` ; `bg` accepte aussi `none`. |
@@ -189,6 +190,7 @@ GitHub garde `align` sur `<p>` et `width` sur `<img>` : les deux cartes de la pr
 - `align` vaut `left`, `center` ou `right` ; `center` par défaut.
 - `items` liste des noms de cartes, `identity` et `links`. Un élément se place une seule fois dans l'ensemble des lignes, et `links` doit être seul dans sa ligne.
 - Quand une ligne a plusieurs éléments, chaque `width` est un pourcentage proportionnel aux largeurs naturelles de la ligne (495 pour une `card`, 1000 pour la carte identité et une carte `wide`), avec 2 % laissés libres. Un élément seul dans sa ligne garde sa largeur habituelle.
+- Les cartes d'une même ligne sont dessinées à la hauteur de la plus haute : le cadre et le fond sont prolongés et le contenu reste en haut. La carte identité garde sa hauteur.
 - `identity` sans carte identité et `links` sans lien sont ignorés, et une ligne devenue vide n'est pas écrite.
 - Les éléments absents de toutes les lignes sont ajoutés après les lignes, dans l'ordre par défaut : identité, cartes, liens.
 - 12 lignes au plus.

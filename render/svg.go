@@ -137,25 +137,33 @@ func label(y float64, s string, th theme, right string) string {
 	return out
 }
 
-func SVG(w io.Writer, r report.Report, cfg config.Render, mode Mode) error {
-	return svg(w, r, cfg, mode, true)
+type cardOpts struct {
+	header    bool
+	minHeight int
 }
 
-func svg(w io.Writer, r report.Report, cfg config.Render, mode Mode, header bool) error {
+func SVG(w io.Writer, r report.Report, cfg config.Render, mode Mode) error {
+	_, err := svg(w, r, cfg, mode, cardOpts{header: true})
+	return err
+}
+
+func svg(w io.Writer, r report.Report, cfg config.Render, mode Mode, o cardOpts) (int, error) {
 	if mode != Dark && mode != Light {
-		return fmt.Errorf("render: unknown mode %q", mode)
+		return 0, fmt.Errorf("render: unknown mode %q", mode)
 	}
 	c := config.Default()
 	c.Render = cfg
 	if err := c.Validate(); err != nil {
-		return err
+		return 0, err
 	}
 	rd := newRenderer(r, cfg, mode)
-	rd.header = header
-	if _, err := io.WriteString(w, rd.card()+"\n"); err != nil {
-		return fmt.Errorf("render: write svg: %w", err)
+	rd.header = o.header
+	rd.minHeight = o.minHeight
+	out, height := rd.card()
+	if _, err := io.WriteString(w, out+"\n"); err != nil {
+		return 0, fmt.Errorf("render: write svg: %w", err)
 	}
-	return nil
+	return height, nil
 }
 
 func blockCSS(p string, cycle, n int) string {
@@ -412,7 +420,7 @@ func (rd *renderer) columnBlocks() (left, right []int) {
 	return left, right
 }
 
-func (rd *renderer) card() string {
+func (rd *renderer) card() (string, int) {
 	th, cfg := rd.th, rd.cfg
 	login := rd.rep.Login
 	wide := effectiveLayout(config.Card{Layout: cfg.Layout, Blocks: cfg.Blocks}) == config.LayoutWide
@@ -438,26 +446,27 @@ func (rd *renderer) card() string {
 		styles = append(styles, motionCSS()...)
 	}
 
-	var height int
+	var height, contentHeight int
 	if !wide {
 		all := make([]int, len(cfg.Blocks))
 		for i := range all {
 			all[i] = i
 		}
 		b, s, y := rd.stack(all)
-		body, styles, height = append(body, b...), append(styles, s...), y+8
+		body, styles, contentHeight = append(body, b...), append(styles, s...), y+8
 	} else {
 		left, right := rd.columnBlocks()
 		lb, ls, ly := rd.stack(left)
 		rb, rs, ry := rd.stack(right)
-		height = max(ly, ry) + 8
+		contentHeight = max(ly, ry) + 8
 		body = append(body, lb...)
 		body = append(body, fmt.Sprintf(`<g transform="translate(%s 0)">%s</g>`, num(wideOffset), strings.Join(rb, "")))
-		body = append(body, fmt.Sprintf(`<line x1="%s" x2="%s" y1="%d" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), rd.top()+6, height-14, th.border))
+		body = append(body, fmt.Sprintf(`<line x1="%s" x2="%s" y1="%d" y2="%d" stroke="%s"/>`, num(wideOffset-5), num(wideOffset-5), rd.top()+6, contentHeight-14, th.border))
 		styles = append(styles, ls...)
 		styles = append(styles, rs...)
 	}
+	height = max(contentHeight, rd.minHeight)
 
 	svg := shell(cw, height, "ghstats card for "+login+" ("+string(rd.mode)+")", th, cfg, styles, body)
-	return accentize(svg, th, cfg, rd.mode)
+	return accentize(svg, th, cfg, rd.mode), contentHeight
 }

@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - A `wide` card spreads its blocks over two columns of 495 px: `languages` stays on the right when present, otherwise the blocks are balanced by height.
-- Cards placed on the same row by `render.rows` are drawn at the height of the tallest one: the frame and the background are extended and the content stays at the top. `identity` keeps its own height.
+- Cards placed on the same row by `render.rows` are drawn at the height of the tallest one: the frame and the background are extended, the header stays at the top and the blocks are centered vertically. `identity` keeps its own height. A `wide` card or `identity` alone in its row is written at `width="98%"`.
 - A `wide` card with a single block is now drawn at 495 px instead of 1000 px with an empty column, and the snippet writes `width="495"` for it.
 
 ## [1.4.0] - 2026-11-21

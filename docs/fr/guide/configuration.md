@@ -123,6 +123,7 @@ Ce fichier écrit `overview-dark.svg`, `overview-light.svg`, `langs-dark.svg` et
   <source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg">
   <img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="495">
 </picture>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="ghstats/langs-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="ghstats/langs-light.svg">
@@ -181,7 +182,7 @@ Le snippet devient :
 </p>
 
 <p align="right">
-  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/overview-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg"><img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="100%"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/overview-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg"><img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="98%"></picture>
 </p>
 ```
 
@@ -189,10 +190,10 @@ GitHub garde `align` sur `<p>` et `width` sur `<img>` : les deux cartes de la pr
 
 - `align` vaut `left`, `center` ou `right` ; `center` par défaut.
 - `items` liste des noms de cartes, `identity` et `links`. Un élément se place une seule fois dans l'ensemble des lignes, et `links` doit être seul dans sa ligne.
-- Quand une ligne a plusieurs éléments, chaque `width` est un pourcentage proportionnel aux largeurs naturelles de la ligne (495 pour une `card`, 1000 pour la carte identité et une carte `wide`), avec 2 % laissés libres. Un élément seul dans sa ligne garde sa largeur habituelle.
-- Les cartes d'une même ligne sont dessinées à la hauteur de la plus haute : le cadre et le fond sont prolongés et le contenu reste en haut. La carte identité garde sa hauteur.
+- Quand une ligne a plusieurs éléments, chaque `width` est un pourcentage proportionnel aux largeurs naturelles de la ligne (495 pour une `card`, 1000 pour la carte identité et une carte `wide`), avec 2 % laissés libres. Un élément seul dans sa ligne est dessiné à 98 % quand c'est une carte `wide` ou la carte identité, et garde 495 quand c'est une `card`.
+- Les cartes d'une même ligne sont dessinées à la hauteur de la plus haute : le cadre et le fond sont prolongés, l'en-tête reste en haut et les blocs sont centrés verticalement dans l'espace ajouté. La carte identité garde sa hauteur.
 - `identity` sans carte identité et `links` sans lien sont ignorés, et une ligne devenue vide n'est pas écrite.
-- Les éléments absents de toutes les lignes sont ajoutés après les lignes, dans l'ordre par défaut : identité, cartes, liens.
+- Les éléments absents de toutes les lignes sont ajoutés après les lignes, dans l'ordre par défaut : identité, cartes, liens, avec les largeurs habituelles (495 pour une `card`, `100%` pour une carte `wide` et la carte identité).
 - 12 lignes au plus.
 
 ### Thème

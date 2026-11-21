@@ -1,6 +1,8 @@
 package render_test
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -315,5 +317,53 @@ func TestLanguageMultipliersOption(t *testing.T) {
 	cfg.Languages.Multipliers = &off
 	if svg := renderSVG(t, sample.Report(), cfg, render.Dark); strings.Contains(svg, "×") {
 		t.Fatal("multipliers: false must drop every multiplier label")
+	}
+}
+
+func docSnippetExample(t *testing.T, heading string) (yamlSrc, html string) {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("..", "docs", "en", "guide", "configuration.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := strings.ReplaceAll(string(b), "\r\n", "\n")
+	_, section, ok := strings.Cut(doc, "### "+heading+"\n")
+	if !ok {
+		t.Fatalf("no %q section in configuration.md", heading)
+	}
+	if end := strings.Index(section, "\n## "); end >= 0 {
+		section = section[:end]
+	}
+	if end := strings.Index(section, "\n### "); end >= 0 {
+		section = section[:end]
+	}
+	block := func(src, fence string) (string, string) {
+		_, rest, ok := strings.Cut(src, "```"+fence+"\n")
+		if !ok {
+			t.Fatalf("no %s block in the %q section", fence, heading)
+		}
+		body, after, ok := strings.Cut(rest, "```")
+		if !ok {
+			t.Fatalf("unterminated %s block in the %q section", fence, heading)
+		}
+		return body, after
+	}
+	yamlSrc, after := block(section, "yaml")
+	html, _ = block(after, "html")
+	return yamlSrc, html
+}
+
+func TestDocSnippetExamplesMatchSnippet(t *testing.T) {
+	for _, heading := range []string{"Several cards", "Layout in the README"} {
+		t.Run(heading, func(t *testing.T) {
+			src, want := docSnippetExample(t, heading)
+			cfg, err := config.Parse(strings.NewReader(src))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := render.Snippet(cfg); strings.TrimSpace(got) != strings.TrimSpace(want) {
+				t.Fatalf("docs/en/guide/configuration.md differs from render.Snippet\n--- Snippet\n%s\n--- docs\n%s", got, want)
+			}
+		})
 	}
 }

@@ -123,6 +123,7 @@ This writes `overview-dark.svg`, `overview-light.svg`, `langs-dark.svg` and `lan
   <source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg">
   <img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="495">
 </picture>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="ghstats/langs-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="ghstats/langs-light.svg">
@@ -181,7 +182,7 @@ The snippet becomes:
 </p>
 
 <p align="right">
-  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/overview-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg"><img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="100%"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="ghstats/overview-dark.svg"><source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg"><img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="98%"></picture>
 </p>
 ```
 
@@ -189,10 +190,10 @@ GitHub keeps `align` on `<p>` and `width` on `<img>`, so the two cards of the fi
 
 - `align` is `left`, `center` or `right`; it defaults to `center`.
 - `items` lists card names, `identity` and `links`. An item can be placed once in all the rows, and `links` must be alone in its row.
-- With several items in a row, each `width` is a percentage of the natural widths of the row (495 for a `card`, 1000 for the identity card and a `wide` card), with 2 % left free. An item alone in its row keeps its usual width.
-- Cards in the same row are drawn at the height of the tallest one: the frame and background are extended and the content stays at the top. The identity card keeps its height.
+- With several items in a row, each `width` is a percentage of the natural widths of the row (495 for a `card`, 1000 for the identity card and a `wide` card), with 2 % left free. An item alone in its row is drawn at 98 % when it is a `wide` card or the identity card, and keeps 495 when it is a `card`.
+- Cards in the same row are drawn at the height of the tallest one: the frame and background are extended, the header stays at the top and the blocks are centered vertically in the extra space. The identity card keeps its height.
 - `identity` without an identity card and `links` without links are skipped, and a row left empty is not written.
-- Items that appear in no row are added after the rows, in the default order: identity, cards, links.
+- Items that appear in no row are added after the rows, in the default order: identity, cards, links, with the usual widths (495 for a `card`, `100%` for a `wide` card and the identity card).
 - At most 12 rows.
 
 ### Theme

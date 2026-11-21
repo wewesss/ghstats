@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-11-21
+
+### Added
+
+- `render.cards`: split the render into several images, each grouping blocks and variants as you choose. A card named `overview` writes `overview-dark.svg` and `overview-light.svg`, and `README.snippet.md` lists one picture per card. Without `render.cards`, nothing changes: `render.blocks` gives `stats-<mode>.svg`.
+- The builder on the site edits several cards: a name, a layout and its blocks for each one.
+
 ## [1.1.1] - 2026-11-18
 
 ### Security

@@ -63,6 +63,7 @@ How the cards look. See the [gallery](../cards/gallery.md) for every block and v
 | Key | Allowed values |
 | --- | --- |
 | `render.blocks` | List of `block: [variants]`, stacked in this order. `stats`: `totals`, `distribution`. `languages`: `bars`, `iso`, `cells`, `treemap`, `shift`, `terminal`. `history`: `views`, `clones`. |
+| `render.cards` | Optional list of cards, each with `name`, `blocks` and an optional `layout`. Splits the render into several images; `render.blocks` is then ignored. See [Several cards](#several-cards). |
 | `render.private_bar` | `true` (default) or `false`. Replaces the names of private repositories with a black bar. |
 | `render.languages.colors` | `accent` (default), `github`, `mono`, `spectrum`, `duotone`, or a map of language to `"#rrggbb"`. |
 | `render.theme.preset` | `noir` (default), `carbon`, `graphite`, `midnight`, `slate`, `dune`, `transparent`. |
@@ -82,6 +83,66 @@ render:
     - stats: [totals, distribution]
     - languages: [bars, treemap]
     - history: [views]
+```
+
+### Several cards
+
+Without `render.cards`, `render.blocks` gives one card, `stats-dark.svg` and `stats-light.svg`. With `render.cards`, each card is its own pair of images and groups blocks and variants as you like:
+
+```yaml
+version: 1
+render:
+  cards:
+    - name: overview
+      blocks:
+        - stats: [totals]
+        - history: [views]
+    - name: langs
+      layout: wide
+      blocks:
+        - languages: [treemap]
+```
+
+This writes `overview-dark.svg`, `overview-light.svg`, `langs-dark.svg` and `langs-light.svg`. `stats.json` and the link badges are unchanged, and the identity card keeps its name.
+
+- `name` is required, unique, lowercase letters, digits and `-` (1 to 40 characters, starting with a letter or a digit). `identity` and `links` are reserved.
+- `blocks` follows the same rules as `render.blocks`, and needs at least one block per card. A block may appear in several cards.
+- `layout` is `card` or `wide`. When it is missing, the card inherits `render.layout`.
+- At most 12 cards.
+- When `render.cards` is set, `render.blocks` is ignored.
+
+`README.snippet.md` lists one `<picture>` per card, in order, `495` wide for a `card` layout and `100%` for a `wide` one. The alt text is `GitHub stats: <name>`:
+
+```html
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="ghstats/overview-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="ghstats/overview-light.svg">
+  <img alt="GitHub stats: overview" src="ghstats/overview-dark.svg" width="495">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="ghstats/langs-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="ghstats/langs-light.svg">
+  <img alt="GitHub stats: langs" src="ghstats/langs-dark.svg" width="100%">
+</picture>
+```
+
+One card per variant:
+
+```yaml
+render:
+  cards:
+    - name: totals
+      blocks:
+        - stats: [totals]
+    - name: distribution
+      blocks:
+        - stats: [distribution]
+    - name: treemap
+      blocks:
+        - languages: [treemap]
+    - name: views
+      blocks:
+        - history: [views]
 ```
 
 ### Theme

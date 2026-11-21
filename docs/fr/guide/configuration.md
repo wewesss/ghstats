@@ -75,6 +75,7 @@ L'apparence des cartes. Voir la [galerie](../cards/gallery.md) pour chaque bloc 
 | `render.theme.accent` | `ice` (défaut), `mint`, `amber`, `silver`, `violet`, `rose`, `lime`, `coral`, `cycle`, ou `{dark: "#rrggbb", light: "#rrggbb"}`. |
 | `render.theme.overrides` | Clés `bg`, `border`, `fg`, `muted`, `faint` en `"#rrggbb"` ; `bg` accepte aussi `none`. |
 | `render.motion` | `true` (défaut) ou `false`. `false` coupe toutes les animations. Le mouvement réduit est toujours respecté. |
+| `render.png` | `false` (défaut) ou `true`. `true` écrit aussi `<nom>-dark.png` et `<nom>-light.png` à côté de chaque SVG (les cartes, la carte identité et les badges de liens), rendus en 2x sans aucune animation. Le drapeau `--png` de `ghstats render` et l'entrée `png` de l'Action font de même. |
 | `render.layout` | `card` (495 px, défaut) ou `wide` (1000 px, deux colonnes de 495 px). Avec `languages`, il va dans la colonne de droite et les autres blocs à gauche ; sans lui, les blocs sont répartis pour équilibrer les deux colonnes. Une carte `wide` à un seul bloc est dessinée en 495 px. |
 | `render.base_path` | Préfixe de chaque chemin écrit dans `README.snippet.md`, terminé par `/` (défaut `ghstats/`). |
 
@@ -389,6 +390,7 @@ render:
     preset: noir
     accent: cycle
   motion: true
+  png: false
   layout: card
   base_path: ghstats/
 profile:

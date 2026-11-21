@@ -294,6 +294,14 @@ func (rd *renderer) activeVariants(blk config.Block) []string {
 	return out
 }
 
+func headerDot(cx float64, cy int, motion bool) string {
+	dot := fmt.Sprintf(`<circle cx="%s" cy="%d" r="3" fill="%s"/>`, num(cx), cy, acc)
+	if !motion {
+		return dot
+	}
+	return dot + fmt.Sprintf(`<circle class="pulse" cx="%s" cy="%d" r="3" fill="%s"/>`, num(cx), cy, acc)
+}
+
 func motionCSS() []string {
 	return []string{
 		fmt.Sprintf(".%s .blink{animation:%sblink 1.1s steps(1,end) infinite}@keyframes %sblink{50%%{opacity:0}}", prefix, prefix, prefix),
@@ -435,8 +443,7 @@ func (rd *renderer) card() (string, int) {
 	if rd.header {
 		body = append(body, txt(24, 31, esc(login), topt{fill: th.fg, size: 14, weight: 600}))
 		body = append(body, txt(float64(23+9*utf8.RuneCountInString(login)), 31, "/ ghstats", topt{fill: th.muted, size: 12, mono: true}))
-		body = append(body, fmt.Sprintf(`<circle cx="%s" cy="27" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="27" r="3" fill="%s"/>`,
-			num(cw-132), acc, num(cw-132), acc))
+		body = append(body, headerDot(cw-132, 27, cfg.Motion))
 		synced := "never"
 		if !rd.rep.CollectedAt.IsZero() {
 			synced = rd.rep.CollectedAt.UTC().Format("2 Jan")

@@ -205,6 +205,7 @@ func TestRenderDefaultsMatchDocs(t *testing.T) {
 		"render.theme.preset":        r.Theme.Preset,
 		"render.theme.accent":        r.Theme.Accent.Name,
 		"render.motion":              fmt.Sprint(r.Motion),
+		"render.png":                 fmt.Sprint(r.PNG),
 		"render.layout":              r.Layout,
 		"render.base_path":           r.BasePath,
 	}
@@ -246,6 +247,7 @@ render:
       bg: none
       fg: "#ffffff"
   motion: false
+  png: true
 `
 	got, err := config.Parse(strings.NewReader(in))
 	if err != nil {
@@ -255,7 +257,7 @@ render:
 	if len(r.Blocks) != 3 || r.Blocks[1].Name != "languages" || len(r.Blocks[1].Variants) != 6 || r.Blocks[2].Variants[1] != "clones" {
 		t.Fatalf("blocks = %+v", r.Blocks)
 	}
-	if r.PrivateBar || r.Motion {
+	if r.PrivateBar || r.Motion || !r.PNG {
 		t.Fatalf("flags = %+v", r)
 	}
 	if r.Languages.Colors.Name != "" || r.Languages.Colors.Custom["Go"] != "#00ADD8" {

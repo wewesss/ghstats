@@ -146,7 +146,7 @@ func identityCard(r report.Report, cfg config.Config, mode Mode) string {
 	if p.Location != "" {
 		dotX = W - 28 - 11*monoAdvance*float64(utf8.RuneCountInString(p.Location)) - 12
 	}
-	b = append(b, fmt.Sprintf(`<circle cx="%s" cy="33" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="33" r="3" fill="%s"/>`, num(dotX), acc, num(dotX), acc))
+	b = append(b, headerDot(dotX, 33, rc.Motion))
 	if p.Location != "" {
 		b = append(b, txt(W-28, 37, esc(p.Location), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
 	}
@@ -230,7 +230,7 @@ func identityFlow(r report.Report, cfg config.Config, mode Mode) string {
 		if showLocation {
 			dotX = W - mx - 11*monoAdvance*float64(utf8.RuneCountInString(p.Location)) - 12
 		}
-		b = append(b, fmt.Sprintf(`<circle cx="%s" cy="33" r="3" fill="%s"/><circle class="pulse" cx="%s" cy="33" r="3" fill="%s"/>`, num(dotX), acc, num(dotX), acc))
+		b = append(b, headerDot(dotX, 33, rc.Motion))
 		if showLocation {
 			b = append(b, txt(W-mx, 37, esc(p.Location), topt{fill: th.muted, size: 11, mono: true, anchor: "end"}))
 		}

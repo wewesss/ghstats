@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"image/png"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -553,5 +554,82 @@ func TestCollectKeepIgnoresFilesItDidNotWrite(t *testing.T) {
 	want := "snapshot-2026-11-14T090000Z.json.bak snapshot-2026-11-16T090000Z.json snapshot-2026-11-17T090000Z.json snapshot-backup-before-migration.json snapshot-old.json"
 	if got != want {
 		t.Fatalf("files = %q, want %q", got, want)
+	}
+}
+
+func TestRenderPNGWritesValidImages(t *testing.T) {
+	dir := t.TempDir()
+	raw, err := json.Marshal(report.Report{SchemaVersion: report.SchemaVersion, Login: "me", CollectedAt: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reportPath := filepath.Join(dir, "report.json")
+	if err := os.WriteFile(reportPath, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfgPath := filepath.Join(dir, "ghstats.yaml")
+	cfg := "version: 1\nrender:\n  theme:\n    accent: cycle\nprofile:\n  tagline: SOFTWARE\n  links:\n    - website: https://example.com\n"
+	if err := os.WriteFile(cfgPath, []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	plain := filepath.Join(dir, "plain")
+	if code, _, stderr := exec("render", "--report", reportPath, "--config", cfgPath, "--out-dir", plain); code != 0 {
+		t.Fatalf("render = %d, %q", code, stderr)
+	}
+	if _, err := os.Stat(filepath.Join(plain, "stats-dark.png")); err == nil {
+		t.Fatal("png written without --png")
+	}
+
+	outDir := filepath.Join(dir, "png")
+	if code, _, stderr := exec("render", "--report", reportPath, "--config", cfgPath, "--out-dir", outDir, "--png"); code != 0 {
+		t.Fatalf("render --png = %d, %q", code, stderr)
+	}
+	for _, name := range []string{"stats-dark", "stats-light", "identity-dark", "identity-light", "links/website-dark", "links/website-light"} {
+		data, err := os.ReadFile(filepath.Join(outDir, filepath.FromSlash(name)+".png"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		img, err := png.Decode(bytes.NewReader(data))
+		if err != nil {
+			t.Fatalf("%s.png: %v", name, err)
+		}
+		if b := img.Bounds(); b.Dx() < 2 || b.Dy() < 2 {
+			t.Fatalf("%s.png is %v", name, b)
+		}
+	}
+	svgData, err := os.ReadFile(filepath.Join(outDir, "stats-dark.svg"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(svgData), "@keyframes") {
+		t.Fatal("the SVG must keep its animation when PNGs are written")
+	}
+}
+
+func TestRenderPNGFromConfig(t *testing.T) {
+	dir := t.TempDir()
+	raw, err := json.Marshal(report.Report{SchemaVersion: report.SchemaVersion, Login: "me", CollectedAt: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reportPath := filepath.Join(dir, "report.json")
+	if err := os.WriteFile(reportPath, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfgPath := filepath.Join(dir, "ghstats.yaml")
+	if err := os.WriteFile(cfgPath, []byte("version: 1\nrender:\n  png: true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outDir := filepath.Join(dir, "cards")
+	if code, _, stderr := exec("render", "--report", reportPath, "--config", cfgPath, "--out-dir", outDir); code != 0 {
+		t.Fatalf("render = %d, %q", code, stderr)
+	}
+	data, err := os.ReadFile(filepath.Join(outDir, "stats-light.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := png.Decode(bytes.NewReader(data)); err != nil {
+		t.Fatal(err)
 	}
 }

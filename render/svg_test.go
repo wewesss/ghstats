@@ -280,7 +280,7 @@ func TestAnimationRules(t *testing.T) {
 	cfg := sample.FullRender()
 	cfg.Motion = false
 	still := renderSVG(t, sample.Report(), cfg, render.Dark)
-	for _, bad := range []string{"@keyframes", "prefers-reduced-motion", "<animate", `class="slide"`, `class="dot"`} {
+	for _, bad := range []string{"@keyframes", "prefers-reduced-motion", "<animate", `class="slide"`, `class="dot"`, `class="pulse"`} {
 		if strings.Contains(still, bad) {
 			t.Fatalf("motion off still contains %q", bad)
 		}

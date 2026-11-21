@@ -18,6 +18,7 @@ Le dépôt est une Action composite pour les runners Linux et macOS. Elle instal
 | `output-dir` | `ghstats` | Dossier qui reçoit les cartes et `README.snippet.md`. |
 | `traffic` | `true` | Mettre `false` pour sauter les appels à l'API de trafic. |
 | `keep-snapshots` | `30` | Nombre de snapshots conservés dans `data-dir/snapshots` ; `0` les garde tous. |
+| `png` | `false` | Mettre `true` pour écrire aussi un `-dark.png` et un `-light.png` à côté de chaque SVG (2x, sans animation). Équivaut à `render.png: true`. |
 
 ## Outputs
 

@@ -18,6 +18,7 @@ The repository is a composite Action for Linux and macOS runners. It installs th
 | `output-dir` | `ghstats` | Directory receiving the cards and `README.snippet.md`. |
 | `traffic` | `true` | Set to `false` to skip the traffic API calls. |
 | `keep-snapshots` | `30` | Number of snapshots kept in `data-dir/snapshots`; `0` keeps them all. |
+| `png` | `false` | Set to `true` to also write a `-dark.png` and a `-light.png` next to every SVG (2x, no animation). Same as `render.png: true`. |
 
 ## Outputs
 

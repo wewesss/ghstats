@@ -20,7 +20,7 @@ go install github.com/wewesss/ghstats/cmd/ghstats@latest
 ```sh
 ghstats collect [--out data/snapshots] [--history data/history.json] [--no-traffic] [--concurrency N] [--keep N]
 ghstats compute --snapshot <file> --history <file> --out <report.json> [--config <file>]
-ghstats render  --report <report.json> --out-dir <dir> [--config <file>]
+ghstats render  --report <report.json> --out-dir <dir> [--config <file>] [--png]
 ghstats init    [--user <login>] [--yes] [--force] [--no-run]
 ghstats version
 ```
@@ -63,6 +63,7 @@ Les avertissements sont affichés sur la sortie d'erreur.
 | `--report` | oui | Fichier de rapport. |
 | `--out-dir` | oui | Dossier qui reçoit les fichiers. |
 | `--config` | non | Fichier de configuration ; les valeurs par défaut s'appliquent s'il est omis. |
+| `--png` | non | Écrit aussi `<nom>-dark.png` et `<nom>-light.png` à côté de chaque SVG, en 2x sans aucune animation. Équivaut à `render.png: true`. |
 
 `render` écrit `stats.json`, `stats-dark.svg` et `stats-light.svg` dans `--out-dir`, plus la carte identité et les badges de liens quand la configuration a une section `profile` (voir [Cartes de profil](../cards/profile.md)), et `README.snippet.md`. Avec `render.cards`, les fichiers de statistiques sont `<name>-dark.svg` et `<name>-light.svg`, une paire par carte (voir [Plusieurs cartes](./configuration.md#plusieurs-cartes)).
 

@@ -93,6 +93,8 @@ render:
     overrides: {}
   # false turns every animation off.
   motion: true
+  # true also writes <name>-dark.png and <name>-light.png next to each SVG (2x, motion off).
+  png: false
   # card: 495 px stats card. wide: 1000 px, two columns (languages on the right when present).
   # A wide card with a single block is drawn at 495 px.
   layout: card

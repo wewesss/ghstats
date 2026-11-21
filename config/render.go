@@ -58,6 +58,7 @@ type Render struct {
 	Languages  RenderLanguages `yaml:"languages"`
 	Theme      Theme           `yaml:"theme"`
 	Motion     bool            `yaml:"motion"`
+	PNG        bool            `yaml:"png"`
 	Layout     string          `yaml:"layout"`
 	BasePath   string          `yaml:"base_path"`
 }
